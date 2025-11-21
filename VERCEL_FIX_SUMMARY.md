@@ -1,19 +1,27 @@
-# Vercel ESM Error - Quick Fix Summary
+# Vercel Build Errors - Quick Fix Summary
 
-## ❌ Error
+## ❌ Errors Fixed
+
+### Error 1: ESM Module Error
 ```
 SyntaxError: Unexpected token 'export'
 Node.js process exited with exit status: 1
 ```
 
-## ✅ Solution Applied
+### Error 2: TypeScript Build Error
+```
+error TS18003: No inputs were found in config file '/vercel/path0/server/tsconfig.json'
+Specified 'include' paths were '["src/**/*"]'
+```
+
+## ✅ Solutions Applied
 
 ### Files Changed
 
 1. **Created `api/index.js`** - Vercel serverless entry point
 2. **Updated `vercel.json`** - Changed to use rewrites instead of builds
 3. **Updated `server.js`** - Fixed export syntax (moved outside if block)
-4. **Updated `.vercelignore`** - Ensured api/ folder is included
+4. **Updated `.vercelignore`** - Removed `server/src` exclusion (needed for TypeScript build)
 
 ### What Changed
 
@@ -41,6 +49,10 @@ export default handler;
 **server.js**
 - Moved `export default handler` outside the if block
 - Handler function now always exported (works for both Vercel and local)
+
+**.vercelignore**
+- Removed `server/src` from ignore list
+- TypeScript source files now included for compilation during build
 
 ## 🚀 Next Steps
 
