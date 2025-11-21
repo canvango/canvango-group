@@ -65,34 +65,33 @@ async function setupApp() {
   }
 }
 
-// For Vercel: Export the app as serverless function
-if (isVercel) {
-  // Vercel serverless function handler
-  let appPromise = null;
-  
-  export default async function handler(req, res) {
-    try {
-      // Initialize app once and reuse
-      if (!appPromise) {
-        appPromise = setupApp();
-      }
-      
-      const app = await appPromise;
-      return app(req, res);
-    } catch (error) {
-      console.error('Serverless function error:', error);
-      return res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Server initialization failed',
-          details: error.message
-        }
-      });
+// Vercel serverless function handler
+let appPromise = null;
+
+async function handler(req, res) {
+  try {
+    // Initialize app once and reuse
+    if (!appPromise) {
+      appPromise = setupApp();
     }
+    
+    const app = await appPromise;
+    return app(req, res);
+  } catch (error) {
+    console.error('Serverless function error:', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Server initialization failed',
+        details: error.message
+      }
+    });
   }
-} else {
-  // For traditional Node.js server
+}
+
+// For traditional Node.js server (when not on Vercel)
+if (!isVercel) {
   setupApp()
     .then((app) => {
       app.listen(PORT, () => {
@@ -123,3 +122,6 @@ if (isVercel) {
       process.exit(1);
     });
 }
+
+// Export for Vercel and other serverless platforms
+export default handler;

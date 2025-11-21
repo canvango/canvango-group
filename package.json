@@ -8,7 +8,7 @@
     "build": "npm run build:frontend && npm run build:server && npm run postbuild:server",
     "build:frontend": "vite build",
     "build:server": "tsc -p server/tsconfig.json",
-    "postbuild:server": "node -e \"require('fs').writeFileSync('server/dist/package.json', JSON.stringify({type:'module'}, null, 2))\"",
+    "postbuild:server": "node -e \"const fs=require('fs');fs.writeFileSync('server/dist/package.json',JSON.stringify({type:'module'},null,2));console.log('✅ Created server/dist/package.json')\"",
     "build:analyze": "npm run build:frontend && start dist/stats.html",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:server\" \"vite\"",
     "dev:server": "tsx watch server/src/index.ts",

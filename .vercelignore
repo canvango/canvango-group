@@ -22,3 +22,6 @@ server/src
 # Ignore build artifacts that shouldn't be deployed
 node_modules/.cache
 .cache
+
+# Keep api folder for Vercel
+!api
