@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=gpittnsfzgkdbqnccncn",
+      "headers": {
+        "Authorization": "Bearer sbp_4c5b4e081ef90a206ae197d9df5c4da6826a7c51"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "execute_sql",
+        "apply_migration",
+        "list_tables",
+        "get_logs",
+        "get_advisors",
+        "list_migrations",
+        "get_project_url",
+        "get_anon_key"
+      ]
+    }
+  }
+}

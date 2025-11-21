@@ -1,0 +1,24 @@
+### Test Individual Delete Product
+DELETE http://localhost:3000/api/admin/products/0342427c-9a12-4310-88c0-730b59a1835a
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+### Test Bulk Delete Products
+POST http://localhost:3000/api/admin/products/bulk
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "product_ids": ["6a420391-beca-4de6-8b43-e193ea5540f0"],
+  "action": "delete"
+}
+
+### Test Bulk Activate
+POST http://localhost:3000/api/admin/products/bulk
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "product_ids": ["e7caeddf-09fd-44eb-b609-2546a7dcc0b1"],
+  "action": "activate"
+}

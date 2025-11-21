@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login - Canvango</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Login</h1>
+    <p>Akun Admin yang Tersedia:</p>
+    <ul>
+        <li>admin@canvango.com</li>
+        <li>admin1@gmail.com</li>
+        <li>angunk2@gmail.com</li>
+    </ul>
+    
+    <form id="loginForm">
+        <input type="text" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+        
+        // Ganti dengan Supabase URL dan Anon Key Anda
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('result')
+            
+            resultDiv.textContent = 'Logging in...'
+            resultDiv.className = ''
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                })
+                
+                if (error) throw error
+                
+                // Get user data from users table
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single()
+                
+                if (userError) {
+                    console.error('User data error:', userError)
+                }
+                
+                resultDiv.className = 'success'
+                resultDiv.innerHTML = `
+                    <strong>Login Successful!</strong><br>
+                    Email: ${data.user.email}<br>
+                    Role: ${userData?.role || 'N/A'}<br>
+                    Username: ${userData?.username || 'N/A'}<br>
+                    <br>
+                    <a href="http://localhost:5174">Go to App</a>
+                `
+            } catch (error) {
+                resultDiv.className = 'error'
+                resultDiv.textContent = 'Error: ' + error.message
+            }
+        })
+    </script>
+</body>
+</html>

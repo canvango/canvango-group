@@ -1,0 +1,39 @@
+### Test Admin Products Endpoint After Single Port Fix
+
+### 1. Health Check
+GET http://localhost:5000/health
+
+### 2. Login as Admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "admin1",
+  "password": "Admin123!"
+}
+
+### 3. Get All Products (requires auth token from step 2)
+GET http://localhost:5000/api/admin/products
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 4. Get Products with Pagination
+GET http://localhost:5000/api/admin/products?page=1&limit=10
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 5. Get Products with Filter
+GET http://localhost:5000/api/admin/products?product_type=bm_account
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 6. Get Products with Search
+GET http://localhost:5000/api/admin/products?search=BM
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 7. Get Product Stats
+GET http://localhost:5000/api/admin/products/stats
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Notes:
+# - Replace YOUR_TOKEN_HERE with actual token from login response
+# - Server running at: http://localhost:5000
+# - API Base: http://localhost:5000/api
+# - Frontend: http://localhost:5000

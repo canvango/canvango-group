@@ -1,0 +1,84 @@
+### Product Management API Testing
+### Base URL: http://localhost:3000/api/admin/products
+### Requires: Admin authentication token
+
+@baseUrl = http://localhost:3000/api/admin
+@token = YOUR_ADMIN_TOKEN_HERE
+
+### 1. Get All Products (with pagination)
+GET {{baseUrl}}/products?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 2. Get All Products (with search)
+GET {{baseUrl}}/products?search=BM50
+Authorization: Bearer {{token}}
+
+### 3. Get All Products (with filters)
+GET {{baseUrl}}/products?product_type=bm_account&stock_status=available
+Authorization: Bearer {{token}}
+
+### 4. Get Product by ID
+GET {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{token}}
+
+### 5. Get Product Statistics
+GET {{baseUrl}}/products/stats
+Authorization: Bearer {{token}}
+
+### 6. Create New Product
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "BM100 - Premium",
+  "product_type": "bm_account",
+  "category": "bm100",
+  "description": "Business Manager account with $100 spending limit",
+  "price": 200000,
+  "stock_status": "available",
+  "is_active": true
+}
+
+### 7. Update Product
+PUT {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "BM100 - Premium (Updated)",
+  "price": 220000,
+  "stock_status": "available"
+}
+
+### 8. Duplicate Product (NEW!)
+POST {{baseUrl}}/products/PRODUCT_ID_HERE/duplicate
+Authorization: Bearer {{token}}
+
+### 9. Delete Product
+DELETE {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{token}}
+
+### 10. Test Validation - Missing Required Fields
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test"
+}
+
+### 11. Test Validation - Invalid Product Type
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "product_type": "invalid_type",
+  "category": "test",
+  "price": 100000
+}
+
+### 12. Test Unauthorized Access (without token)
+GET {{baseUrl}}/products

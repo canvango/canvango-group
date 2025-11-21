@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+canvango-app/backend/node_modules
+
+# Build outputs (will be built in container)
+dist
+canvango-app/backend/dist
+
+# Development files
+.git
+.gitignore
+*.md
+!README.md
+
+# Environment files (use docker secrets instead)
+.env
+.env.*
+canvango-app/backend/.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.backup
+.backups

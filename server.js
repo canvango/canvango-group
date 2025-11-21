@@ -1,0 +1,84 @@
+/**
+ * Production Server - Serves both Frontend and Backend
+ * 
+ * This server combines the Express backend API with the built frontend
+ * static files, serving everything from a single port.
+ * 
+ * Usage:
+ *   npm run build        # Build both frontend and backend
+ *   npm start            # Start production server
+ */
+
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from server .env
+dotenv.config({ path: './server/.env' });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Import backend app (API routes)
+// Note: Backend must be built first (npm run build:server)
+import('./server/dist/index.js')
+  .then((backendModule) => {
+    const backendApp = backendModule.default;
+    
+    // 1. Mount backend API routes
+    // All API routes are prefixed with /api
+    app.use('/api', backendApp);
+    
+    // 2. Serve static frontend files
+    const frontendPath = path.join(__dirname, 'dist');
+    app.use(express.static(frontendPath));
+    
+    // 3. SPA fallback - serve index.html for all non-API routes
+    app.use((req, res, next) => {
+      // Don't serve index.html for API routes
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({ 
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'API endpoint not found'
+          }
+        });
+      }
+      
+      // Serve index.html for all other routes (React Router)
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log('');
+      console.log('🚀 ========================================');
+      console.log('🚀  Canvango Server Started Successfully');
+      console.log('🚀 ========================================');
+      console.log('');
+      console.log(`📍 Server URL: http://localhost:${PORT}`);
+      console.log(`📍 API Base:   http://localhost:${PORT}/api`);
+      console.log(`📍 Frontend:   http://localhost:${PORT}`);
+      console.log('');
+      console.log(`📝 Environment: ${process.env.NODE_ENV || 'production'}`);
+      console.log('');
+      console.log('✅ Backend API: Ready');
+      console.log('✅ Frontend:    Ready');
+      console.log('');
+      console.log('Press Ctrl+C to stop the server');
+      console.log('');
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Failed to start server:', error);
+    console.error('');
+    console.error('Make sure you have built the server first:');
+    console.error('  npm run build:server');
+    console.error('');
+    process.exit(1);
+  });

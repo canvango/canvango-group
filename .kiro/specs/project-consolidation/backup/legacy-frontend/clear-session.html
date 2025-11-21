@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Session</title>
+</head>
+<body>
+    <h1>Clearing Supabase Session...</h1>
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+        
+        const supabase = createClient(
+            'YOUR_SUPABASE_URL',
+            'YOUR_SUPABASE_ANON_KEY'
+        )
+        
+        async function clearSession() {
+            await supabase.auth.signOut()
+            localStorage.clear()
+            sessionStorage.clear()
+            document.body.innerHTML = '<h1>Session cleared! You can close this tab.</h1>'
+        }
+        
+        clearSession()
+    </script>
+</body>
+</html>
