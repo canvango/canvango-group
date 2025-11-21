@@ -14,7 +14,7 @@ export async function getRecentTransactions(req: Request, res: Response): Promis
     const supabase = getSupabaseClient();
 
     // Use raw SQL query for better control
-    const { data: transactions, error } = await supabase.rpc('get_recent_transactions_public', {
+    const { data: transactions, error } = await (supabase.rpc as any)('get_recent_transactions_public', {
       p_limit: limit
     });
 
@@ -40,16 +40,16 @@ export async function getRecentTransactions(req: Request, res: Response): Promis
       // Get product and user info separately
       const transactionsWithDetails = await Promise.all(
         (fallbackData || []).map(async (tx: any) => {
-          let productName = null;
-          let userEmail = null;
+          let productName: string | null = null;
+          let userEmail: string | null = null;
 
           if (tx.product_id) {
             const { data: product } = await supabase
               .from('products')
               .select('product_name')
               .eq('id', tx.product_id)
-              .single();
-            productName = product?.product_name;
+              .maybeSingle();
+            productName = (product as any)?.product_name || null;
           }
 
           if (tx.user_id) {
@@ -57,8 +57,8 @@ export async function getRecentTransactions(req: Request, res: Response): Promis
               .from('users')
               .select('email')
               .eq('id', tx.user_id)
-              .single();
-            userEmail = user?.email;
+              .maybeSingle();
+            userEmail = (user as any)?.email || null;
           }
 
           return {

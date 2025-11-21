@@ -55,6 +55,7 @@ export const ProductAccountFieldModel = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('product_account_fields')
+      // @ts-ignore - Supabase type inference issue
       .update(input as any)
       .eq('id', id)
       .select()

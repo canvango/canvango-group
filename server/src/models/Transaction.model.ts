@@ -249,6 +249,7 @@ export class TransactionModel {
 
     const { data, error } = await this.supabase
       .from('transactions')
+      // @ts-ignore - Supabase type inference issue
       .update(updates)
       .eq('id', id)
       .select()
@@ -268,8 +269,9 @@ export class TransactionModel {
   static async updateStatus(id: string, status: TransactionStatus): Promise<Transaction | null> {
     const updateData: any = { status };
 
-    const { data, error } = await (this.supabase
-      .from('transactions') as any)
+    const { data, error } = await this.supabase
+      .from('transactions')
+      // @ts-ignore - Supabase type inference issue
       .update(updateData)
       .eq('id', id)
       .select()
@@ -365,11 +367,12 @@ export class TransactionModel {
   }> {
     try {
       // Call PostgreSQL function for efficient aggregation
-      const { data, error } = await (this.supabase.rpc as any)('get_transaction_statistics', {
+      // @ts-ignore - RPC function type inference issue
+      const { data, error } = await this.supabase.rpc('get_transaction_statistics' as any, {
         p_user_id: filters?.user_id || null,
         p_start_date: filters?.start_date?.toISOString() || null,
         p_end_date: filters?.end_date?.toISOString() || null
-      });
+      } as any);
 
       if (error) {
         console.error('Error getting transaction statistics:', error);

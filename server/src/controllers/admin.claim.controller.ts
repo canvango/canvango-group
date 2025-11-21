@@ -198,7 +198,7 @@ export async function resolveClaim(req: Request, res: Response): Promise<void> {
 
     // Process refund - add transaction amount to user balance
     const oldBalance = user.balance;
-    const refundAmount = transaction.total_amount;
+    const refundAmount = transaction.amount;
     await UserModel.updateBalance(claim.user_id, refundAmount);
 
     // Log action

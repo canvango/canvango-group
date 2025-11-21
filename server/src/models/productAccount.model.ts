@@ -115,6 +115,7 @@ export const ProductAccountModel = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('product_accounts')
+      // @ts-ignore - Supabase type inference issue
       .update(input as any)
       .eq('id', id)
       .select()
@@ -128,8 +129,9 @@ export const ProductAccountModel = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('product_accounts')
+      // @ts-ignore - Supabase type inference issue
       .update({
-        status: 'sold',
+        status: 'sold' as const,
         assigned_to_transaction_id: transactionId,
         assigned_at: new Date().toISOString()
       } as any)

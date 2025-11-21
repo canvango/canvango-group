@@ -193,8 +193,11 @@ export async function refundTransaction(req: Request, res: Response): Promise<vo
       return;
     }
 
+    // Calculate refund amount from transaction
+    const refundAmount = transaction.amount;
+    
     // Refund user balance (atomic operation to prevent race condition)
-    const updatedUser = await UserModel.updateBalance(transaction.user_id, transaction.total_amount);
+    const updatedUser = await UserModel.updateBalance(transaction.user_id, refundAmount);
     if (!updatedUser) {
       res.status(500).json(errorResponse(
         'BALANCE_UPDATE_ERROR',
@@ -202,6 +205,8 @@ export async function refundTransaction(req: Request, res: Response): Promise<vo
       ));
       return;
     }
+
+    const newBalance = user.balance + refundAmount;
 
     // Update transaction status to GAGAL (refunded)
     const updatedTransaction = await TransactionModel.updateStatus(id, 'GAGAL');
@@ -215,7 +220,7 @@ export async function refundTransaction(req: Request, res: Response): Promise<vo
         {
           transaction_id: id,
           user_id: transaction.user_id,
-          refund_amount: transaction.total_amount,
+          refund_amount: refundAmount,
           old_balance: user.balance,
           new_balance: newBalance,
           reason: reason || 'Admin refund',
@@ -228,7 +233,7 @@ export async function refundTransaction(req: Request, res: Response): Promise<vo
     res.status(200).json(successResponse(
       {
         transaction: updatedTransaction,
-        refund_amount: transaction.total_amount,
+        refund_amount: refundAmount,
         new_user_balance: newBalance,
       },
       'Transaction refunded successfully'
@@ -318,10 +323,10 @@ export async function exportTransactions(req: Request, res: Response): Promise<v
       t.username,
       t.user_email,
       t.user_full_name,
-      t.product_name,
-      t.product_type,
-      t.quantity,
-      t.total_amount,
+      t.metadata?.product_name || 'N/A',
+      t.metadata?.product_type || t.transaction_type,
+      t.metadata?.quantity || 1,
+      t.amount,
       t.status,
       new Date(t.created_at).toISOString(),
       new Date(t.updated_at).toISOString(),
