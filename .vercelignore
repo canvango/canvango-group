@@ -1,0 +1,24 @@
+# Ignore TypeScript source files
+server/src
+
+# Ignore development files
+.env.local
+.env.development.local
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore config files
+.vscode
+.kiro
+.git
+.github
+
+# Ignore build artifacts that shouldn't be deployed
+node_modules/.cache
+.cache
