@@ -177,10 +177,10 @@ export const LoginForm: React.FC = () => {
 
           {/* Error Message */}
           {loginError && (
-            <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-red-700 flex-1">
-                Username atau kata sandi salah. Silakan periksa kembali.
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl animate-shake">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 flex-1 font-medium">
+                {loginError}
               </p>
             </div>
           )}

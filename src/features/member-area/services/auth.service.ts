@@ -40,20 +40,38 @@ export const login = async (credentials: LoginCredentials): Promise<{
     }
     
     // Sign in with Supabase Auth
+    console.log('🔐 Attempting login with email:', email);
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password: credentials.password,
     });
     
     if (authError) {
-      throw authError;
+      console.error('❌ Supabase auth error:', authError);
+      
+      // Map Supabase errors to user-friendly messages
+      if (authError.message?.includes('Invalid login credentials')) {
+        throw new Error('Username atau password salah. Silakan coba lagi.');
+      } else if (authError.message?.includes('Email not confirmed')) {
+        throw new Error('Email belum diverifikasi. Silakan cek email Anda.');
+      } else if (authError.message?.includes('User not found')) {
+        throw new Error('Username atau password salah. Silakan coba lagi.');
+      } else if (authError.status === 429) {
+        throw new Error('Terlalu banyak percobaan login. Silakan coba lagi nanti.');
+      } else {
+        throw new Error('Login gagal. Silakan coba lagi.');
+      }
     }
     
     if (!authData.session || !authData.user) {
-      throw new Error('Login failed - no session created');
+      console.error('❌ No session created after login');
+      throw new Error('Login gagal. Silakan coba lagi.');
     }
     
+    console.log('✅ Login successful, user ID:', authData.user.id);
+    
     // Fetch user profile from users table
+    console.log('📋 Fetching user profile for ID:', authData.user.id);
     const { data: profileData, error: profileError } = await supabase
       .from('users')
       .select('*')
@@ -61,8 +79,11 @@ export const login = async (credentials: LoginCredentials): Promise<{
       .single();
     
     if (profileError || !profileData) {
-      throw new Error('Failed to fetch user profile');
+      console.error('❌ Failed to fetch user profile:', profileError);
+      throw new Error('Gagal mengambil data profil. Silakan coba lagi.');
     }
+    
+    console.log('✅ Profile fetched successfully:', profileData.username);
     
     // Map to User type
     const user: User = {
