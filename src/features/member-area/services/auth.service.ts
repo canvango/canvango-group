@@ -20,17 +20,23 @@ export const login = async (credentials: LoginCredentials): Promise<{
     
     // If it doesn't contain @, treat it as username and fetch email
     if (!credentials.identifier.includes('@')) {
+      console.log('🔍 Looking up email for username:', credentials.identifier);
+      
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('email')
         .eq('username', credentials.identifier)
         .single();
       
+      console.log('📧 Username lookup result:', { userData, userError });
+      
       if (userError || !userData) {
+        console.error('❌ Username lookup failed:', userError);
         throw new Error('Invalid username or password');
       }
       
       email = userData.email;
+      console.log('✅ Found email for username:', email);
     }
     
     // Sign in with Supabase Auth
