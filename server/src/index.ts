@@ -55,8 +55,12 @@ const PORT = process.env.PORT || 5000;
 // HTTPS Enforcement (must be first)
 app.use(httpsSecurityMiddleware);
 
-// Security Middleware
-app.use(helmet()); // Set security HTTP headers
+// Security Middleware - Configure helmet to work with CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin requests
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginEmbedderPolicy: false, // Disable to allow external resources
+}));
 
 // CORS Configuration
 // Enable CORS in development and on Vercel (where frontend/backend are separate)
@@ -74,7 +78,8 @@ app.use(cookieParser());
 
 // Request logging middleware (BEFORE sanitization to catch all requests)
 app.use((req, _res, next) => {
-  console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.path}`);
+  const origin = req.get('origin');
+  console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.path}${origin ? ` (Origin: ${origin})` : ''}`);
   next();
 });
 
@@ -83,6 +88,9 @@ app.use((req, _res, next) => {
 // app.use(mongoSanitize()); // Prevent NoSQL injection
 app.use(sanitizeInput); // Sanitize input to prevent XSS
 app.use(preventSQLInjection); // Prevent SQL injection
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

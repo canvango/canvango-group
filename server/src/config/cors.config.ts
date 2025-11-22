@@ -90,16 +90,28 @@ export const corsOptions: CorsOptions = {
     }
   },
   credentials: true, // Allow cookies to be sent
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
     'X-Requested-With',
     'Accept',
+    'Origin',
+    'apikey', // Supabase API key header
+    'X-CSRF-Token', // CSRF protection
+    'X-Client-Info', // Supabase client info
+    'Cache-Control',
+    'Pragma',
   ],
-  exposedHeaders: ['Set-Cookie'],
+  exposedHeaders: [
+    'Set-Cookie',
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset',
+  ],
+  preflightContinue: false, // Pass preflight response to next handler
   maxAge: 86400, // 24 hours - how long the results of a preflight request can be cached
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+  optionsSuccessStatus: 204, // Standard preflight response
 };
 
 /**
@@ -108,5 +120,14 @@ export const corsOptions: CorsOptions = {
 export const logCorsConfig = (): void => {
   console.log('🔒 CORS Configuration:');
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Allowed Origins: ${allowedOrigins.join(', ')}`);
+  console.log(`   Vercel: ${process.env.VERCEL === '1' ? 'Yes' : 'No'}`);
+  console.log(`   Vercel URL: ${process.env.VERCEL_URL || 'N/A'}`);
+  console.log(`   Allowed Origins:`);
+  allowedOrigins.forEach((origin, index) => {
+    if (origin instanceof RegExp) {
+      console.log(`     ${index + 1}. ${origin.toString()} (regex)`);
+    } else {
+      console.log(`     ${index + 1}. ${origin}`);
+    }
+  });
 };
