@@ -6,7 +6,7 @@ import { CorsOptions } from 'cors';
  */
 
 // Get allowed origins from environment variable or use defaults
-const getAllowedOrigins = (): string[] => {
+const getAllowedOrigins = (): (string | RegExp)[] => {
   const envOrigins = process.env.CORS_ALLOWED_ORIGINS;
   
   if (envOrigins) {
@@ -14,12 +14,24 @@ const getAllowedOrigins = (): string[] => {
     return envOrigins.split(',').map(origin => origin.trim());
   }
   
-  // Default origins for development
+  // Default origins for production
   if (process.env.NODE_ENV === 'production') {
-    return [
+    const origins: (string | RegExp)[] = [
       'https://canvango.com',
       'https://www.canvango.com',
     ];
+    
+    // Add Vercel preview URLs
+    if (process.env.VERCEL === '1') {
+      // Add Vercel deployment URL
+      if (process.env.VERCEL_URL) {
+        origins.push(`https://${process.env.VERCEL_URL}`);
+      }
+      // Add Vercel project URL pattern (allow all preview deployments)
+      origins.push(/^https:\/\/.*\.vercel\.app$/);
+    }
+    
+    return origins;
   }
   
   // Allow all localhost ports in development
@@ -59,8 +71,18 @@ export const corsOptions: CorsOptions = {
       }
     }
     
-    // Check if origin is in whitelist
-    if (allowedOrigins.includes(origin)) {
+    // Check if origin is in whitelist (string or regex)
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return allowed === origin;
+      }
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS blocked request from origin: ${origin}`);

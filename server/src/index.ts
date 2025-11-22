@@ -58,11 +58,12 @@ app.use(httpsSecurityMiddleware);
 // Security Middleware
 app.use(helmet()); // Set security HTTP headers
 
-// CORS - Only needed in development when frontend and backend are separate
-// In production (single port), CORS is not needed
-if (process.env.NODE_ENV === 'development') {
+// CORS Configuration
+// Enable CORS in development and on Vercel (where frontend/backend are separate)
+const isVercel = process.env.VERCEL === '1';
+if (process.env.NODE_ENV === 'development' || isVercel) {
   app.use(cors(corsOptions));
-  console.log('🔓 CORS enabled for development');
+  console.log('🔓 CORS enabled for', isVercel ? 'Vercel' : 'development');
 } else {
   console.log('🔒 CORS disabled (same origin in production)');
 }
