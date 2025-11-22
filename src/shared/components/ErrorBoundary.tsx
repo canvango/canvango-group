@@ -83,23 +83,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               We're sorry, but something unexpected happened. Please try refreshing the page or go back to the home page.
             </p>
 
-            {isDev() && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                <p className="text-sm font-mono text-red-600 mb-2">
-                  {this.state.error.toString()}
-                </p>
-                {this.state.errorInfo && (
-                  <details className="text-xs text-gray-600">
-                    <summary className="cursor-pointer font-semibold mb-2">
-                      Stack trace
-                    </summary>
-                    <pre className="whitespace-pre-wrap overflow-auto max-h-40">
-                      {this.state.errorInfo.componentStack}
-                    </pre>
-                  </details>
-                )}
-              </div>
-            )}
+            {/* Show error details in both dev and production for debugging */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm font-mono text-red-600 mb-2">
+                {this.state.error.toString()}
+              </p>
+              {this.state.errorInfo && (
+                <details className="text-xs text-gray-600">
+                  <summary className="cursor-pointer font-semibold mb-2">
+                    Stack trace
+                  </summary>
+                  <pre className="whitespace-pre-wrap overflow-auto max-h-40">
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                </details>
+              )}
+            </div>
 
             <div className="flex gap-3 justify-center">
               <Button

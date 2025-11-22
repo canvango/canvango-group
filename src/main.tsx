@@ -41,10 +41,16 @@ const PageLoader = () => (
   </div>
 );
 
+// Debug: Log environment info
+console.log('Environment:', import.meta.env.MODE);
+console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set (using fallback)');
+
 const root = document.getElementById('root');
 if (!root) {
+  console.error('Root element not found!');
   document.body.innerHTML = '<div style="padding: 20px;">Error: Root element not found</div>';
 } else {
+  console.log('Initializing React app...');
   ReactDOM.createRoot(root).render(
     // StrictMode disabled to prevent double API calls in development
     // React StrictMode intentionally double-invokes functions to detect side effects
