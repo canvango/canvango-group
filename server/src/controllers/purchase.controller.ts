@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { TransactionModel } from '../models/Transaction.model';
-import { ProductAccountModel } from '../models/productAccount.model';
-import { UserModel } from '../models/User.model';
-import { getSupabaseClient } from '../config/supabase';
-import { successResponse, errorResponse } from '../utils/response';
+import { TransactionModel } from '../models/Transaction.model.js';
+import { ProductAccountModel } from '../models/productAccount.model.js';
+import { UserModel } from '../models/User.model.js';
+import { getSupabaseClient } from '../config/supabase.js';
+import { successResponse, errorResponse } from '../utils/response.js';
 
 export const purchaseController = {
   async purchaseProduct(req: Request, res: Response) {

@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../config/supabase';
+import { getSupabaseClient } from '../config/supabase.js';
 
 export interface ProductAccountField {
   id: string;

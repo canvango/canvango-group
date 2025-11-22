@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ProductAccountFieldModel } from '../models/productAccountField.model';
-import { ProductAccountModel } from '../models/productAccount.model';
+import { ProductAccountFieldModel } from '../models/productAccountField.model.js';
+import { ProductAccountModel } from '../models/productAccount.model.js';
 
 export const productAccountController = {
   // ===== FIELD MANAGEMENT =====

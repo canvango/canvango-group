@@ -5,10 +5,11 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "npm run build:frontend && npm run build:server && npm run postbuild:server",
+    "build": "npm run build:frontend && npm run build:server && npm run postbuild:server && npm run verify:build",
     "build:frontend": "vite build",
     "build:server": "tsc -p server/tsconfig.json",
     "postbuild:server": "node -e \"const fs=require('fs');fs.writeFileSync('server/dist/package.json',JSON.stringify({type:'module'},null,2));console.log('✅ Created server/dist/package.json')\"",
+    "verify:build": "node scripts/verify-build.js",
     "build:analyze": "npm run build:frontend && start dist/stats.html",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:server\" \"vite\"",
     "dev:server": "tsx watch server/src/index.ts",
