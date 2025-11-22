@@ -21,6 +21,7 @@
 
 import { supabase } from './supabase';
 import { Product, ProductFilters, ProductCategory, ProductType } from '../types/product';
+import { handleSupabaseOperation, handleSupabaseMutation } from '@/utils/supabaseErrorHandler';
 
 /**
  * Generic paginated response structure

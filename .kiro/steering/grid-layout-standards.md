@@ -2,59 +2,59 @@
 inclusion: always
 ---
 
-# Grid Layout Standards - JANGAN DIUBAH
+# Grid Layout Standards - DO NOT MODIFY
 
-## ⚠️ PENTING: Pengaturan Grid Responsif yang Sudah Ditetapkan
+## ⚠️ CRITICAL: Established Grid Configuration
 
-Pengaturan grid layout berikut sudah dikonfigurasi dengan cermat dan **TIDAK BOLEH DIUBAH** tanpa persetujuan eksplisit dari user.
+These grid settings are carefully configured. **DO NOT CHANGE** without explicit user approval.
 
-### 1. Product Grid (`.product-grid-responsive`)
+## Product Grid - `.product-grid-responsive`
 
-**File**: `src/index.css`
+**File:** `src/index.css`
 
 ```css
 .product-grid-responsive {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.5rem; /* 8px - JANGAN DIUBAH */
+  gap: 0.5rem; /* 8px - DO NOT CHANGE */
   width: 100%;
 }
 
 .product-grid-responsive > * {
-  max-width: 380px; /* JANGAN DIUBAH - mencegah card gepeng */
+  max-width: 380px; /* DO NOT CHANGE - prevents stretched cards */
   width: 100%;
 }
 ```
 
-**Digunakan di:**
+**Used in:**
 - `src/features/member-area/components/products/ProductGrid.tsx`
-- Halaman: BMAccounts, PersonalAccounts
+- Pages: BMAccounts, PersonalAccounts
 
-**Aturan:**
-- ✅ Gap harus tetap `0.5rem` (8px) - card dempet
-- ✅ Max-width harus tetap `380px` - mencegah card gepeng saat produk sedikit
-- ✅ Gunakan `auto-fit` bukan `auto-fill` - untuk mengisi full width
-- ✅ Breakpoint responsif: 240px → 260px → 280px → 300px
+**Rules:**
+- Gap MUST be `0.5rem` (8px) - tight spacing
+- Max-width MUST be `380px` - prevents card stretching with few products
+- Use `auto-fit` not `auto-fill` - fills full width
+- Responsive breakpoints: 240px → 260px → 280px → 300px
 
-### 2. Main Content Container
+## Main Content Container
 
-**File**: `src/features/member-area/components/layout/MainContent.tsx`
+**File:** `src/features/member-area/components/layout/MainContent.tsx`
 
 ```tsx
 <div className="w-full mx-auto px-2 md:px-4 lg:px-6">
 ```
 
-**Aturan:**
-- ✅ JANGAN gunakan `max-w-7xl` atau pembatas width lainnya
-- ✅ Gunakan `w-full` untuk full width
-- ✅ Padding responsif: px-2 → px-4 → px-6
+**Rules:**
+- NO `max-w-7xl` or other width constraints
+- Use `w-full` for full width
+- Responsive padding: `px-2` → `px-4` → `px-6`
 
-### 3. Summary Cards & Admin Grids
+## Summary Cards & Admin Grids
 
-**Gap Responsif yang Sudah Ditetapkan:**
+**Established Responsive Gaps:**
 
 ```tsx
-// Product Summary Cards (3 kolom)
+// Product Summary Cards (3 columns)
 <div className="grid grid-cols-3 gap-2 md:gap-3">
 
 // Admin Statistics Cards
@@ -64,49 +64,30 @@ Pengaturan grid layout berikut sudah dikonfigurasi dengan cermat dan **TIDAK BOL
 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
 ```
 
-**Aturan:**
-- ✅ Gap harus responsif: `gap-2` atau `gap-3` (mobile) → `gap-4` (tablet) → `gap-6` (desktop)
-- ✅ JANGAN gunakan gap fixed seperti `gap-6` saja
+**Rules:**
+- Gaps MUST be responsive: `gap-2` or `gap-3` (mobile) → `gap-4` (tablet) → `gap-6` (desktop)
+- NO fixed gaps like `gap-6` alone
 
-## Halaman yang Sudah Dikonfigurasi
+## Configured Pages
 
-### User Pages
-- ✅ BMAccounts
-- ✅ PersonalAccounts
-- ✅ Dashboard
-- ✅ TransactionHistory
-- ✅ VerifiedBMService
-- ✅ APIDocumentation
+**User:** BMAccounts, PersonalAccounts, Dashboard, TransactionHistory, VerifiedBMService, APIDocumentation
 
-### Admin Pages
-- ✅ AdminDashboard
-- ✅ ProductManagement
-- ✅ TransactionManagement
-- ✅ TutorialManagement
-- ✅ AuditLog
+**Admin:** AdminDashboard, ProductManagement, TransactionManagement, TutorialManagement, AuditLog
 
-## Jika Ada Perubahan yang Diminta
+## Before Modifying Grid Settings
 
-**SEBELUM mengubah pengaturan grid:**
+**STOP and ask user first:**
 
-1. ⚠️ **STOP** dan tanyakan user terlebih dahulu
-2. Ingatkan bahwa ada pengaturan grid yang sudah ditetapkan
-3. Tunjukkan file `RESPONSIVE_GRID_FIX.md` untuk referensi
-4. Tunggu konfirmasi eksplisit dari user
+1. Warn that established grid settings will be changed
+2. Show current configuration
+3. Reference `RESPONSIVE_GRID_FIX.md`
+4. Wait for explicit user confirmation
 
-**Contoh peringatan:**
+**Warning template:**
 
-> "⚠️ Perubahan ini akan mengubah pengaturan grid responsif yang sudah ditetapkan sebelumnya. Pengaturan saat ini:
-> - Product grid gap: 0.5rem (dempet)
-> - Max-width card: 380px (tidak gepeng)
-> - Container: full width tanpa batasan
+> "⚠️ This will modify established grid settings:
+> - Product grid gap: 0.5rem (tight)
+> - Max-width card: 380px (no stretching)
+> - Container: full width
 > 
-> Apakah Anda yakin ingin mengubahnya?"
-
-## Dokumentasi
-
-Lihat `RESPONSIVE_GRID_FIX.md` untuk dokumentasi lengkap tentang:
-- Masalah yang diselesaikan
-- Solusi yang diterapkan
-- Hasil dan keuntungan
-- Daftar file yang diupdate
+> Confirm to proceed?"

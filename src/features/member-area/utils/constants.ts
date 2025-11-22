@@ -53,12 +53,15 @@ export const STATUS_COLORS = {
 
 // Payment Methods
 export const PAYMENT_METHODS = [
-  { id: 'gopay', name: 'GoPay', icon: '💚', type: 'ewallet' },
-  { id: 'ovo', name: 'OVO', icon: '💜', type: 'ewallet' },
-  { id: 'dana', name: 'DANA', icon: '💙', type: 'ewallet' },
-  { id: 'shopeepay', name: 'ShopeePay', icon: '🧡', type: 'ewallet' },
-  { id: 'bank_transfer', name: 'Transfer Bank', icon: '🏦', type: 'bank_transfer' },
-  { id: 'qris', name: 'QRIS', icon: '📱', type: 'qris' }
+  { id: 'gopay', name: 'GoPay', icon: '💚', type: 'ewallet', logo: '/assets/payment/gopay.png', enabled: true },
+  { id: 'ovo', name: 'OVO', icon: '💜', type: 'ewallet', logo: '/assets/payment/ovo.png', enabled: true },
+  { id: 'dana', name: 'DANA', icon: '💙', type: 'ewallet', logo: '/assets/payment/dana.png', enabled: true },
+  { id: 'shopeepay', name: 'ShopeePay', icon: '🧡', type: 'ewallet', logo: '/assets/payment/shopeepay.png', enabled: true },
+  { id: 'bca_va', name: 'BCA Virtual Account', icon: '🏦', type: 'va', logo: '/assets/payment/bca.png', enabled: true },
+  { id: 'mandiri_va', name: 'Mandiri Virtual Account', icon: '🏦', type: 'va', logo: '/assets/payment/mandiri.png', enabled: true },
+  { id: 'bni_va', name: 'BNI Virtual Account', icon: '🏦', type: 'va', logo: '/assets/payment/bni.png', enabled: true },
+  { id: 'bri_va', name: 'BRI Virtual Account', icon: '🏦', type: 'va', logo: '/assets/payment/bri.png', enabled: true },
+  { id: 'qris', name: 'QRIS', icon: '📱', type: 'qris', logo: '/assets/payment/qris.png', enabled: true }
 ] as const;
 
 // Top-up Nominal Options

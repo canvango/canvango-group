@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase';
 import { User, LoginCredentials } from '../types/user';
+import { handleSupabaseAuth, handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 
 /**
  * Login with email/username and password

@@ -19,7 +19,8 @@
  * ```
  */
 
-import apiClient from './api';
+import { supabase } from '@/clients/supabase';
+import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 import { User, UserStats as UserStatsType } from '../types/user';
 
 /**
@@ -71,8 +72,20 @@ export interface UpdateProfileData {
  * @see {@link User} for user data structure
  */
 export const fetchUserProfile = async (): Promise<User> => {
-  const response = await apiClient.get<{ success: boolean; data: User }>('/user/profile');
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  });
 };
 
 /**
@@ -95,8 +108,35 @@ export const fetchUserProfile = async (): Promise<User> => {
  * @see {@link UserStats} for statistics structure
  */
 export const fetchUserStats = async (): Promise<UserStats> => {
-  const response = await apiClient.get<{ success: boolean; data: UserStats }>('/user/stats');
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    // Fetch purchases for stats
+    const { data: purchases, error: purchasesError } = await supabase
+      .from('purchases')
+      .select('*, product:products(*)')
+      .eq('user_id', authUser.id);
+
+    if (purchasesError) throw purchasesError;
+
+    // Calculate stats
+    const totalPurchases = purchases?.length || 0;
+    const totalSpending = purchases?.reduce((sum, p) => sum + (p.product?.price || 0), 0) || 0;
+    const activePurchases = purchases?.filter(p => p.status === 'active').length || 0;
+    const successRate = totalPurchases > 0 ? (activePurchases / totalPurchases) * 100 : 0;
+
+    const stats: UserStats = {
+      totalPurchases,
+      totalSpending,
+      activePurchases,
+      successRate,
+      recentActivity: [],
+    };
+
+    return { data: stats, error: null };
+  });
 };
 
 /**
@@ -115,8 +155,27 @@ export const fetchUserStats = async (): Promise<UserStats> => {
  * ```
  */
 export const fetchUserBalance = async (): Promise<UserBalance> => {
-  const response = await apiClient.get<{ success: boolean; data: UserBalance }>('/user/balance');
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('balance')
+      .eq('id', authUser.id)
+      .single();
+
+    if (error) throw error;
+
+    const balanceData: UserBalance = {
+      balance: data.balance || 0,
+      currency: 'IDR',
+      lastUpdated: new Date().toISOString(),
+    };
+
+    return { data: balanceData, error: null };
+  });
 };
 
 /**
@@ -152,8 +211,27 @@ export const fetchUserBalance = async (): Promise<UserBalance> => {
 export const updateUserProfile = async (
   data: UpdateProfileData
 ): Promise<UserProfile> => {
-  const response = await apiClient.patch<{ success: boolean; data: UserProfile }>('/user/profile', data);
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    const updateData: any = {};
+    if (data.username) updateData.username = data.username;
+    if (data.email) updateData.email = data.email;
+    if (data.fullName) updateData.full_name = data.fullName;
+    if (data.avatar) updateData.avatar = data.avatar;
+
+    const { data: updatedUser, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', authUser.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: updatedUser, error: null };
+  });
 };
 
 /**
@@ -194,11 +272,14 @@ export interface ChangePasswordData {
 export const changePassword = async (
   data: ChangePasswordData
 ): Promise<{ message: string }> => {
-  const response = await apiClient.post<{ success: boolean; data: { message: string } }>(
-    '/user/change-password',
-    data
-  );
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { error } = await supabase.auth.updateUser({
+      password: data.newPassword,
+    });
+
+    if (error) throw error;
+    return { data: { message: 'Password changed successfully' }, error: null };
+  });
 };
 
 /**
@@ -226,19 +307,35 @@ export const changePassword = async (
 export const uploadAvatar = async (
   file: File
 ): Promise<{ avatarUrl: string }> => {
-  const formData = new FormData();
-  formData.append('avatar', file);
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
 
-  const response = await apiClient.post<{ success: boolean; data: { avatarUrl: string } }>(
-    '/user/avatar',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-  return response.data.data;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('user-uploads')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('user-uploads')
+      .getPublicUrl(filePath);
+
+    // Update user profile with avatar URL
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ avatar: publicUrl })
+      .eq('id', authUser.id);
+
+    if (updateError) throw updateError;
+
+    return { data: { avatarUrl: publicUrl }, error: null };
+  });
 };
 
 /**
@@ -257,8 +354,19 @@ export const uploadAvatar = async (
  * ```
  */
 export const deleteAvatar = async (): Promise<{ message: string }> => {
-  const response = await apiClient.delete<{ success: boolean; data: { message: string } }>('/user/avatar');
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('users')
+      .update({ avatar: null })
+      .eq('id', authUser.id);
+
+    if (error) throw error;
+    return { data: { message: 'Avatar deleted successfully' }, error: null };
+  });
 };
 
 /**
@@ -293,10 +401,28 @@ export interface NotificationPreferences {
  * ```
  */
 export const fetchNotificationPreferences = async (): Promise<NotificationPreferences> => {
-  const response = await apiClient.get<{ success: boolean; data: NotificationPreferences }>(
-    '/user/preferences/notifications'
-  );
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('notification_preferences')
+      .eq('id', authUser.id)
+      .single();
+
+    if (error) throw error;
+
+    const prefs: NotificationPreferences = data.notification_preferences || {
+      emailNotifications: true,
+      transactionAlerts: true,
+      warrantyReminders: true,
+      promotionalEmails: false,
+    };
+
+    return { data: prefs, error: null };
+  });
 };
 
 /**
@@ -320,9 +446,33 @@ export const fetchNotificationPreferences = async (): Promise<NotificationPrefer
 export const updateNotificationPreferences = async (
   preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> => {
-  const response = await apiClient.patch<{ success: boolean; data: NotificationPreferences }>(
-    '/user/preferences/notifications',
-    preferences
-  );
-  return response.data.data;
+  return handleSupabaseOperation(async () => {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!authUser) throw new Error('Not authenticated');
+
+    // Get current preferences
+    const { data: currentData, error: fetchError } = await supabase
+      .from('users')
+      .select('notification_preferences')
+      .eq('id', authUser.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updatedPrefs = {
+      ...(currentData.notification_preferences || {}),
+      ...preferences,
+    };
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({ notification_preferences: updatedPrefs })
+      .eq('id', authUser.id)
+      .select('notification_preferences')
+      .single();
+
+    if (error) throw error;
+    return { data: data.notification_preferences, error: null };
+  });
 };

@@ -1,50 +1,55 @@
 import { Tutorial, TutorialCategory } from '../types/tutorial';
-import apiClient from './api';
+import { supabase } from '@/clients/supabase';
+import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 
 export interface TutorialFilters {
   category?: TutorialCategory | 'all';
   search?: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-interface TutorialsData {
-  tutorials: Tutorial[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-  };
-}
-
 export const tutorialsService = {
   /**
-   * Fetch tutorials with optional filters
+   * Fetch tutorials with optional filters - Direct Supabase
    */
   async fetchTutorials(filters?: TutorialFilters): Promise<Tutorial[]> {
-    const params = new URLSearchParams();
-    
-    if (filters?.category && filters.category !== 'all') {
-      params.append('category', filters.category);
-    }
-    
-    if (filters?.search) {
-      params.append('search', filters.search);
-    }
+    return handleSupabaseOperation(async () => {
+      let query = supabase
+        .from('tutorials')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
 
-    const response = await apiClient.get<ApiResponse<TutorialsData>>(`/tutorials?${params.toString()}`);
-    return response.data.data.tutorials || [];
+      if (filters?.category && filters.category !== 'all') {
+        query = query.eq('category', filters.category);
+      }
+
+      if (filters?.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return { data: data || [], error: null };
+    });
   },
 
   /**
-   * Fetch a single tutorial by slug
+   * Fetch a single tutorial by slug - Direct Supabase
    */
   async fetchTutorialBySlug(slug: string): Promise<Tutorial> {
-    const response = await apiClient.get<ApiResponse<Tutorial>>(`/tutorials/${slug}`);
-    return response.data.data;
+    return handleSupabaseOperation(async () => {
+      const { data, error } = await supabase
+        .from('tutorials')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('Tutorial not found');
+
+      return { data, error: null };
+    });
   }
 };

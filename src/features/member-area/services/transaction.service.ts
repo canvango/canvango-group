@@ -1,5 +1,6 @@
-import api from '../utils/api';
+import { supabase } from './supabase';
 import type { Transaction } from '../types/transaction';
+import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 
 interface GetTransactionsParams {
   page?: number;
@@ -20,73 +21,138 @@ interface GetTransactionsResponse {
 }
 
 /**
- * Get user transactions with pagination
+ * Get user transactions with pagination - Direct Supabase
  */
 export async function getUserTransactions(
   params: GetTransactionsParams = {}
 ): Promise<GetTransactionsResponse> {
   const { page = 1, limit = 10, status } = params;
+  const offset = (page - 1) * limit;
   
-  const queryParams = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(status && { status })
-  });
-
-  try {
-    const response = await api.get<{ success: boolean; data: GetTransactionsResponse }>(
-      `/transactions?${queryParams.toString()}`
-    );
-    
-    // Backend returns: { success: true, data: { transactions: [...], pagination: {...} } }
-    const responseData = response.data;
-    
-    if (responseData.success && responseData.data) {
-      return {
-        transactions: responseData.data.transactions || [],
-        pagination: responseData.data.pagination || {
-          page,
-          limit,
-          totalCount: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false
-        }
-      };
-    }
-    
-    // Fallback for unexpected format
-    return {
-      transactions: [],
-      pagination: {
-        page,
-        limit,
-        totalCount: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
-    };
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    throw error;
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('Not authenticated');
   }
+
+  // Build query with pagination and filtering
+  let queryBuilder = supabase
+    .from('transactions')
+    .select(`
+      *,
+      product:products(
+        id,
+        product_name,
+        product_type
+      )
+    `, { count: 'exact' })
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  
+  // Apply status filter if provided
+  if (status) {
+    queryBuilder = queryBuilder.eq('status', status);
+  }
+  
+  // Execute query with error handler
+  const result = await handleSupabaseOperation(
+    async () => {
+      const { data, error, count } = await queryBuilder;
+      return { data: { data, count }, error };
+    },
+    'getUserTransactions'
+  );
+  
+  const { data, count } = result;
+  
+  // Calculate pagination metadata
+  const totalCount = count || 0;
+  const totalPages = Math.ceil(totalCount / limit);
+  const hasNextPage = offset + limit < totalCount;
+  const hasPreviousPage = page > 1;
+  
+  // Transform data to match Transaction interface
+  const transactions: Transaction[] = (data || []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    transactionType: row.transaction_type,
+    type: row.transaction_type, // Alias for compatibility
+    status: row.status,
+    amount: parseFloat(row.amount),
+    productId: row.product_id,
+    productName: row.product?.product_name,
+    product: row.product ? {
+      id: row.product.id,
+      title: row.product.product_name
+    } : undefined,
+    paymentMethod: row.payment_method,
+    paymentProofUrl: row.payment_proof_url,
+    notes: row.notes,
+    metadata: row.metadata,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    completedAt: row.completed_at ? new Date(row.completed_at) : undefined
+  }));
+  
+  return {
+    transactions,
+    pagination: {
+      page,
+      limit,
+      totalCount,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage
+    }
+  };
 }
 
 /**
- * Get recent transactions from all users (public - for dashboard)
+ * Get recent transactions from all users (public - for dashboard) - Direct Supabase
  */
 export async function getRecentTransactions(): Promise<Transaction[]> {
   try {
-    const response = await api.get<{ success: boolean; data: { transactions: Transaction[] } }>(
-      '/transactions/recent?limit=10'
+    const data = await handleSupabaseOperation(
+      async () => {
+        return await supabase
+          .from('transactions')
+          .select(`
+            id,
+            transaction_type,
+            amount,
+            status,
+            created_at,
+            product:products(
+              id,
+              product_name
+            )
+          `)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(10);
+      },
+      'getRecentTransactions'
     );
     
-    if (response.data.success && response.data.data) {
-      return response.data.data.transactions || [];
-    }
+    // Transform data to match Transaction interface
+    const transactions: Transaction[] = (data || []).map((row: any) => ({
+      id: row.id,
+      userId: '', // Not included in public view
+      transactionType: row.transaction_type,
+      type: row.transaction_type, // Alias for compatibility
+      status: row.status,
+      amount: parseFloat(row.amount),
+      productName: row.product?.product_name,
+      product: row.product ? {
+        id: row.product.id,
+        title: row.product.product_name
+      } : undefined,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.created_at), // Use created_at as fallback
+    }));
     
-    return [];
+    return transactions;
   } catch (error) {
     console.error('Error fetching recent transactions:', error);
     return [];

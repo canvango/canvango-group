@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { History, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
 import TopUpForm, { TopUpFormData } from '../components/topup/TopUpForm';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../services/api';
+import { processTopUp } from '../services/topup.service';
 import { formatCurrency } from '../utils/formatters';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -22,16 +22,16 @@ const TopUp: React.FC = () => {
     setNotification(null);
 
     try {
-      // Call top-up API
-      await apiClient.post('/topup', {
+      // Call top-up service (direct Supabase)
+      const result = await processTopUp({
         amount: data.amount,
-        payment_method: data.paymentMethod
+        paymentMethod: data.paymentMethod
       });
 
       // Show success notification
       setNotification({
         type: 'success',
-        message: `Top up berhasil! Saldo Anda telah ditambahkan sebesar ${formatCurrency(data.amount)}`
+        message: result.message || `Top up berhasil! Saldo Anda telah ditambahkan sebesar ${formatCurrency(data.amount)}`
       });
 
       // Refresh user data to update balance
@@ -43,7 +43,7 @@ const TopUp: React.FC = () => {
       console.error('Top up failed:', error);
       
       // Show error notification
-      const errorMessage = error.response?.data?.message || 'Gagal melakukan top up. Silakan coba lagi.';
+      const errorMessage = error.message || 'Gagal melakukan top up. Silakan coba lagi.';
       setNotification({
         type: 'error',
         message: errorMessage
