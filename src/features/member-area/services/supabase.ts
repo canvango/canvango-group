@@ -4,9 +4,28 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gpittnsfzgkdbqnccncn.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwaXR0bnNmemdrZGJxbmNjbmNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDE3MzIsImV4cCI6MjA3ODY3NzczMn0.4jrpZ_7Wd_ELFjCH105iBqyFPmZmKxI06U0EyqTT5xo';
 
-// Validate configuration in development only
-if (import.meta.env.DEV && (!supabaseUrl || !supabaseAnonKey)) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
+// Debug logging
+console.log('🔧 Supabase Configuration:');
+console.log('  URL:', supabaseUrl);
+console.log('  Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'MISSING');
+console.log('  Env Mode:', import.meta.env.MODE);
+console.log('  Env URL set:', !!import.meta.env.VITE_SUPABASE_URL);
+console.log('  Env Key set:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+// Validate configuration
+if (!supabaseUrl || !supabaseAnonKey) {
+  const error = 'Missing Supabase environment variables. Please check your installation.';
+  console.error('❌', error);
+  throw new Error(error);
 }
+
+// Validate URL format
+if (!supabaseUrl.startsWith('http')) {
+  const error = `Invalid Supabase URL format: ${supabaseUrl}`;
+  console.error('❌', error);
+  throw new Error(error);
+}
+
+console.log('✅ Supabase client initialized successfully');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
