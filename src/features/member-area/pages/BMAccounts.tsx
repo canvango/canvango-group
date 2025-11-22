@@ -1,14 +1,12 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Package, TrendingUp, CheckCircle } from 'lucide-react';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import CategoryTabs from '../components/products/CategoryTabs';
 import SearchSortBar, { SortOption } from '../components/products/SearchSortBar';
 import ProductGrid from '../components/products/ProductGrid';
 import Pagination from '../../../shared/components/Pagination';
-import { useProducts } from '../hooks/useProducts';
+import { useProducts, useProductStats } from '../hooks/useProducts';
 import { usePurchase } from '../hooks/usePurchase';
-import { useBMStats } from '../hooks/useBMStats';
 import { ProductCategory, Product } from '../types/product';
 import { BM_CATEGORIES, getBMCategoryTabs } from '../config/bm-categories.config';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -26,7 +24,6 @@ const SORT_OPTIONS: SortOption[] = [
 
 const BMAccounts: React.FC = () => {
   usePageTitle('BM Accounts');
-  const navigate = useNavigate();
   
   // Persisted filters
   const { filters, setFilter, setFilters } = usePersistedFilters('bm-accounts', {
@@ -79,7 +76,7 @@ const BMAccounts: React.FC = () => {
   }, [activeCategory]);
 
   // Fetch products
-  const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useProducts({
+  const { data: productsData, isLoading: isLoadingProducts, error: productsError } = useProducts({
     category: ProductCategory.BM,
     type: productType,
     search: searchQuery || undefined,
@@ -103,8 +100,8 @@ const BMAccounts: React.FC = () => {
     productsCount: productsData?.data?.length
   });
 
-  // Fetch BM statistics from Supabase (real-time data)
-  const { data: stats, isLoading: isLoadingStats } = useBMStats();
+  // Fetch product stats
+  const { data: stats } = useProductStats(ProductCategory.BM);
 
   // Purchase mutation
   const purchaseMutation = usePurchase();
@@ -145,29 +142,19 @@ const BMAccounts: React.FC = () => {
     setIsPurchaseModalOpen(true);
   };
 
-  const handlePurchaseConfirm = (quantity: number) => {
+  const handlePurchaseConfirm = async (quantity: number) => {
     if (!selectedProduct) return;
-    
-    // Prevent double submission
-    if (purchaseMutation.isPending) {
-      console.warn('Purchase already in progress, ignoring duplicate request');
-      return;
-    }
 
-    // Use mutate instead of mutateAsync to avoid race conditions
-    purchaseMutation.mutate(
+    await purchaseMutation.mutateAsync(
       { productId: selectedProduct.id, quantity },
       {
         onSuccess: (response) => {
           setIsPurchaseModalOpen(false);
           setSelectedProduct(null);
-          
-          // Redirect immediately without alert to prevent timing issues
-          // Alert can cause component unmount during navigation
-          navigate('/riwayat-transaksi');
+          alert(`Purchase successful! Transaction ID: ${response.transactionId}`);
         },
         onError: (error) => {
-          alert(`❌ Pembelian gagal: ${error.message}`);
+          alert(`Purchase failed: ${error.message}`);
         },
       }
     );
@@ -197,17 +184,17 @@ const BMAccounts: React.FC = () => {
         </p>
       </div>
 
-      {/* Summary Cards - Integrated with Supabase */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-2 md:gap-3">
         <SummaryCard
           icon={Package}
-          value={isLoadingStats ? '...' : stats?.totalStock || 0}
+          value={stats?.totalStock || 0}
           label="Available Stock"
           bgColor="bg-primary-50"
         />
         <SummaryCard
           icon={TrendingUp}
-          value={isLoadingStats ? '...' : `${stats?.successRate || 0}%`}
+          value={`${stats?.successRate || 0}%`}
           label="Success Rate"
           subInfo={{
             text: 'High quality accounts',
@@ -217,12 +204,8 @@ const BMAccounts: React.FC = () => {
         />
         <SummaryCard
           icon={CheckCircle}
-          value={isLoadingStats ? '...' : stats?.totalSoldThisMonth || 0}
+          value={stats?.totalSold || 0}
           label="Total Sold"
-          subInfo={{
-            text: 'This month',
-            color: 'orange',
-          }}
           bgColor="bg-orange-50"
         />
       </div>
@@ -237,29 +220,15 @@ const BMAccounts: React.FC = () => {
       </div>
 
       {/* Search and Sort Bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <SearchSortBar
-            searchValue={searchQuery}
-            sortValue={sortValue}
-            onSearchChange={handleSearchChange}
-            onSortChange={handleSortChange}
-            sortOptions={SORT_OPTIONS}
-            searchPlaceholder="Search BM accounts..."
-            resultCount={searchQuery ? productsData?.pagination.total : undefined}
-          />
-        </div>
-        <button
-          onClick={() => refetchProducts()}
-          className="px-4 py-2 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2"
-          title="Refresh stock data"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span className="hidden md:inline">Refresh</span>
-        </button>
-      </div>
+      <SearchSortBar
+        searchValue={searchQuery}
+        sortValue={sortValue}
+        onSearchChange={handleSearchChange}
+        onSortChange={handleSortChange}
+        sortOptions={SORT_OPTIONS}
+        searchPlaceholder="Search BM accounts..."
+        resultCount={searchQuery ? productsData?.pagination.total : undefined}
+      />
 
       {/* Product Grid */}
       <ProductGrid
@@ -295,3 +264,4 @@ const BMAccounts: React.FC = () => {
 };
 
 export default BMAccounts;
+

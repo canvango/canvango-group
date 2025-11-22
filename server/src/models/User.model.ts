@@ -11,6 +11,8 @@ export interface User {
   full_name: string;
   role: UserRole;
   balance: number;
+  phone?: string | null;
+  phone_verified_at?: string | null;
   created_at: string;
   updated_at: string;
   last_login_at: string | null;
@@ -21,6 +23,7 @@ export interface CreateUserInput {
   username: string;
   email: string;
   full_name: string;
+  phone?: string;
   role?: UserRole;
 }
 
@@ -47,6 +50,8 @@ export class UserModel {
       email: userData.email,
       password: '', // Password managed by Supabase Auth
       full_name: userData.full_name,
+      phone: userData.phone || null,
+      phone_verified_at: userData.phone ? new Date().toISOString() : null,
       role: userData.role || ('member' as UserRole),
       balance: 0
     };

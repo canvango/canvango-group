@@ -1,0 +1,34 @@
+### Test OTP Endpoints
+
+### 1. Send OTP
+POST http://localhost:3000/api/auth/send-otp
+Content-Type: application/json
+
+{
+  "phone": "081234567890"
+}
+
+### 2. Verify OTP (use code from step 1)
+POST http://localhost:3000/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "081234567890",
+  "otp_code": "123456"
+}
+
+### 3. Resend OTP
+POST http://localhost:3000/api/auth/resend-otp
+Content-Type: application/json
+
+{
+  "phone": "081234567890"
+}
+
+### 4. Check username availability
+POST http://localhost:3000/api/auth/check-username
+Content-Type: application/json
+
+{
+  "username": "testuser"
+}

@@ -176,7 +176,7 @@ const PersonalAccounts: React.FC = () => {
       </div>
 
       {/* Summary Cards - Integrated with Supabase */}
-      <div className="grid grid-cols-3 gap-2 md:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
         <SummaryCard
           icon={Package}
           value={isLoadingStats ? '...' : stats?.totalStock || 0}

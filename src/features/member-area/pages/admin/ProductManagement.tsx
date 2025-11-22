@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import api from '../../utils/api';
+import { productsService } from '../../services/products.service';
 import ProductDetailModal from './ProductDetailModal';
 import { DynamicDetailFields, DetailField } from '../../components/products/DynamicDetailFields';
 
@@ -23,6 +23,7 @@ interface Product {
   disadvantages?: string | null;
   warranty_terms?: string | null;
   detail_fields?: DetailField[];
+  available_stock?: number; // Real stock from product_accounts pool
 }
 
 interface ProductFormData {
@@ -91,22 +92,25 @@ const ProductManagement = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const params: any = {
+      
+      const filters = {
         page: currentPage,
         limit,
+        search: searchQuery || undefined,
+        product_type: productTypeFilter !== 'all' ? productTypeFilter : undefined,
+        stock_status: stockStatusFilter !== 'all' ? stockStatusFilter : undefined,
+        is_active: activeStatusFilter !== 'all' ? activeStatusFilter === 'active' : undefined,
       };
 
-      if (searchQuery) params.search = searchQuery;
-      if (productTypeFilter !== 'all') params.product_type = productTypeFilter;
-      if (stockStatusFilter !== 'all') params.stock_status = stockStatusFilter;
-      if (activeStatusFilter !== 'all') params.is_active = activeStatusFilter === 'active';
-
-      const response = await api.get('/admin/products', { params });
-      setProducts(response.data.data.products);
-      setTotalPages(response.data.data.pagination.totalPages);
+      console.log('📦 Fetching products with filters:', filters);
+      const response = await productsService.getAll(filters);
+      console.log('✅ Products fetched:', response);
+      
+      setProducts(response.products);
+      setTotalPages(response.pagination.totalPages);
     } catch (error: any) {
-      console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
+      console.error('❌ Error fetching products:', error);
+      toast.error(error.message || 'Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -145,227 +149,39 @@ const ProductManagement = () => {
     
     try {
       setIsBulkProcessing(true);
-      
-      let requestData: any = {
-        product_ids: productIds,
-        action: bulkAction
-      };
+      let results;
 
-      if (bulkAction === 'update_stock') {
-        requestData.data = { stock_status: 'out_of_stock' };
+      switch (bulkAction) {
+        case 'activate':
+          results = await productsService.bulkUpdate(productIds, { is_active: true });
+          break;
+        case 'deactivate':
+          results = await productsService.bulkUpdate(productIds, { is_active: false });
+          break;
+        case 'update_stock':
+          results = await productsService.bulkUpdate(productIds, { stock_status: 'out_of_stock' });
+          break;
+        case 'delete':
+          results = await productsService.bulkDelete(productIds);
+          break;
+        default:
+          return;
       }
 
-      const response = await api.post('/admin/products/bulk', requestData);
+      toast.success(`Bulk action completed: ${results.success} succeeded, ${results.failed} failed`);
       
-      const { success, failed } = response.data.data;
-      
-      if (failed > 0) {
-        toast.success(`Bulk action completed: ${success} succeeded, ${failed} failed`);
-      } else {
-        toast.success(`Bulk action completed successfully: ${success} products updated`);
+      if (results.errors.length > 0) {
+        console.error('Bulk action errors:', results.errors);
       }
-      
+
       setSelectedProducts(new Set());
       setBulkAction('');
       fetchProducts();
     } catch (error: any) {
-      console.error('Bulk action error:', error);
-      toast.error(error.response?.data?.error?.message || 'Failed to perform bulk action');
+      console.error('❌ Bulk action error:', error);
+      toast.error(error.message || 'Bulk action failed');
     } finally {
       setIsBulkProcessing(false);
-    }
-  };
-
-  const handleCreateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Prevent multiple submissions
-    if (isSubmitting) {
-      console.log('⏳ Already submitting, ignoring...');
-      return;
-    }
-    
-    console.log('🚀 handleCreateProduct called');
-    console.log('📝 Form Data:', formData);
-    
-    // Manual validation for required fields
-    if (!formData.product_name.trim()) {
-      console.log('❌ Validation failed: Nama Produk kosong');
-      toast.error('Nama Produk wajib diisi');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.category.trim()) {
-      console.log('❌ Validation failed: Kategori kosong');
-      toast.error('Kategori wajib diisi');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      console.log('❌ Validation failed: Harga tidak valid', formData.price);
-      toast.error('Harga harus lebih dari 0');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.warranty_duration || parseInt(formData.warranty_duration) < 0) {
-      console.log('❌ Validation failed: Durasi garansi tidak valid', formData.warranty_duration);
-      toast.error('Durasi Garansi tidak valid');
-      setActiveTab('warranty');
-      return;
-    }
-    
-    console.log('✅ Validation passed, sending to backend...');
-    setIsSubmitting(true);
-    
-    const payload = {
-      ...formData,
-      price: parseFloat(formData.price),
-      warranty_duration: parseInt(formData.warranty_duration),
-    };
-    
-    console.log('📤 Payload:', payload);
-    console.log('📤 API URL:', api.defaults.baseURL);
-    
-    try {
-      const response = await api.post('/admin/products', payload, {
-        timeout: 10000 // 10 second timeout
-      });
-      console.log('✅ Backend response:', response.data);
-      toast.success('Product created successfully');
-      setIsCreateModalOpen(false);
-      resetForm();
-      fetchProducts();
-    } catch (error: any) {
-      console.error('❌ Error creating product:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error code:', error.code);
-      
-      if (error.code === 'ECONNABORTED') {
-        toast.error('Request timeout - Backend tidak merespons');
-      } else if (error.code === 'ERR_NETWORK') {
-        toast.error('Network error - Pastikan backend running di port 3000');
-      } else {
-        toast.error(error.response?.data?.error?.message || error.message || 'Failed to create product');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-
-    // Prevent multiple submissions
-    if (isSubmitting) {
-      console.log('⏳ Already submitting, ignoring...');
-      return;
-    }
-
-    console.log('🔄 handleUpdateProduct called');
-    console.log('📝 Form Data:', formData);
-
-    // Manual validation for required fields
-    if (!formData.product_name.trim()) {
-      console.log('❌ Validation failed: Nama Produk kosong');
-      toast.error('Nama Produk wajib diisi');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.category.trim()) {
-      console.log('❌ Validation failed: Kategori kosong');
-      toast.error('Kategori wajib diisi');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      console.log('❌ Validation failed: Harga tidak valid', formData.price);
-      toast.error('Harga harus lebih dari 0');
-      setActiveTab('basic');
-      return;
-    }
-    if (!formData.warranty_duration || parseInt(formData.warranty_duration) < 0) {
-      console.log('❌ Validation failed: Durasi garansi tidak valid', formData.warranty_duration);
-      toast.error('Durasi Garansi tidak valid');
-      setActiveTab('warranty');
-      return;
-    }
-
-    console.log('✅ Validation passed, sending to backend...');
-    setIsSubmitting(true);
-
-    const payload = {
-      ...formData,
-      price: parseFloat(formData.price),
-      warranty_duration: parseInt(formData.warranty_duration),
-    };
-
-    console.log('📤 Payload:', payload);
-
-    try {
-      const response = await api.put(`/admin/products/${selectedProduct.id}`, payload, {
-        timeout: 10000
-      });
-      console.log('✅ Backend response:', response.data);
-      toast.success('Product updated successfully');
-      setIsEditModalOpen(false);
-      setSelectedProduct(null);
-      resetForm();
-      fetchProducts();
-    } catch (error: any) {
-      console.error('❌ Error updating product:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error code:', error.code);
-
-      if (error.code === 'ECONNABORTED') {
-        toast.error('Request timeout - Backend tidak merespons');
-      } else if (error.code === 'ERR_NETWORK') {
-        toast.error('Network error - Pastikan backend running di port 3000');
-      } else {
-        toast.error(error.response?.data?.error?.message || error.message || 'Failed to update product');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteProduct = async () => {
-    if (!selectedProduct) return;
-
-    try {
-      await api.delete(`/admin/products/${selectedProduct.id}`);
-      toast.success('Product deleted successfully');
-      setIsDeleteModalOpen(false);
-      setSelectedProduct(null);
-      fetchProducts();
-    } catch (error: any) {
-      console.error('Error deleting product:', error);
-      
-      // Check if it's a foreign key constraint error
-      if (error.response?.data?.error?.code === 'PRODUCT_IN_USE') {
-        toast.error(
-          'Cannot delete: Product has purchase history. Please deactivate it instead.',
-          { duration: 5000 }
-        );
-      } else {
-        toast.error(error.response?.data?.error?.message || 'Failed to delete product');
-      }
-      
-      setIsDeleteModalOpen(false);
-      setSelectedProduct(null);
-    }
-  };
-
-  const handleDuplicateProduct = async (product: Product) => {
-    try {
-      await api.post(`/admin/products/${product.id}/duplicate`);
-      toast.success('Product duplicated successfully');
-      fetchProducts();
-    } catch (error: any) {
-      console.error('Error duplicating product:', error);
-      toast.error(error.response?.data?.error?.message || 'Failed to duplicate product');
     }
   };
 
@@ -379,8 +195,8 @@ const ProductManagement = () => {
       price: product.price.toString(),
       stock_status: product.stock_status,
       is_active: product.is_active,
-      warranty_duration: (product as any).warranty_duration?.toString() || '30',
-      warranty_enabled: (product as any).warranty_enabled !== undefined ? (product as any).warranty_enabled : true,
+      warranty_duration: '30',
+      warranty_enabled: true,
       ad_limit: product.ad_limit || '',
       verification_status: product.verification_status || '',
       ad_account_type: product.ad_account_type || '',
@@ -402,21 +218,128 @@ const ProductManagement = () => {
     setIsDetailModalOpen(true);
   };
 
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      const payload = {
+        product_name: formData.product_name,
+        product_type: formData.product_type,
+        category: formData.category,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        stock_status: formData.stock_status,
+        is_active: formData.is_active,
+        warranty_duration: parseInt(formData.warranty_duration),
+        warranty_enabled: formData.warranty_enabled,
+        ad_limit: formData.ad_limit || null,
+        verification_status: formData.verification_status || null,
+        ad_account_type: formData.ad_account_type || null,
+        advantages: formData.advantages || null,
+        disadvantages: formData.disadvantages || null,
+        warranty_terms: formData.warranty_terms || null,
+        detail_fields: formData.detail_fields,
+      };
+    
+      const product = await productsService.create(payload);
+      console.log('✅ Product created:', product);
+      toast.success('Product created successfully');
+      setIsCreateModalOpen(false);
+      resetForm();
+      fetchProducts();
+    } catch (error: any) {
+      console.error('❌ Error creating product:', error);
+      toast.error(error.message || 'Failed to create product');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      const payload = {
+        product_name: formData.product_name,
+        product_type: formData.product_type,
+        category: formData.category,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        stock_status: formData.stock_status,
+        is_active: formData.is_active,
+        warranty_duration: parseInt(formData.warranty_duration),
+        warranty_enabled: formData.warranty_enabled,
+        ad_limit: formData.ad_limit || null,
+        verification_status: formData.verification_status || null,
+        ad_account_type: formData.ad_account_type || null,
+        advantages: formData.advantages || null,
+        disadvantages: formData.disadvantages || null,
+        warranty_terms: formData.warranty_terms || null,
+        detail_fields: formData.detail_fields,
+      };
+
+      const product = await productsService.update(selectedProduct.id, payload);
+      console.log('✅ Product updated:', product);
+      toast.success('Product updated successfully');
+      setIsEditModalOpen(false);
+      resetForm();
+      fetchProducts();
+    } catch (error: any) {
+      console.error('❌ Error updating product:', error);
+      toast.error(error.message || 'Failed to update product');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!selectedProduct) return;
+
+    try {
+      await productsService.delete(selectedProduct.id);
+      toast.success('Product deleted successfully');
+      setIsDeleteModalOpen(false);
+      setSelectedProduct(null);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('❌ Error deleting product:', error);
+      toast.error(error.message || 'Failed to delete product');
+    }
+  };
+
+  const handleDuplicateProduct = async (product: Product) => {
+    try {
+      await productsService.duplicate(product.id);
+      toast.success('Product duplicated successfully');
+      fetchProducts();
+    } catch (error: any) {
+      console.error('❌ Error duplicating product:', error);
+      toast.error(error.message || 'Failed to duplicate product');
+    }
+  };
+
   const handleQuickToggleActive = async (product: Product) => {
     try {
-      await api.put(`/admin/products/${product.id}`, {
+      await productsService.update(product.id, {
         is_active: !product.is_active
       });
       toast.success(`Product ${!product.is_active ? 'activated' : 'deactivated'} successfully`);
       fetchProducts();
     } catch (error: any) {
-      console.error('Error toggling product status:', error);
-      toast.error('Failed to update product status');
+      console.error('❌ Error toggling product status:', error);
+      toast.error(error.message || 'Failed to update product status');
     }
   };
 
   const resetForm = () => {
-    setActiveTab('basic'); // Reset tab to basic
+    setActiveTab('basic');
     setFormData({
       product_name: '',
       product_type: 'bm_account',
@@ -528,145 +451,112 @@ const ProductManagement = () => {
 
       {/* Bulk Actions */}
       {selectedProducts.size > 0 && (
-        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-blue-900">
-                {selectedProducts.size} product{selectedProducts.size > 1 ? 's' : ''} selected
-              </span>
-              <select
-                value={bulkAction}
-                onChange={(e) => setBulkAction(e.target.value)}
-                className="px-3 py-1.5 border border-blue-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">Select Action</option>
-                <option value="activate">Activate</option>
-                <option value="deactivate">Deactivate</option>
-                <option value="update_stock">Mark Out of Stock</option>
-                <option value="delete">Delete</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleBulkAction}
-                disabled={!bulkAction || isBulkProcessing}
-                className="px-4 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                {isBulkProcessing ? 'Processing...' : 'Apply'}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedProducts(new Set());
-                  setBulkAction('');
-                }}
-                className="px-4 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Info Banner for Inactive Products */}
-      {activeStatusFilter === 'inactive' && products.length > 0 && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-yellow-800">Inactive Products</h3>
-              <p className="mt-1 text-sm text-yellow-700">
-                These products are hidden from users and cannot be purchased. They may have purchase history and cannot be deleted. 
-                Use "Activate" to make them available again.
-              </p>
-            </div>
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+          <span className="text-sm font-medium text-blue-900">
+            {selectedProducts.size} product(s) selected
+          </span>
+          <div className="flex items-center gap-3">
+            <select
+              value={bulkAction}
+              onChange={(e) => setBulkAction(e.target.value)}
+              className="px-3 py-1.5 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Action</option>
+              <option value="activate">Activate</option>
+              <option value="deactivate">Deactivate</option>
+              <option value="update_stock">Mark Out of Stock</option>
+              <option value="delete">Delete</option>
+            </select>
+            <button
+              onClick={handleBulkAction}
+              disabled={!bulkAction || isBulkProcessing}
+              className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              {isBulkProcessing ? 'Processing...' : 'Apply'}
+            </button>
           </div>
         </div>
       )}
 
       {/* Products Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      ) : products.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow p-12 text-center">
-          <p className="text-gray-500">
-            {activeStatusFilter === 'active' && 'No active products found'}
-            {activeStatusFilter === 'inactive' && 'No inactive products found'}
-            {activeStatusFilter === 'all' && 'No products found'}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
+      <div className="bg-white rounded-3xl shadow overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600">Loading products...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            No products found
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.size === products.length && products.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Stock
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedProducts.size === products.length && products.length > 0}
-                        onChange={toggleSelectAll}
+                        checked={selectedProducts.has(product.id)}
+                        onChange={() => toggleProductSelection(product.id)}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.has(product.id)}
-                          onChange={() => toggleProductSelection(product.id)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{product.product_name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          {getProductTypeLabel(product.product_type)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{product.product_name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        {getProductTypeLabel(product.product_type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {product.category}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(product.price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {product.available_stock !== undefined ? product.available_stock : 0} akun
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {product.category}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.price)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full inline-block w-fit ${
                             product.stock_status === 'available'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
@@ -674,528 +564,94 @@ const ProductManagement = () => {
                         >
                           {product.stock_status === 'available' ? 'Available' : 'Out of Stock'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            product.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {product.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => openDetailModal(product)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="View details & manage accounts"
-                          >
-                            <EyeIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleQuickToggleActive(product)}
-                            className={product.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
-                            title={product.is_active ? 'Deactivate product' : 'Activate product'}
-                          >
-                            {product.is_active ? (
-                              <XCircleIcon className="w-5 h-5" />
-                            ) : (
-                              <CheckCircleIcon className="w-5 h-5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => openEditModal(product)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Edit product"
-                          >
-                            <PencilIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDuplicateProduct(product)}
-                            className="text-purple-600 hover:text-purple-900"
-                            title="Duplicate product"
-                          >
-                            <DocumentDuplicateIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(product)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete product"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex justify-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <span className="px-4 py-2 text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Create/Edit Modal */}
-      {(isCreateModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => {
-              setIsCreateModalOpen(false);
-              setIsEditModalOpen(false);
-              setSelectedProduct(null);
-              resetForm();
-            }}></div>
-
-            <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
-              <form onSubmit={isCreateModalOpen ? handleCreateProduct : handleUpdateProduct}>
-                <div className="bg-white px-6 pt-6 pb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    {isCreateModalOpen ? '✨ Tambah Produk Baru' : '✏️ Edit Produk'}
-                  </h3>
-
-                  {/* Required Fields Info */}
-                  <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3">
-                    <p className="text-sm text-blue-800">
-                      <span className="font-semibold">ℹ️ Field Wajib:</span> Field yang ditandai dengan <span className="text-red-500 font-bold">*</span> wajib diisi untuk membuat produk.
-                    </p>
-                  </div>
-
-                  {/* Tabs */}
-                  <div className="flex gap-2 mb-6 border-b border-gray-200">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('basic')}
-                      className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                        activeTab === 'basic'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      📋 Info Dasar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('details')}
-                      className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                        activeTab === 'details'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      🎯 Detail Produk
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('warranty')}
-                      className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                        activeTab === 'warranty'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      🛡️ Garansi
-                    </button>
-                  </div>
-
-                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                    {/* Tab: Info Dasar */}
-                    {activeTab === 'basic' && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nama Produk <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={formData.product_name}
-                            onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Contoh: BM Account - Limit 250"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Tipe Produk <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              required
-                              value={formData.product_type}
-                              onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="bm_account">BM Account</option>
-                              <option value="personal_account">Personal Account</option>
-                              <option value="verified_bm">Verified BM</option>
-                              <option value="api">API</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Kategori <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              required
-                              value={formData.category}
-                              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="">Pilih Kategori</option>
-                              <option value="limit_250">BM Limit 250$</option>
-                              <option value="limit_500">BM Limit 500$</option>
-                              <option value="limit_1000">BM Limit 1000$</option>
-                              <option value="bm_verified">BM Verified</option>
-                              <option value="limit_140">BM 140 Limit</option>
-                              <option value="bm50">BM 50 Limit</option>
-                              <option value="bm_160">BM 160 Limit</option>
-                              <option value="aged_1year">Personal Aged 1 Year</option>
-                              <option value="aged_2years">Personal Aged 2 Years</option>
-                              <option value="aged_3years">Personal Aged 3+ Years</option>
-                              <option value="whatsapp_api">WhatsApp API</option>
-                              <option value="basic">Basic</option>
-                              <option value="premium">Premium</option>
-                              <option value="professional">Professional</option>
-                              <option value="starter">Starter</option>
-                              <option value="verified">Verified</option>
-                            </select>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Pilih kategori yang sesuai dengan produk
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Deskripsi Singkat
-                          </label>
-                          <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Deskripsi singkat produk..."
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Harga (IDR) <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              required
-                              min="0"
-                              step="1000"
-                              value={formData.price}
-                              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="150000"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Status Stok <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              required
-                              value={formData.stock_status}
-                              onChange={(e) => setFormData({ ...formData, stock_status: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="available">✅ Tersedia</option>
-                              <option value="out_of_stock">❌ Habis</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="is_active"
-                              checked={formData.is_active}
-                              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
-                              Produk Aktif
-                            </label>
-                          </div>
-                        </div>
                       </div>
-                    )}
-
-                    {/* Tab: Detail Produk */}
-                    {activeTab === 'details' && (
-                      <div className="space-y-4">
-                        <DynamicDetailFields
-                          fields={formData.detail_fields}
-                          onChange={(fields) => setFormData({ ...formData, detail_fields: fields })}
-                        />
-
-                        <div className="border-t border-gray-200 pt-4 mt-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">📝 Field Tetap (Opsional)</h4>
-                          <p className="text-xs text-gray-500 mb-4">
-                            Field di bawah ini masih tersedia untuk backward compatibility. Disarankan menggunakan "Detail Produk Custom" di atas.
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              💰 Limit Iklan
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.ad_limit}
-                              onChange={(e) => setFormData({ ...formData, ad_limit: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Contoh: $250/hari"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                              Limit spending iklan per hari
-                            </p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              ✅ Status Verifikasi
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.verification_status}
-                              onChange={(e) => setFormData({ ...formData, verification_status: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Contoh: Verified, Blue Badge"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                              Status verifikasi akun
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            🏢 Tipe Akun Iklan
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.ad_account_type}
-                            onChange={(e) => setFormData({ ...formData, ad_account_type: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Contoh: Business Manager, Personal, Agency"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            Jenis akun iklan yang digunakan
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            ⭐ Keunggulan Produk
-                          </label>
-                          <textarea
-                            value={formData.advantages}
-                            onChange={(e) => setFormData({ ...formData, advantages: e.target.value })}
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Tulis keunggulan produk, pisahkan dengan enter untuk list:&#10;- Limit tinggi&#10;- Akun terverifikasi&#10;- Support 24/7"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            Pisahkan setiap poin dengan enter (baris baru)
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            ⚠️ Kekurangan & Peringatan
-                          </label>
-                          <textarea
-                            value={formData.disadvantages}
-                            onChange={(e) => setFormData({ ...formData, disadvantages: e.target.value })}
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Tulis kekurangan atau peringatan, pisahkan dengan enter:&#10;- Tidak bisa refund&#10;- Harus ganti password&#10;- Jangan share ke orang lain"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            Pisahkan setiap poin dengan enter (baris baru)
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tab: Garansi */}
-                    {activeTab === 'warranty' && (
-                      <div className="space-y-4">
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                          <p className="text-sm text-green-800">
-                            🛡️ <strong>Garansi:</strong> Atur durasi dan ketentuan garansi untuk produk ini.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl mb-4">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="warranty_enabled"
-                              checked={formData.warranty_enabled}
-                              onChange={(e) => setFormData({ ...formData, warranty_enabled: e.target.checked })}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <label htmlFor="warranty_enabled" className="ml-2 text-sm font-medium text-gray-700">
-                              Aktifkan Garansi
-                            </label>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            ⏱️ Durasi Garansi (Hari) <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="number"
-                            required
-                            min="0"
-                            max="365"
-                            value={formData.warranty_duration}
-                            onChange={(e) => setFormData({ ...formData, warranty_duration: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="30"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            💡 Rekomendasi: 30 hari untuk BM Account, 7 hari untuk Personal Account
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            📋 Ketentuan Garansi
-                          </label>
-                          <textarea
-                            value={formData.warranty_terms}
-                            onChange={(e) => setFormData({ ...formData, warranty_terms: e.target.value })}
-                            rows={6}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Tulis ketentuan garansi, contoh:&#10;&#10;1. Garansi berlaku 30 hari sejak pembelian&#10;2. Claim hanya untuk akun yang disabled/banned&#10;3. Tidak cover kesalahan user&#10;4. Replacement 1x1 dengan produk yang sama&#10;5. Wajib screenshot bukti error"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            Jelaskan syarat dan ketentuan garansi secara detail
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Processing...
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          product.is_active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {product.is_active ? 'Active' : 'Inactive'}
                       </span>
-                    ) : (
-                      isCreateModalOpen ? 'Create' : 'Update'
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      setIsCreateModalOpen(false);
-                      setIsEditModalOpen(false);
-                      setSelectedProduct(null);
-                      resetForm();
-                    }}
-                    className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => openDetailModal(product)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="View details & manage accounts"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleQuickToggleActive(product)}
+                          className={product.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
+                          title={product.is_active ? 'Deactivate product' : 'Activate product'}
+                        >
+                          {product.is_active ? (
+                            <XCircleIcon className="w-5 h-5" />
+                          ) : (
+                            <CheckCircleIcon className="w-5 h-5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openEditModal(product)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit product"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicateProduct(product)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="Duplicate product"
+                        >
+                          <DocumentDuplicateIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(product)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete product"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2 text-sm text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => {
-              setIsDeleteModalOpen(false);
-              setSelectedProduct(null);
-            }}></div>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Product</h3>
-                <p className="text-sm text-gray-600">
-                  Are you sure you want to delete "{selectedProduct.product_name}"? This action cannot be undone.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-                <button
-                  onClick={handleDeleteProduct}
-                  className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => {
-                    setIsDeleteModalOpen(false);
-                    setSelectedProduct(null);
-                  }}
-                  className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Product Detail Modal with Account Pool */}
+      {/* Product Detail Modal */}
       <ProductDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => {
@@ -1204,6 +660,318 @@ const ProductManagement = () => {
         }}
         product={selectedProduct}
       />
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Delete Product</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{selectedProduct?.product_name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setSelectedProduct(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Product Modal - Will be added in next part */}
+      {(isCreateModalOpen || isEditModalOpen) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl">
+              <h3 className="text-xl font-bold text-gray-900">
+                {isCreateModalOpen ? 'Create New Product' : 'Edit Product'}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setIsEditModalOpen(false);
+                  resetForm();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={isCreateModalOpen ? handleCreateProduct : handleUpdateProduct} className="p-6">
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('basic')}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === 'basic'
+                      ? 'border-b-2 border-blue-600 text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Basic Info
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('details')}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === 'details'
+                      ? 'border-b-2 border-blue-600 text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Product Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('warranty')}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === 'warranty'
+                      ? 'border-b-2 border-blue-600 text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Warranty & Terms
+                </button>
+              </div>
+
+              {/* Basic Info Tab */}
+              {activeTab === 'basic' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.product_name}
+                      onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
+                      <select
+                        required
+                        value={formData.product_type}
+                        onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="bm_account">BM Account</option>
+                        <option value="personal_account">Personal Account</option>
+                        <option value="verified_bm">Verified BM</option>
+                        <option value="api">API</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., limit_250, limit_500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price (IDR) *</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Stock Status *</label>
+                      <select
+                        required
+                        value={formData.stock_status}
+                        onChange={(e) => setFormData({ ...formData, stock_status: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="available">Available</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">Product is active</label>
+                  </div>
+                </div>
+              )}
+
+              {/* Product Details Tab */}
+              {activeTab === 'details' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ad Limit</label>
+                    <input
+                      type="text"
+                      value={formData.ad_limit}
+                      onChange={(e) => setFormData({ ...formData, ad_limit: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., $250/day"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Verification Status</label>
+                    <input
+                      type="text"
+                      value={formData.verification_status}
+                      onChange={(e) => setFormData({ ...formData, verification_status: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Verified, Blue Badge"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ad Account Type</label>
+                    <input
+                      type="text"
+                      value={formData.ad_account_type}
+                      onChange={(e) => setFormData({ ...formData, ad_account_type: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Business Manager, Personal"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Advantages</label>
+                    <textarea
+                      value={formData.advantages}
+                      onChange={(e) => setFormData({ ...formData, advantages: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="List advantages, one per line"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Disadvantages</label>
+                    <textarea
+                      value={formData.disadvantages}
+                      onChange={(e) => setFormData({ ...formData, disadvantages: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="List disadvantages, one per line"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Dynamic Detail Fields</label>
+                    <DynamicDetailFields
+                      fields={formData.detail_fields}
+                      onChange={(fields) => setFormData({ ...formData, detail_fields: fields })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Warranty Tab */}
+              {activeTab === 'warranty' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Duration (days)</label>
+                      <input
+                        type="number"
+                        value={formData.warranty_duration}
+                        onChange={(e) => setFormData({ ...formData, warranty_duration: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center pt-7">
+                      <input
+                        type="checkbox"
+                        checked={formData.warranty_enabled}
+                        onChange={(e) => setFormData({ ...formData, warranty_enabled: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label className="ml-2 text-sm text-gray-700">Warranty enabled</label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Terms & Conditions</label>
+                    <textarea
+                      value={formData.warranty_terms}
+                      onChange={(e) => setFormData({ ...formData, warranty_terms: e.target.value })}
+                      rows={6}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="List warranty terms, one per line"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Form Actions */}
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setIsEditModalOpen(false);
+                    resetForm();
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Saving...' : (isCreateModalOpen ? 'Create Product' : 'Update Product')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

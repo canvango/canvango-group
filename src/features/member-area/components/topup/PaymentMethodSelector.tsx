@@ -50,32 +50,40 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         flex items-center gap-3
         ${
           selectedMethod === method.id
-            ? 'border-primary-600 bg-primary-50 text-primary-700 shadow-sm'
-            : 'border-gray-300 bg-white text-gray-700 hover:border-primary-400 hover:bg-primary-50'
+            ? 'border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-100'
+            : 'border-gray-300 bg-white text-gray-700 hover:border-primary-400 hover:bg-primary-50 hover:shadow-sm'
         }
         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+        active:scale-[0.98]
       `}
     >
       <div className={`
-        flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-        ${selectedMethod === method.id ? 'bg-primary-100' : 'bg-gray-100'}
+        flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors
+        ${selectedMethod === method.id ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}
       `}>
         {getMethodIcon(method.id)}
       </div>
-      <span className="text-sm font-medium text-left">{method.name}</span>
+      <span className="text-sm font-semibold text-left">{method.name}</span>
+      {selectedMethod === method.id && (
+        <svg className="w-5 h-5 ml-auto text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+      )}
     </button>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Metode Pembayaran</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Metode Pembayaran</h3>
         
         {/* E-Wallet Section */}
-        <div className="mb-4">
+        <div className="mb-5">
           <div className="flex items-center gap-2 mb-3">
-            <Wallet className="w-4 h-4 text-gray-500" />
-            <h4 className="text-xs font-semibold text-gray-600 uppercase">E-Wallet</h4>
+            <div className="bg-green-100 p-1.5 rounded-lg">
+              <Wallet className="w-4 h-4 text-green-600" />
+            </div>
+            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">E-Wallet</h4>
           </div>
           <div className="space-y-2">
             {ewalletMethods.map(renderMethodCard)}
@@ -85,8 +93,10 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         {/* Virtual Account Section */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <CreditCard className="w-4 h-4 text-gray-500" />
-            <h4 className="text-xs font-semibold text-gray-600 uppercase">Virtual Account</h4>
+            <div className="bg-blue-100 p-1.5 rounded-lg">
+              <CreditCard className="w-4 h-4 text-blue-600" />
+            </div>
+            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Virtual Account</h4>
           </div>
           <div className="space-y-2">
             {vaMethods.map(renderMethodCard)}
@@ -95,9 +105,11 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       </div>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+          <p className="text-sm text-red-700 font-medium" role="alert">
+            {error}
+          </p>
+        </div>
       )}
     </div>
   );

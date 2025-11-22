@@ -328,6 +328,16 @@ body {
     @apply transition-all duration-300 ease-out;
   }
 
+  /* Hide scrollbar while maintaining scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+
   /* Responsive product grid - adapts to zoom and screen size */
   /* Uses auto-fit to fill available space without empty gaps on the right */
   .product-grid-responsive {

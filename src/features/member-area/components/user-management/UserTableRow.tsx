@@ -8,6 +8,7 @@ interface User {
   full_name: string;
   role: 'guest' | 'member' | 'admin';
   balance: number;
+  phone?: string | null;
   created_at: string;
 }
 
@@ -71,6 +72,11 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
       {/* Email */}
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{user.email}</div>
+      </td>
+
+      {/* Phone */}
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{user.phone || '-'}</div>
       </td>
 
       {/* Balance */}

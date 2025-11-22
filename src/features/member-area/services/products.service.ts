@@ -45,53 +45,6 @@ export interface PaginatedResponse<T> {
 }
 
 /**
- * Helper function to parse multi-line text into array
- * Splits by newline and filters out empty lines
- */
-const parseTextToArray = (text: string | null | undefined): string[] => {
-  if (!text) return [];
-  return text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
-};
-
-/**
- * Helper function to get product details from database or fallback to defaults
- */
-const getProductDetails = (item: any) => {
-  const productType = item.product_type;
-  const isBM = productType === 'bm_account';
-  const defaultWarrantyDuration = item.warranty_duration || (isBM ? 30 : 7);
-  
-  // Parse advantages from database (if available), otherwise return empty array
-  let features: string[];
-  if (item.advantages) {
-    features = parseTextToArray(item.advantages);
-  } else {
-    features = [];
-  }
-
-  // Parse disadvantages from database (if available), otherwise return empty array
-  let limitations: string[];
-  if (item.disadvantages) {
-    limitations = parseTextToArray(item.disadvantages);
-  } else {
-    limitations = [];
-  }
-
-  // Parse warranty terms from database (if available), otherwise return empty array
-  let warrantyTerms: string[];
-  if (item.warranty_terms) {
-    warrantyTerms = parseTextToArray(item.warranty_terms);
-  } else {
-    warrantyTerms = [];
-  }
-
-  return { features, limitations, warrantyTerms, warrantyDuration: defaultWarrantyDuration };
-};
-
-/**
  * Parameters for fetching products
  * 
  * @interface FetchProductsParams
@@ -136,10 +89,13 @@ export const fetchProducts = async (
   const pageSize = params.pageSize || 12;
   const offset = (page - 1) * pageSize;
 
-  // Build query
+  // Build query - Include product_accounts count for real stock
   let query = supabase
     .from('products')
-    .select('*', { count: 'exact' })
+    .select(`
+      *,
+      product_accounts!product_accounts_product_id_fkey(id, status)
+    `, { count: 'exact' })
     .eq('is_active', true);
 
   // Apply filters
@@ -190,45 +146,77 @@ export const fetchProducts = async (
     throw error;
   }
 
-  if (!data || data.length === 0) {
-    return {
-      data: [],
-      pagination: {
-        page,
-        pageSize,
-        total: 0,
-        totalPages: 0,
-      },
-    };
-  }
+  console.log('Fetched products from Supabase:', {
+    count,
+    dataLength: data?.length,
+    params,
+    firstProduct: data?.[0]
+  });
 
-  // Fetch real stock counts from product_accounts for each product
-  const productIds = (data || []).map((item: any) => item.id);
-  const stockMap: Record<string, number> = {};
+  // Helper function to get product details based on type
+  const getProductDetails = (productType: string) => {
+    const isBM = productType === 'bm_account';
+    
+    const features = isBM ? [
+      'Sudah di buatkan akun iklan',
+      'Sudah di buatkan fanspage',
+      'Bisa merubah negara dan mata uang',
+      'Tingkat keberhasilan saat mendaftarkan WhatsApp API 70%',
+      'Sangat di rekomendasikan jika di gunakan dalam jangka panjang',
+      'Limit akun iklan bisa naik hingga 1000$'
+    ] : [
+      'Akun personal Facebook yang sudah terverifikasi',
+      'Bisa digunakan untuk iklan dengan limit sesuai kategori',
+      'Akses penuh ke Facebook Ads Manager',
+      'Cocok untuk pemula yang ingin memulai iklan',
+      'Proses setup lebih cepat'
+    ];
 
-  if (productIds.length > 0) {
-    const { data: stockData, error: stockError } = await supabase
-      .from('product_accounts')
-      .select('product_id')
-      .in('product_id', productIds)
-      .eq('status', 'available');
+    const limitations = isBM ? [
+      'Tidak di rekomendasikan untuk langsung di gunakan setelah pembelian harus di redam beberapa hari',
+      'Tidak aman jika langsung mendaftarkan WhatsApp API setelah pembelian'
+    ] : [
+      'Limit iklan terbatas sesuai kategori akun',
+      'Tidak bisa menambahkan admin tambahan',
+      'Risiko suspend lebih tinggi jika tidak hati-hati'
+    ];
 
-    if (!stockError && stockData) {
-      // Count available accounts per product
-      stockData.forEach((item: any) => {
-        stockMap[item.product_id] = (stockMap[item.product_id] || 0) + 1;
-      });
-    } else if (stockError) {
-      console.error('Error fetching stock data:', stockError);
-    }
-  }
+    const warrantyTerms = isBM ? [
+      'Garansi tidak berlaku jika membuat akun iklan baru akun BM mati atau akun iklan mati',
+      'Garansi tidak berlaku akun BM mati saat menambahkan admin baru',
+      'Garansi tidak berlaku jika menambahkan fanspage baru akun BM mati',
+      'Garansi tidak berlaku jika akun iklan atau akun BM mati saat menambahkan metode pembayaran',
+      'Garansi tidak berlaku jika menambahkan WhatsApp akun WhatsApp atau BM mati'
+    ] : [
+      'Garansi berlaku 7 hari untuk akun personal',
+      'Garansi tidak berlaku jika akun di-suspend karena pelanggaran kebijakan',
+      'Garansi tidak berlaku jika password diubah tanpa konfirmasi',
+      'Penggantian akun hanya berlaku 1x dalam periode garansi'
+    ];
+
+    return { features, limitations, warrantyTerms };
+  };
 
   // Transform database records to Product interface
   const transformedData = (data || []).map((item: any) => {
-    const { features, limitations, warrantyTerms, warrantyDuration } = getProductDetails(item);
+    const defaultDetails = getProductDetails(item.product_type);
     
-    // Get real stock from product_accounts, fallback to 0 if not found
-    const realStock = stockMap[item.id] || 0;
+    // Calculate real stock from product_accounts pool
+    const availableAccounts = (item.product_accounts || []).filter(
+      (acc: any) => acc.status === 'available'
+    );
+    const realStock = availableAccounts.length;
+    
+    // Parse advantages, disadvantages, warranty_terms from database (text format, one per line)
+    const parseTextToArray = (text: string | null): string[] => {
+      if (!text) return [];
+      return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    };
+    
+    // Use database values if available, otherwise use defaults
+    const features = item.advantages ? parseTextToArray(item.advantages) : defaultDetails.features;
+    const limitations = item.disadvantages ? parseTextToArray(item.disadvantages) : defaultDetails.limitations;
+    const warrantyTerms = item.warranty_terms ? parseTextToArray(item.warranty_terms) : defaultDetails.warrantyTerms;
     
     return {
       id: item.id,
@@ -237,18 +225,18 @@ export const fetchProducts = async (
       title: item.product_name,
       description: item.description || '',
       price: Number(item.price),
-      stock: realStock, // Real stock from product_accounts
+      stock: realStock, // Real stock from product_accounts pool
       features,
       limitations,
       warranty: {
-        enabled: item.warranty_enabled !== undefined ? item.warranty_enabled : true,
-        duration: warrantyDuration,
+        enabled: item.warranty_enabled !== false,
+        duration: item.warranty_duration || (item.product_type === 'bm_account' ? 30 : 7),
         terms: warrantyTerms,
       },
-      ad_limit: item.ad_limit || undefined,
-      verification_status: item.verification_status || undefined,
-      ad_account_type: item.ad_account_type || undefined,
-      detail_fields: item.detail_fields || undefined,
+      ad_limit: item.ad_limit || null,
+      verification_status: item.verification_status || null,
+      ad_account_type: item.ad_account_type || null,
+      detail_fields: item.detail_fields || [],
       createdAt: new Date(item.created_at),
       updatedAt: new Date(item.updated_at),
     };
@@ -284,7 +272,10 @@ export const fetchProducts = async (
 export const fetchProductById = async (productId: string): Promise<Product> => {
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(`
+      *,
+      product_accounts!product_accounts_product_id_fkey(id, status)
+    `)
     .eq('id', productId)
     .eq('is_active', true)
     .single();
@@ -293,18 +284,67 @@ export const fetchProductById = async (productId: string): Promise<Product> => {
   if (!data) throw new Error('Product not found');
 
   // Helper function to get product details based on type
-  const { features, limitations, warrantyTerms, warrantyDuration } = getProductDetails(data);
+  const getProductDetails = (productType: string) => {
+    const isBM = productType === 'bm_account';
+    
+    const features = isBM ? [
+      'Sudah di buatkan akun iklan',
+      'Sudah di buatkan fanspage',
+      'Bisa merubah negara dan mata uang',
+      'Tingkat keberhasilan saat mendaftarkan WhatsApp API 70%',
+      'Sangat di rekomendasikan jika di gunakan dalam jangka panjang',
+      'Limit akun iklan bisa naik hingga 1000$'
+    ] : [
+      'Akun personal Facebook yang sudah terverifikasi',
+      'Bisa digunakan untuk iklan dengan limit sesuai kategori',
+      'Akses penuh ke Facebook Ads Manager',
+      'Cocok untuk pemula yang ingin memulai iklan',
+      'Proses setup lebih cepat'
+    ];
 
-  // Fetch real stock from product_accounts
-  const { count: realStock, error: stockError } = await supabase
-    .from('product_accounts')
-    .select('*', { count: 'exact', head: true })
-    .eq('product_id', productId)
-    .eq('status', 'available');
+    const limitations = isBM ? [
+      'Tidak di rekomendasikan untuk langsung di gunakan setelah pembelian harus di redam beberapa hari',
+      'Tidak aman jika langsung mendaftarkan WhatsApp API setelah pembelian'
+    ] : [
+      'Limit iklan terbatas sesuai kategori akun',
+      'Tidak bisa menambahkan admin tambahan',
+      'Risiko suspend lebih tinggi jika tidak hati-hati'
+    ];
 
-  if (stockError) {
-    console.error('Error fetching stock for product:', productId, stockError);
-  }
+    const warrantyTerms = isBM ? [
+      'Garansi tidak berlaku jika membuat akun iklan baru akun BM mati atau akun iklan mati',
+      'Garansi tidak berlaku akun BM mati saat menambahkan admin baru',
+      'Garansi tidak berlaku jika menambahkan fanspage baru akun BM mati',
+      'Garansi tidak berlaku jika akun iklan atau akun BM mati saat menambahkan metode pembayaran',
+      'Garansi tidak berlaku jika menambahkan WhatsApp akun WhatsApp atau BM mati'
+    ] : [
+      'Garansi berlaku 7 hari untuk akun personal',
+      'Garansi tidak berlaku jika akun di-suspend karena pelanggaran kebijakan',
+      'Garansi tidak berlaku jika password diubah tanpa konfirmasi',
+      'Penggantian akun hanya berlaku 1x dalam periode garansi'
+    ];
+
+    return { features, limitations, warrantyTerms };
+  };
+
+  const defaultDetails = getProductDetails(data.product_type);
+
+  // Calculate real stock from product_accounts pool
+  const availableAccounts = (data.product_accounts || []).filter(
+    (acc: any) => acc.status === 'available'
+  );
+  const realStock = availableAccounts.length;
+
+  // Parse advantages, disadvantages, warranty_terms from database (text format, one per line)
+  const parseTextToArray = (text: string | null): string[] => {
+    if (!text) return [];
+    return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  };
+  
+  // Use database values if available, otherwise use defaults
+  const features = data.advantages ? parseTextToArray(data.advantages) : defaultDetails.features;
+  const limitations = data.disadvantages ? parseTextToArray(data.disadvantages) : defaultDetails.limitations;
+  const warrantyTerms = data.warranty_terms ? parseTextToArray(data.warranty_terms) : defaultDetails.warrantyTerms;
 
   // Transform database record to Product interface
   return {
@@ -314,18 +354,18 @@ export const fetchProductById = async (productId: string): Promise<Product> => {
     title: data.product_name,
     description: data.description || '',
     price: Number(data.price),
-    stock: realStock || 0, // Real stock from product_accounts
+    stock: realStock, // Real stock from product_accounts pool
     features,
     limitations,
     warranty: {
-      enabled: data.warranty_enabled !== undefined ? data.warranty_enabled : true,
-      duration: warrantyDuration,
+      enabled: data.warranty_enabled !== false,
+      duration: data.warranty_duration || (data.product_type === 'bm_account' ? 30 : 7),
       terms: warrantyTerms,
     },
-    ad_limit: data.ad_limit || undefined,
-    verification_status: data.verification_status || undefined,
-    ad_account_type: data.ad_account_type || undefined,
-    detail_fields: data.detail_fields || undefined,
+    ad_limit: data.ad_limit || null,
+    verification_status: data.verification_status || null,
+    ad_account_type: data.ad_account_type || null,
+    detail_fields: data.detail_fields || [],
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   };
@@ -384,29 +424,34 @@ export interface PurchaseResponse {
 export const purchaseProduct = async (
   data: PurchaseProductData
 ): Promise<PurchaseResponse> => {
-  // Import apiClient to use configured axios instance with auth
-  const { default: apiClient } = await import('./api');
-  
-  try {
-    // Use new backend endpoint that handles account assignment
-    const response = await apiClient.post('/purchase', {
+  // Use backend API endpoint for purchase
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('User not authenticated');
+
+  const response = await fetch('http://localhost:3000/api/purchase', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
       productId: data.productId,
-      quantity: data.quantity
-    });
+      quantity: data.quantity,
+    }),
+  });
 
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Purchase failed');
-    }
-
-    return {
-      status: 'success',
-      transactionId: response.data.data.transactionId,
-      message: response.data.data.message || 'Purchase completed successfully',
-    };
-  } catch (error: any) {
-    console.error('Purchase error:', error.response?.data?.message || error.message);
-    throw new Error(error.response?.data?.message || error.message || 'Purchase failed');
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Purchase failed');
   }
+
+  const result = await response.json();
+  
+  return {
+    status: 'success',
+    transactionId: result.data.transactionId,
+    message: result.data.message || 'Purchase completed successfully',
+  };
 };
 
 /**
@@ -480,3 +525,306 @@ export const fetchProductStats = async (
   };
 };
 
+
+
+// ============================================================================
+// Admin API: productsService object for admin panel
+// ============================================================================
+
+export interface ProductFiltersNew {
+  search?: string;
+  product_type?: string;
+  stock_status?: string;
+  is_active?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProductsResponse {
+  products: any[];
+  total: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const productsService = {
+  /**
+   * Get all products with filtering and pagination (for admin)
+   */
+  async getAll(filters: ProductFiltersNew = {}): Promise<ProductsResponse> {
+    const {
+      search,
+      product_type,
+      stock_status,
+      is_active,
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    // Start query - Include product_accounts for real stock count
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        product_accounts!product_accounts_product_id_fkey(id, status)
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (search) {
+      query = query.ilike('product_name', `%${search}%`);
+    }
+
+    if (product_type && product_type !== 'all') {
+      query = query.eq('product_type', product_type);
+    }
+
+    if (stock_status && stock_status !== 'all') {
+      query = query.eq('stock_status', stock_status);
+    }
+
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active);
+    }
+
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    query = query.range(offset, offset + limit - 1);
+
+    // Execute query
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('❌ Supabase error fetching products:', error);
+      throw new Error(error.message);
+    }
+
+    // Add available_stock field to each product
+    const productsWithStock = (data || []).map((product: any) => {
+      const availableAccounts = (product.product_accounts || []).filter(
+        (acc: any) => acc.status === 'available'
+      );
+      return {
+        ...product,
+        available_stock: availableAccounts.length,
+      };
+    });
+
+    return {
+      products: productsWithStock,
+      total: count || 0,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    };
+  },
+
+  /**
+   * Get product by ID (for admin)
+   */
+  async getById(id: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error fetching product:', error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error('Product not found');
+    }
+
+    return data;
+  },
+
+  /**
+   * Create new product
+   */
+  async create(productData: any): Promise<any> {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{
+        ...productData,
+        warranty_duration: productData.warranty_duration || 30,
+        warranty_enabled: productData.warranty_enabled !== undefined ? productData.warranty_enabled : true,
+        stock_status: productData.stock_status || 'available',
+        is_active: productData.is_active !== undefined ? productData.is_active : true,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error creating product:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  },
+
+  /**
+   * Update product
+   */
+  async update(id: string, productData: any): Promise<any> {
+    const { data, error } = await supabase
+      .from('products')
+      .update(productData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error updating product:', error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error('Product not found');
+    }
+
+    return data;
+  },
+
+  /**
+   * Delete product
+   */
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('❌ Supabase error deleting product:', error);
+      
+      // Check for foreign key constraint
+      if (error.code === '23503') {
+        throw new Error('Cannot delete product because it has been purchased by users. Please deactivate it instead.');
+      }
+      
+      throw new Error(error.message);
+    }
+
+    return true;
+  },
+
+  /**
+   * Duplicate product
+   */
+  async duplicate(id: string): Promise<any> {
+    // Get original product
+    const original = await this.getById(id);
+
+    // Create duplicate with modified name
+    const duplicateData = {
+      ...original,
+      id: undefined, // Let Supabase generate new ID
+      product_name: `${original.product_name} (Copy)`,
+      created_at: undefined,
+      updated_at: undefined,
+    };
+
+    return this.create(duplicateData);
+  },
+
+  /**
+   * Bulk update products
+   */
+  async bulkUpdate(productIds: string[], updateData: any): Promise<{
+    success: number;
+    failed: number;
+    errors: any[];
+  }> {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as any[],
+    };
+
+    for (const id of productIds) {
+      try {
+        await this.update(id, updateData);
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({ id, error: error.message });
+      }
+    }
+
+    return results;
+  },
+
+  /**
+   * Bulk delete products
+   */
+  async bulkDelete(productIds: string[]): Promise<{
+    success: number;
+    failed: number;
+    errors: any[];
+  }> {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as any[],
+    };
+
+    for (const id of productIds) {
+      try {
+        await this.delete(id);
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({ id, error: error.message });
+      }
+    }
+
+    return results;
+  },
+
+  /**
+   * Get product statistics
+   */
+  async getStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    available: number;
+    out_of_stock: number;
+    by_type: Record<string, number>;
+  }> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('product_type, is_active, stock_status');
+
+    if (error) {
+      console.error('❌ Supabase error fetching stats:', error);
+      throw new Error(error.message);
+    }
+
+    const stats = {
+      total: data.length,
+      active: data.filter(p => p.is_active).length,
+      inactive: data.filter(p => !p.is_active).length,
+      available: data.filter(p => p.stock_status === 'available').length,
+      out_of_stock: data.filter(p => p.stock_status === 'out_of_stock').length,
+      by_type: {} as Record<string, number>,
+    };
+
+    // Count by type
+    data.forEach(product => {
+      stats.by_type[product.product_type] = (stats.by_type[product.product_type] || 0) + 1;
+    });
+
+    return stats;
+  },
+};

@@ -33,7 +33,7 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
   return (
     <div
       onClick={() => onClick(tutorial.slug)}
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full cursor-pointer"
+      className="bg-white rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full cursor-pointer"
     >
       {/* Thumbnail Image */}
       <div className="relative w-full" style={{ paddingTop: '50%' }}>
@@ -45,12 +45,12 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-            <BookOpen className="w-16 h-16 text-primary-600" />
+            <BookOpen className="w-12 h-12 md:w-16 md:h-16 text-primary-600" />
           </div>
         )}
         
         {/* Category Badge Overlay */}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-2 left-2 md:top-3 md:left-3">
           <Badge variant={categoryColors[tutorial.category]} size="sm">
             {categoryLabels[tutorial.category]}
           </Badge>
@@ -58,8 +58,8 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
       </div>
 
       {/* Tutorial Info */}
-      <div className="px-3 py-3 flex-1 flex flex-col">
-        <h3 className="text-base font-bold text-gray-900 mb-1 line-clamp-1">
+      <div className="px-3 py-3 md:px-4 md:py-4 flex-1 flex flex-col">
+        <h3 className="text-sm md:text-base font-bold text-gray-900 mb-1 line-clamp-2">
           {tutorial.title}
         </h3>
         
@@ -69,7 +69,7 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
 
         {/* Read Time */}
         <div className="flex items-center text-xs text-gray-500 mt-auto">
-          <Clock className="w-3.5 h-3.5 mr-1" />
+          <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
           <span>{tutorial.readTime} menit baca</span>
         </div>
       </div>

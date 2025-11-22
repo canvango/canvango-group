@@ -2,12 +2,24 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 
 // Import context providers
 import { AuthProvider } from './features/member-area/contexts/AuthContext';
 import { ToastProvider } from './shared/contexts/ToastContext';
 import { UIProvider } from './features/member-area/contexts/UIContext';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Import error boundary
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
@@ -39,27 +51,29 @@ if (!root) {
     // This causes purchase mutations to be called twice, resulting in double balance deduction
     // <React.StrictMode>
       <ErrorBoundary>
-        <BrowserRouter>
-          <UIProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <div className="min-h-screen bg-gray-50">
-                  <React.Suspense fallback={<PageLoader />}>
-                    <Routes>
-                      {/* Auth routes - accessible only to guests */}
-                      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-                      <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-                      
-                      {/* Member area routes - all other routes */}
-                      <Route path="/*" element={<MemberArea />} />
-                    </Routes>
-                  </React.Suspense>
-                </div>
-                <Toaster position="top-right" />
-              </AuthProvider>
-            </ToastProvider>
-          </UIProvider>
-        </BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <UIProvider>
+              <ToastProvider>
+                <AuthProvider>
+                  <div className="min-h-screen bg-gray-50">
+                    <React.Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        {/* Auth routes - accessible only to guests */}
+                        <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+                        <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+                        
+                        {/* Member area routes - all other routes */}
+                        <Route path="/*" element={<MemberArea />} />
+                      </Routes>
+                    </React.Suspense>
+                  </div>
+                  <Toaster position="top-right" />
+                </AuthProvider>
+              </ToastProvider>
+            </UIProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
       </ErrorBoundary>
     // </React.StrictMode>
   );

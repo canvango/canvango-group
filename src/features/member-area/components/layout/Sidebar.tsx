@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  Home, History, Wallet, Infinity, User, CheckCircle, 
-  Shield, Code, BookOpen, Users, BarChart3, CreditCard,
-  ShieldCheck, Package, Settings, ClipboardList, FolderTree, ChevronDown, ChevronRight
-} from 'lucide-react';
+  faHouse, faClockRotateLeft, faWallet, faUser, faCircleCheck,
+  faShield, faCode, faBook, faUsers, faChartLine, faCreditCard,
+  faShieldHalved, faBox, faGear, faClipboardList, faFolderTree, 
+  faChevronDown, faChevronRight
+} from '@fortawesome/free-solid-svg-icons';
+import { faMeta } from '@fortawesome/free-brands-svg-icons';
 import { ROUTES } from '../../config/routes.config';
 
 interface SidebarProps {
@@ -49,22 +52,22 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     {
       section: 'MENU UTAMA',
       items: [
-        { icon: Home, label: 'Dashboard', path: ROUTES.DASHBOARD }
+        { icon: faHouse, label: 'Dashboard', path: ROUTES.DASHBOARD }
       ]
     },
     {
       section: 'AKUN & LAYANAN',
       items: [
-        { icon: Infinity, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
-        { icon: User, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
-        { icon: CheckCircle, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM }
+        { icon: faMeta, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
+        { icon: faUser, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
+        { icon: faCircleCheck, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM }
       ]
     },
     {
       section: 'LAINNYA',
       items: [
-        { icon: Code, label: 'API', path: ROUTES.API },
-        { icon: BookOpen, label: 'Tutorial', path: ROUTES.TUTORIALS }
+        { icon: faCode, label: 'API', path: ROUTES.API },
+        { icon: faBook, label: 'Tutorial', path: ROUTES.TUTORIALS }
       ]
     }
   ];
@@ -74,40 +77,40 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     {
       section: 'MENU UTAMA',
       items: [
-        { icon: Home, label: 'Dashboard', path: ROUTES.DASHBOARD },
-        { icon: History, label: 'Riwayat Transaksi', path: ROUTES.TRANSACTIONS },
-        { icon: Wallet, label: 'Top Up', path: ROUTES.TOPUP }
+        { icon: faHouse, label: 'Dashboard', path: ROUTES.DASHBOARD },
+        { icon: faClockRotateLeft, label: 'Riwayat Transaksi', path: ROUTES.TRANSACTIONS },
+        { icon: faWallet, label: 'Top Up', path: ROUTES.TOPUP }
       ]
     },
     {
       section: 'AKUN & LAYANAN',
       items: [
-        { icon: Infinity, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
-        { icon: User, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
-        { icon: CheckCircle, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM },
-        { icon: Shield, label: 'Claim Garansi', path: ROUTES.WARRANTY }
+        { icon: faMeta, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
+        { icon: faUser, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
+        { icon: faCircleCheck, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM },
+        { icon: faShield, label: 'Claim Garansi', path: ROUTES.WARRANTY }
       ]
     },
     {
       section: 'LAINNYA',
       items: [
-        { icon: Code, label: 'API', path: ROUTES.API },
-        { icon: BookOpen, label: 'Tutorial', path: ROUTES.TUTORIALS }
+        { icon: faCode, label: 'API', path: ROUTES.API },
+        { icon: faBook, label: 'Tutorial', path: ROUTES.TUTORIALS }
       ]
     },
   ];
 
   // Admin menu items (separate for dropdown)
   const adminMenuItems = isAdmin ? [
-    { icon: BarChart3, label: 'Dashboard Admin', path: ROUTES.ADMIN.DASHBOARD },
-    { icon: Users, label: 'Kelola Pengguna', path: ROUTES.ADMIN.USERS },
-    { icon: CreditCard, label: 'Kelola Transaksi', path: ROUTES.ADMIN.TRANSACTIONS },
-    { icon: ShieldCheck, label: 'Kelola Klaim', path: ROUTES.ADMIN.CLAIMS },
-    { icon: BookOpen, label: 'Kelola Tutorial', path: ROUTES.ADMIN.TUTORIALS },
-    { icon: Package, label: 'Kelola Produk', path: ROUTES.ADMIN.PRODUCTS },
-    { icon: FolderTree, label: 'Kelola Kategori', path: ROUTES.ADMIN.CATEGORIES },
-    { icon: Settings, label: 'Pengaturan Sistem', path: ROUTES.ADMIN.SETTINGS },
-    { icon: ClipboardList, label: 'Log Aktivitas', path: ROUTES.ADMIN.AUDIT_LOGS }
+    { icon: faChartLine, label: 'Dashboard Admin', path: ROUTES.ADMIN.DASHBOARD },
+    { icon: faUsers, label: 'Kelola Pengguna', path: ROUTES.ADMIN.USERS },
+    { icon: faCreditCard, label: 'Kelola Transaksi', path: ROUTES.ADMIN.TRANSACTIONS },
+    { icon: faShieldHalved, label: 'Kelola Klaim', path: ROUTES.ADMIN.CLAIMS },
+    { icon: faBook, label: 'Kelola Tutorial', path: ROUTES.ADMIN.TUTORIALS },
+    { icon: faBox, label: 'Kelola Produk', path: ROUTES.ADMIN.PRODUCTS },
+    { icon: faFolderTree, label: 'Kelola Kategori', path: ROUTES.ADMIN.CATEGORIES },
+    { icon: faGear, label: 'Pengaturan Sistem', path: ROUTES.ADMIN.SETTINGS },
+    { icon: faClipboardList, label: 'Log Aktivitas', path: ROUTES.ADMIN.AUDIT_LOGS }
   ] : [];
 
   // Select menu structure based on user role
@@ -150,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
               {!isGuest && (
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-2 py-1 rounded-xl mt-1 border border-green-200">
                   <div className="flex items-center space-x-1.5">
-                    <Wallet className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                    <FontAwesomeIcon icon={faWallet} className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
                     <div className="text-xs font-bold text-green-700">
                       Rp {user.balance.toLocaleString()}
                     </div>
@@ -172,7 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
             </div>
             <nav className="space-y-0.5">
               {section.items.map((item) => {
-                const Icon = item.icon;
                 const isItemActive = isPathActive(item.path);
                 // Use absolute path by adding leading slash
                 const absolutePath = `/${item.path}`;
@@ -189,7 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
                     }`}
                     aria-current={isItemActive ? 'page' : undefined}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <FontAwesomeIcon icon={item.icon} className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </Link>
                 );
@@ -203,7 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
           <div className="mb-4 mt-2 pt-3 border-t border-gray-300">
             <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg p-2.5 border border-primary-200 shadow-sm">
               <div className="flex items-center space-x-1.5 mb-2 px-1">
-                <Shield className="w-3.5 h-3.5 text-primary-600" />
+                <FontAwesomeIcon icon={faShield} className="w-3.5 h-3.5 text-primary-600" />
                 <div className="text-xs font-bold text-primary-700 uppercase tracking-wide">
                   Admin Panel
                 </div>
@@ -221,13 +223,13 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
                   aria-expanded={isAdminDropdownOpen}
                 >
                   <div className="flex items-center space-x-2.5">
-                    <Settings className="w-4 h-4 flex-shrink-0" />
+                    <FontAwesomeIcon icon={faGear} className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate">Menu Admin</span>
                   </div>
                   {isAdminDropdownOpen ? (
-                    <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                    <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4 flex-shrink-0" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                    <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4 flex-shrink-0" />
                   )}
                 </button>
 
@@ -235,7 +237,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
                 {isAdminDropdownOpen && (
                   <nav className="space-y-0.5 mt-1 pt-1 border-t border-primary-200">
                     {adminMenuItems.map((item) => {
-                      const Icon = item.icon;
                       const isItemActive = isPathActive(item.path);
                       const absolutePath = `/${item.path}`;
                       
@@ -251,7 +252,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
                           }`}
                           aria-current={isItemActive ? 'page' : undefined}
                         >
-                          <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                          <FontAwesomeIcon icon={item.icon} className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="truncate">{item.label}</span>
                         </Link>
                       );

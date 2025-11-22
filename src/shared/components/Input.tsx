@@ -11,6 +11,8 @@ import { AlertCircle } from 'lucide-react';
  * @property {string} [helperText] - Helper text displayed below input
  * @property {React.ReactNode} [prefixIcon] - Icon displayed at the start of input
  * @property {React.ReactNode} [suffixIcon] - Icon displayed at the end of input
+ * @property {string} [leftAddon] - Text addon displayed at the left of input (e.g., "Rp", "$")
+ * @property {string} [rightAddon] - Text addon displayed at the right of input (e.g., "%", "kg")
  */
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -18,6 +20,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   helperText?: string;
   prefixIcon?: React.ReactNode;
   suffixIcon?: React.ReactNode;
+  leftAddon?: string;
+  rightAddon?: string;
 }
 
 /**

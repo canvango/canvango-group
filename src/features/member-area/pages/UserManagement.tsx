@@ -15,6 +15,7 @@ interface User {
   full_name: string;
   role: 'guest' | 'member' | 'admin';
   balance: number;
+  phone?: string | null;
   created_at: string;
 }
 
@@ -41,7 +42,7 @@ const UserManagement: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, username, full_name, role, balance, created_at')
+        .select('id, email, username, full_name, role, balance, phone, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -9,6 +9,7 @@ interface User {
   full_name: string;
   role: 'guest' | 'member' | 'admin';
   balance: number;
+  phone?: string | null;
   created_at: string;
 }
 
@@ -55,6 +56,12 @@ const MemberUsersTable: React.FC<MemberUsersTableProps> = ({
                 scope="col" 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
               >
+                Phone
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+              >
                 Balance
               </th>
               <th 
@@ -74,7 +81,7 @@ const MemberUsersTable: React.FC<MemberUsersTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   Tidak ada data member atau guest
                 </td>
               </tr>

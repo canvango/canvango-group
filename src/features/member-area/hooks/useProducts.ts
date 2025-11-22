@@ -17,9 +17,7 @@ export const useProducts = (
       console.log('useProducts queryFn result:', result);
       return result;
     },
-    staleTime: 30 * 1000, // 30 seconds (reduced from 5 minutes for faster updates)
-    refetchOnWindowFocus: true, // Refetch when window gains focus
-    refetchOnMount: true, // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -49,3 +47,4 @@ export const useProductStats = (
     staleTime: 5 * 60 * 1000,
   });
 };
+

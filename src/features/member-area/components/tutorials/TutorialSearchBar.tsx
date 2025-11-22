@@ -54,7 +54,7 @@ const TutorialSearchBar: React.FC<TutorialSearchBarProps> = ({
           value={localSearchValue}
           onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Cari tutorial..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         />
       </div>
       {resultCount !== undefined && searchValue && (

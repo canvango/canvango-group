@@ -165,6 +165,7 @@ export const register = async (data: {
   username: string;
   password: string;
   fullName?: string;
+  phone: string;
 }): Promise<User> => {
   try {
     // Sign up with Supabase Auth
@@ -189,6 +190,8 @@ export const register = async (data: {
         email: data.email,
         username: data.username,
         full_name: data.fullName || data.username,
+        phone: data.phone,
+        phone_verified_at: new Date().toISOString(),
         role: 'member',
         balance: 0,
       })
@@ -205,6 +208,8 @@ export const register = async (data: {
       username: profileData.username,
       email: profileData.email,
       fullName: profileData.full_name || profileData.username,
+      phone: profileData.phone,
+      phoneVerifiedAt: profileData.phone_verified_at,
       balance: profileData.balance || 0,
       role: profileData.role || 'member',
       createdAt: profileData.created_at,

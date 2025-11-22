@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuC
           <img 
             src="/logo.png" 
             alt="Canvango Group" 
-            className="h-10 w-auto"
+            className="h-8 w-auto"
           />
           <span className="text-lg md:text-xl font-bold text-gray-900">Canvango Group</span>
         </div>

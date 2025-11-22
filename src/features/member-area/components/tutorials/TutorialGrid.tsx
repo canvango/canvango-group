@@ -16,9 +16,8 @@ const TutorialGrid: React.FC<TutorialGridProps> = ({
 }) => {
   const gridStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 280px))',
-    justifyContent: 'space-between',
-    gap: '8px'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+    gap: '12px'
   };
 
   // Loading skeleton
@@ -26,15 +25,15 @@ const TutorialGrid: React.FC<TutorialGridProps> = ({
     return (
       <div style={gridStyle}>
         {[...Array(6)].map((_, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+          <div key={index} className="bg-white rounded-3xl shadow-md overflow-hidden animate-pulse">
             <div className="relative w-full" style={{ paddingTop: '50%' }}>
               <div className="absolute inset-0 bg-gray-200" />
             </div>
-            <div className="px-3 py-3">
-              <div className="h-5 bg-gray-200 rounded mb-1" />
-              <div className="h-4 bg-gray-200 rounded mb-1" />
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
+            <div className="px-3 py-3 md:px-4 md:py-4">
+              <div className="h-4 md:h-5 bg-gray-200 rounded mb-2" />
+              <div className="h-3 md:h-4 bg-gray-200 rounded mb-1" />
+              <div className="h-3 md:h-4 bg-gray-200 rounded w-3/4 mb-2" />
+              <div className="h-3 md:h-4 bg-gray-200 rounded w-1/2" />
             </div>
           </div>
         ))}

@@ -37,20 +37,18 @@ export function usePersistedFilters<T extends PersistedFilterConfig>(
   // Determine which filters to use
   const activeFilters = useURL ? urlFilters : localStorageFilters;
 
-  // Sync URL filters to localStorage when they change
+  // Sync URL filters to localStorage when they change (debounced to avoid loops)
   useEffect(() => {
     if (useURL && useLocalStorage) {
-      // Check if any URL params are set (non-default)
-      const hasURLParams = Object.keys(urlFilters.filters).some(
-        (key) => urlFilters.filters[key as keyof T] !== defaultFilters[key as keyof T]
-      );
-
-      if (hasURLParams) {
-        // Sync URL filters to localStorage
+      // Always sync URL to localStorage to keep them in sync
+      const timeoutId = setTimeout(() => {
         localStorageFilters.setFilters(urlFilters.filters);
-      }
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [useURL, useLocalStorage, urlFilters.filters, defaultFilters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useURL, useLocalStorage, JSON.stringify(urlFilters.filters)]);
 
   // On mount, if no URL params but localStorage has values, sync to URL
   useEffect(() => {

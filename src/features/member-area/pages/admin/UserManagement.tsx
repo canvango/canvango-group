@@ -8,6 +8,7 @@ interface User {
   full_name: string;
   role: 'guest' | 'member' | 'admin';
   balance: number;
+  phone?: string | null;
   created_at: string;
   updated_at?: string;
   last_login_at?: string | null;
@@ -49,7 +50,7 @@ const UserManagement: React.FC = () => {
       // Build query
       let query = supabase
         .from('users')
-        .select('id, email, username, full_name, role, balance, created_at, updated_at, last_login_at', { count: 'exact' });
+        .select('id, email, username, full_name, role, balance, phone, created_at, updated_at, last_login_at', { count: 'exact' });
 
       // Apply role filter
       if (roleFilter !== 'all') {
@@ -308,6 +309,9 @@ const UserManagement: React.FC = () => {
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -336,6 +340,9 @@ const UserManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.phone || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span

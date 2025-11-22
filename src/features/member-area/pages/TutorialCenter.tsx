@@ -67,14 +67,14 @@ const TutorialCenter: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <BookOpen className="w-8 h-8 text-primary-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Pusat Tutorial</h1>
+      <div className="bg-white rounded-3xl border border-gray-200 p-4 md:p-6">
+        <div className="flex items-center gap-2 md:gap-3 mb-2">
+          <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-primary-600 flex-shrink-0" />
+          <h1 className="text-lg md:text-2xl font-bold text-gray-900">Pusat Tutorial</h1>
         </div>
-        <p className="text-gray-600">
+        <p className="text-sm md:text-base text-gray-600">
           Pelajari cara menggunakan platform kami dengan panduan lengkap dan tutorial step-by-step
         </p>
       </div>

@@ -22,15 +22,24 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
     tabs: tabs.map(t => ({ id: t.id, label: t.label }))
   });
 
+  // Use horizontal scroll for many tabs (> 4), grid for few tabs
+  const useManyTabsLayout = tabs.length > 4;
+
   return (
     <div className="w-full">
       <div 
-        style={{ 
-          display: 'grid',
-          gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`,
-          gap: '8px',
-          paddingBottom: '8px'
-        }}
+        className={
+          useManyTabsLayout
+            ? 'flex gap-2 overflow-x-auto pb-2 scrollbar-hide'
+            : 'grid gap-2 pb-2'
+        }
+        style={
+          useManyTabsLayout
+            ? undefined
+            : { 
+                gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`,
+              }
+        }
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -45,6 +54,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
               className={`
                 inline-flex items-center justify-center px-4 py-2.5 rounded-full font-medium text-sm min-h-[44px]
                 transition-all duration-200
+                ${useManyTabsLayout ? 'flex-shrink-0 whitespace-nowrap' : ''}
                 ${
                   isActive
                     ? 'bg-primary-600 text-white shadow-md'
@@ -55,7 +65,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
               {Icon && (
                 <Icon className={`w-4 h-4 mr-2 ${isActive ? 'text-white' : 'text-gray-600'}`} />
               )}
-              <span className="truncate">{tab.label}</span>
+              <span className={useManyTabsLayout ? '' : 'truncate'}>{tab.label}</span>
               {tab.count !== undefined && (
                 <span
                   className={`

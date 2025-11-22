@@ -13,10 +13,14 @@ const Login: React.FC = () => {
         <div className="max-w-lg text-center">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center mr-3">
-              <span className="text-primary-600 font-bold text-xl">C</span>
+            <div className="bg-white rounded-full px-8 py-4 shadow-lg flex items-center gap-4">
+              <img 
+                src="/logo.png" 
+                alt="Canvango Group" 
+                className="h-12 w-auto"
+              />
+              <h1 className="text-2xl font-bold" style={{ color: '#5271ff' }}>CANVANGO GROUP</h1>
             </div>
-            <h1 className="text-white text-2xl font-bold">CANVANGO GROUP</h1>
           </div>
           
           {/* Heading */}

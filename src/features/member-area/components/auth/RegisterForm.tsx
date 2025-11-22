@@ -4,10 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { RegisterData } from '../../types/user';
 import { validateForm, ValidationRules, ValidationPatterns } from '../../../../shared/utils';
 import Button from '../../../../shared/components/Button';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Smartphone } from 'lucide-react';
 
 interface RegisterFormData extends RegisterData {
-  confirmPassword: string;
+  phone: string;
 }
 
 /**
@@ -22,14 +22,13 @@ export const RegisterForm: React.FC = () => {
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
     fullName: '',
+    phone: '',
   });
   
   const [errors, setErrors] = useState<Partial<Record<keyof RegisterFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registerError, setRegisterError] = useState<string>('');
 
   const validationRules: ValidationRules = {
@@ -46,18 +45,13 @@ export const RegisterForm: React.FC = () => {
       required: true,
       minLength: 2,
     },
+    phone: {
+      required: true,
+      pattern: /^(\+?62|0)8[0-9]{8,12}$/,
+    },
     password: {
       required: true,
       minLength: 6,
-    },
-    confirmPassword: {
-      required: true,
-      custom: (value: string) => {
-        if (value !== formData.password) {
-          return 'Passwords do not match';
-        }
-        return undefined;
-      },
     },
   };
 
@@ -66,8 +60,8 @@ export const RegisterForm: React.FC = () => {
       username: 'Username',
       email: 'Email',
       fullName: 'Full name',
+      phone: 'Phone number',
       password: 'Password',
-      confirmPassword: 'Confirm password',
     });
 
     setErrors(newErrors);
@@ -94,8 +88,18 @@ export const RegisterForm: React.FC = () => {
     setRegisterError('');
 
     try {
-      const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      // Normalize phone number
+      let normalizedPhone = formData.phone;
+      if (formData.phone.startsWith('0')) {
+        normalizedPhone = '+62' + formData.phone.substring(1);
+      } else if (!formData.phone.startsWith('+')) {
+        normalizedPhone = '+' + formData.phone;
+      }
+
+      await register({
+        ...formData,
+        phone: normalizedPhone
+      });
       
       // Redirect to dashboard after successful registration (Requirement: 1.4)
       navigate('/dashboard', { replace: true });
@@ -110,29 +114,29 @@ export const RegisterForm: React.FC = () => {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-3xl shadow-lg p-6 md:p-8">
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="mb-5">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
             Daftar akun baru
           </h2>
-          <p className="text-sm text-gray-600">
-            Buat akun untuk mulai menggunakan layanan kami.
+          <p className="text-xs md:text-sm text-gray-600">
+            Buat akun untuk mulai menggunakan layanan kami
           </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           {/* Username Field */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5"
               htmlFor="username"
             >
               Username
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </span>
@@ -142,7 +146,7 @@ export const RegisterForm: React.FC = () => {
                 type="text"
                 value={formData.username}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="canvango"
@@ -157,14 +161,14 @@ export const RegisterForm: React.FC = () => {
           {/* Full Name Field */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5"
               htmlFor="fullName"
             >
               Nama Lengkap
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </span>
@@ -174,7 +178,7 @@ export const RegisterForm: React.FC = () => {
                 type="text"
                 value={formData.fullName}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.fullName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="John Doe"
@@ -189,14 +193,14 @@ export const RegisterForm: React.FC = () => {
           {/* Email Field */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5"
               htmlFor="email"
             >
               Email
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </span>
@@ -206,7 +210,7 @@ export const RegisterForm: React.FC = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="john@example.com"
@@ -218,17 +222,49 @@ export const RegisterForm: React.FC = () => {
             )}
           </div>
 
+          {/* Phone Field */}
+          <div>
+            <label
+              className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5"
+              htmlFor="phone"
+            >
+              Nomor HP
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Smartphone className="w-4 h-4 md:w-5 md:h-5" />
+              </span>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                className={`w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  errors.phone ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="08xxxxxxxxxx"
+                disabled={isSubmitting}
+              />
+            </div>
+            {errors.phone ? (
+              <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">Format: 08xxx atau +62xxx</p>
+            )}
+          </div>
+
           {/* Password Field */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5"
               htmlFor="password"
             >
               Kata sandi
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </span>
@@ -238,10 +274,10 @@ export const RegisterForm: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-12 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-9 md:pl-10 pr-10 md:pr-12 py-2 md:py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="••••••••••••"
+                placeholder="Min. 6 karakter"
                 disabled={isSubmitting}
               />
               <button
@@ -249,7 +285,7 @@ export const RegisterForm: React.FC = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
               </button>
             </div>
             {errors.password && (
@@ -257,57 +293,13 @@ export const RegisterForm: React.FC = () => {
             )}
           </div>
 
-          {/* Confirm Password Field */}
-          <div>
-            <label
-              className="block text-sm font-medium text-gray-700 mb-2"
-              htmlFor="confirmPassword"
-            >
-              Konfirmasi kata sandi
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </span>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-12 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="••••••••••••"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-            )}
-          </div>
-
           {/* Error Message */}
           {registerError && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-red-800 font-medium">
-                  Terjadi kesalahan!
-                </p>
-                <p className="text-xs text-red-600 mt-1">
-                  {registerError}
-                </p>
-              </div>
+            <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700 flex-1">
+                {registerError}
+              </p>
             </div>
           )}
 
@@ -316,14 +308,14 @@ export const RegisterForm: React.FC = () => {
             type="submit"
             variant="primary"
             loading={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors mt-4"
           >
             Daftar
           </Button>
 
           {/* Login Link */}
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-600">
+          <div className="text-center pt-3 border-t border-gray-200">
+            <p className="text-xs md:text-sm text-gray-600">
               Sudah punya akun?{' '}
               <Link
                 to="/login"
@@ -331,12 +323,6 @@ export const RegisterForm: React.FC = () => {
               >
                 Masuk
               </Link>
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              Dengan mendaftar, Anda menyetujui{' '}
-              <a href="#" className="text-blue-600 hover:underline">Ketentuan Layanan</a>
-              {' '}dan{' '}
-              <a href="#" className="text-blue-600 hover:underline">Kebijakan Privasi</a>
             </p>
           </div>
         </form>

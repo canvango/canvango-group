@@ -137,14 +137,35 @@ const TopUp: React.FC = () => {
       <TopUpForm onSubmit={handleTopUpSubmit} loading={loading} />
 
       {/* Information Box */}
-      <div className="bg-primary-50 border border-primary-200 rounded-3xl p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-primary-900 mb-2">Informasi Penting</h3>
-        <ul className="text-sm text-primary-800 space-y-1 list-disc list-inside">
-          <li>Minimal top up adalah Rp 10.000</li>
-          <li>Saldo akan otomatis masuk setelah pembayaran berhasil</li>
-          <li>Proses verifikasi pembayaran memakan waktu 1-5 menit</li>
-          <li>Simpan bukti pembayaran untuk keperluan konfirmasi</li>
-        </ul>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="bg-blue-500 text-white rounded-xl p-2 flex-shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-gray-900 mb-3">Informasi Penting</h3>
+            <ul className="text-sm text-gray-700 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">•</span>
+                <span>Minimal top up adalah <strong>Rp 10.000</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">•</span>
+                <span>Saldo akan otomatis masuk setelah pembayaran berhasil</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">•</span>
+                <span>Proses verifikasi pembayaran memakan waktu <strong>1-5 menit</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">•</span>
+                <span>Simpan bukti pembayaran untuk keperluan konfirmasi</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );

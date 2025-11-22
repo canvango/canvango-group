@@ -10,7 +10,9 @@ export interface User {
   updatedAt?: string;
   lastLoginAt?: string;
   emailVerified?: boolean;
-  phoneNumber?: string;
+  phone?: string;
+  phoneVerifiedAt?: string;
+  phoneNumber?: string; // Deprecated, use phone
   stats?: UserStats;
 }
 
@@ -31,4 +33,5 @@ export interface RegisterData {
   email: string;
   password: string;
   fullName: string;
+  phone: string;
 }
