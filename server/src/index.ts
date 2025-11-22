@@ -89,9 +89,6 @@ app.use((req, _res, next) => {
 app.use(sanitizeInput); // Sanitize input to prevent XSS
 app.use(preventSQLInjection); // Prevent SQL injection
 
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
-
 // Health check endpoint
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', message: 'Canvango API is running' });
