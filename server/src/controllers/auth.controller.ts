@@ -166,8 +166,8 @@ export async function sendOTP(req: Request, res: Response): Promise<void> {
     }
 
     // Generate OTP using database function
-    const { data: otpData, error: otpError } = await supabase
-      .rpc('create_phone_otp', { p_phone: normalizedPhone }) as any;
+    const { data: otpData, error: otpError } = await (supabase as any)
+      .rpc('create_phone_otp', { p_phone: normalizedPhone });
 
     if (otpError) {
       console.error('OTP generation error:', otpError);
@@ -232,11 +232,11 @@ export async function verifyOTP(req: Request, res: Response): Promise<void> {
     }
 
     // Verify OTP using database function
-    const { data: isValid, error: verifyError } = await supabase
+    const { data: isValid, error: verifyError } = await (supabase as any)
       .rpc('verify_phone_otp', {
         p_phone: normalizedPhone,
         p_otp_code: otp_code
-      }) as any;
+      });
 
     if (verifyError) {
       console.error('OTP verification error:', verifyError);
@@ -311,8 +311,8 @@ export async function resendOTP(req: Request, res: Response): Promise<void> {
     }
 
     // Generate new OTP
-    const { data: otpData, error: otpError } = await supabase
-      .rpc('create_phone_otp', { p_phone: normalizedPhone }) as any;
+    const { data: otpData, error: otpError } = await (supabase as any)
+      .rpc('create_phone_otp', { p_phone: normalizedPhone });
 
     if (otpError) {
       console.error('OTP generation error:', otpError);
