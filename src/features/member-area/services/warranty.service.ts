@@ -38,8 +38,15 @@ export interface EligibleAccountsResponse {
  * Fetch all warranty claims for the current user
  */
 export const fetchWarrantyClaims = async (): Promise<WarrantyClaimsResponse> => {
-  const response = await apiClient.get<{ success: boolean; data: WarrantyClaimsResponse }>('/warranty/claims');
-  return response.data.data;
+  try {
+    console.log('🔍 Fetching warranty claims...');
+    const response = await apiClient.get<{ success: boolean; data: WarrantyClaimsResponse }>('/warranty/claims');
+    console.log('✅ Warranty claims response:', response.data);
+    return response.data.data;
+  } catch (error) {
+    console.error('❌ Error fetching warranty claims:', error);
+    throw error;
+  }
 };
 
 /**
@@ -62,14 +69,28 @@ export const submitWarrantyClaim = async (data: SubmitClaimData): Promise<Warran
  * Fetch accounts eligible for warranty claim
  */
 export const fetchEligibleAccounts = async (): Promise<EligibleAccountsResponse> => {
-  const response = await apiClient.get<{ success: boolean; data: EligibleAccountsResponse }>('/warranty/eligible-accounts');
-  return response.data.data;
+  try {
+    console.log('🔍 Fetching eligible accounts...');
+    const response = await apiClient.get<{ success: boolean; data: EligibleAccountsResponse }>('/warranty/eligible-accounts');
+    console.log('✅ Eligible accounts response:', response.data);
+    return response.data.data;
+  } catch (error) {
+    console.error('❌ Error fetching eligible accounts:', error);
+    throw error;
+  }
 };
 
 /**
  * Fetch warranty claim statistics
  */
 export const fetchWarrantyStats = async () => {
-  const response = await apiClient.get<{ success: boolean; data: any }>('/warranty/stats');
-  return response.data.data;
+  try {
+    console.log('🔍 Fetching warranty stats...');
+    const response = await apiClient.get<{ success: boolean; data: any }>('/warranty/stats');
+    console.log('✅ Warranty stats response:', response.data);
+    return response.data.data;
+  } catch (error) {
+    console.error('❌ Error fetching warranty stats:', error);
+    throw error;
+  }
 };
