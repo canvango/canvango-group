@@ -14,27 +14,28 @@ const getAllowedOrigins = (): (string | RegExp)[] => {
     return envOrigins.split(',').map(origin => origin.trim());
   }
   
-  // Default origins for production
-  if (process.env.NODE_ENV === 'production') {
-    const origins: (string | RegExp)[] = [
-      'https://canvango.com',
-      'https://www.canvango.com',
-    ];
-    
-    // Add Vercel preview URLs
-    if (process.env.VERCEL === '1') {
-      // Add Vercel deployment URL
-      if (process.env.VERCEL_URL) {
-        origins.push(`https://${process.env.VERCEL_URL}`);
-      }
-      // Add Vercel project URL pattern (allow all preview deployments)
-      origins.push(/^https:\/\/.*\.vercel\.app$/);
+  // Production origins (always include these)
+  const productionOrigins: (string | RegExp)[] = [
+    'https://canvango.com',
+    'https://www.canvango.com',
+  ];
+  
+  // Add Vercel preview URLs if on Vercel
+  if (process.env.VERCEL === '1' || process.env.VERCEL_URL) {
+    // Add Vercel deployment URL
+    if (process.env.VERCEL_URL) {
+      productionOrigins.push(`https://${process.env.VERCEL_URL}`);
     }
-    
-    return origins;
+    // Add Vercel project URL pattern (allow all preview deployments)
+    productionOrigins.push(/^https:\/\/.*\.vercel\.app$/);
   }
   
-  // Allow all localhost ports in development
+  // If in production or on Vercel, return production origins
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || process.env.VERCEL_URL) {
+    return productionOrigins;
+  }
+  
+  // Development: allow all localhost ports
   return [
     'http://localhost:3000',
     'http://localhost:5173',
