@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
@@ -41,17 +41,31 @@ const PageLoader = () => (
   </div>
 );
 
+// Global error handlers for debugging
+window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error);
+  console.error('Error message:', event.message);
+  console.error('Error filename:', event.filename);
+  console.error('Error line:', event.lineno);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+});
+
 // Debug: Log environment info
 console.log('Environment:', import.meta.env.MODE);
 console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set (using fallback)');
+console.log('Base URL:', import.meta.env.BASE_URL);
 
 const root = document.getElementById('root');
 if (!root) {
   console.error('Root element not found!');
-  document.body.innerHTML = '<div style="padding: 20px;">Error: Root element not found</div>';
+  document.body.innerHTML = '<div style="padding: 20px; color: red; font-family: monospace;">Error: Root element not found</div>';
 } else {
   console.log('Initializing React app...');
-  ReactDOM.createRoot(root).render(
+  try {
+    ReactDOM.createRoot(root).render(
     // StrictMode disabled to prevent double API calls in development
     // React StrictMode intentionally double-invokes functions to detect side effects
     // This causes purchase mutations to be called twice, resulting in double balance deduction
@@ -82,5 +96,16 @@ if (!root) {
         </QueryClientProvider>
       </ErrorBoundary>
     // </React.StrictMode>
-  );
+    );
+    console.log('React app initialized successfully!');
+  } catch (error) {
+    console.error('Failed to initialize React app:', error);
+    document.body.innerHTML = `
+      <div style="padding: 20px; color: red; font-family: monospace;">
+        <h1>Failed to initialize app</h1>
+        <pre>${error instanceof Error ? error.message : String(error)}</pre>
+        <pre>${error instanceof Error ? error.stack : ''}</pre>
+      </div>
+    `;
+  }
 }
