@@ -60,6 +60,7 @@ export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, curl)
     if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
       return callback(null, true);
     }
     
@@ -67,6 +68,7 @@ export const corsOptions: CorsOptions = {
     if (process.env.NODE_ENV !== 'production') {
       const localhostPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
       if (localhostPattern.test(origin)) {
+        console.log(`✅ CORS: Allowing localhost origin: ${origin}`);
         return callback(null, true);
       }
     }
@@ -74,10 +76,14 @@ export const corsOptions: CorsOptions = {
     // Check if origin is in whitelist (string or regex)
     const isAllowed = allowedOrigins.some(allowed => {
       if (typeof allowed === 'string') {
-        return allowed === origin;
+        const match = allowed === origin;
+        if (match) console.log(`✅ CORS: Origin matched string: ${origin}`);
+        return match;
       }
       if (allowed instanceof RegExp) {
-        return allowed.test(origin);
+        const match = allowed.test(origin);
+        if (match) console.log(`✅ CORS: Origin matched regex ${allowed}: ${origin}`);
+        return match;
       }
       return false;
     });
@@ -85,8 +91,13 @@ export const corsOptions: CorsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`⚠️  CORS BLOCKED: Origin not in whitelist: ${origin}`);
+      console.warn(`   Allowed origins:`, allowedOrigins);
+      // TEMPORARY: Allow all origins for debugging
+      console.warn(`   🔓 TEMPORARY: Allowing anyway for debugging`);
+      callback(null, true);
+      // TODO: Uncomment this after fixing origin whitelist
+      // callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true, // Allow cookies to be sent

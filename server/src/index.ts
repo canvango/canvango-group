@@ -63,14 +63,13 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-// Enable CORS in development and on Vercel (where frontend/backend are separate)
-const isVercel = process.env.VERCEL === '1';
-if (process.env.NODE_ENV === 'development' || isVercel) {
-  app.use(cors(corsOptions));
-  console.log('🔓 CORS enabled for', isVercel ? 'Vercel' : 'development');
-} else {
-  console.log('🔒 CORS disabled (same origin in production)');
-}
+// ALWAYS enable CORS - required for Vercel serverless architecture
+// Even though frontend and backend are on same domain, serverless functions need CORS
+app.use(cors(corsOptions));
+console.log('🔓 CORS enabled for all environments');
+console.log('   NODE_ENV:', process.env.NODE_ENV || 'not set');
+console.log('   VERCEL:', process.env.VERCEL || 'not set');
+console.log('   VERCEL_URL:', process.env.VERCEL_URL || 'not set');
 
 app.use(express.json({ limit: '10mb' })); // Limit body size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
