@@ -194,6 +194,8 @@ Implementasi solusi untuk menghilangkan masalah CORS dengan cara menghapus backe
 
   - [x] 7.2 Update build command di vercel.json
 
+
+
     - Ensure hanya build frontend
     - Remove backend build steps
     - _Requirements: 2.1, 3.1_
@@ -348,7 +350,9 @@ Implementasi solusi untuk menghilangkan masalah CORS dengan cara menghapus backe
     - _Requirements: 8.3_
 
   
-  - [ ] 12.3 Test warranty claim submission flow
+  - [x] 12.3 Test warranty claim submission flow
+
+
 
 
 
