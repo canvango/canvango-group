@@ -21,7 +21,6 @@
 
 import { supabase } from './supabase';
 import { Product, ProductFilters, ProductCategory, ProductType } from '../types/product';
-import { handleSupabaseOperation, handleSupabaseMutation } from '@/utils/supabaseErrorHandler';
 
 /**
  * Generic paginated response structure
@@ -110,9 +109,11 @@ export const fetchProducts = async (
     query = query.eq('product_type', mappedType);
   }
   
-  // Filter by category (specific product variant like limit_250, limit_500, etc.)
-  if (params.type) {
-    query = query.eq('category', params.type);
+  // Filter by category slug (specific product variant like limit_250, limit_500, etc.)
+  // Support both 'type' (legacy) and 'categorySlug' (new) parameters
+  const categorySlug = (params as any).categorySlug || params.type;
+  if (categorySlug) {
+    query = query.eq('category', categorySlug);
   }
   if (params.minPrice) {
     query = query.gte('price', params.minPrice);
@@ -154,54 +155,10 @@ export const fetchProducts = async (
     firstProduct: data?.[0]
   });
 
-  // Helper function to get product details based on type
-  const getProductDetails = (productType: string) => {
-    const isBM = productType === 'bm_account';
-    
-    const features = isBM ? [
-      'Sudah di buatkan akun iklan',
-      'Sudah di buatkan fanspage',
-      'Bisa merubah negara dan mata uang',
-      'Tingkat keberhasilan saat mendaftarkan WhatsApp API 70%',
-      'Sangat di rekomendasikan jika di gunakan dalam jangka panjang',
-      'Limit akun iklan bisa naik hingga 1000$'
-    ] : [
-      'Akun personal Facebook yang sudah terverifikasi',
-      'Bisa digunakan untuk iklan dengan limit sesuai kategori',
-      'Akses penuh ke Facebook Ads Manager',
-      'Cocok untuk pemula yang ingin memulai iklan',
-      'Proses setup lebih cepat'
-    ];
 
-    const limitations = isBM ? [
-      'Tidak di rekomendasikan untuk langsung di gunakan setelah pembelian harus di redam beberapa hari',
-      'Tidak aman jika langsung mendaftarkan WhatsApp API setelah pembelian'
-    ] : [
-      'Limit iklan terbatas sesuai kategori akun',
-      'Tidak bisa menambahkan admin tambahan',
-      'Risiko suspend lebih tinggi jika tidak hati-hati'
-    ];
-
-    const warrantyTerms = isBM ? [
-      'Garansi tidak berlaku jika membuat akun iklan baru akun BM mati atau akun iklan mati',
-      'Garansi tidak berlaku akun BM mati saat menambahkan admin baru',
-      'Garansi tidak berlaku jika menambahkan fanspage baru akun BM mati',
-      'Garansi tidak berlaku jika akun iklan atau akun BM mati saat menambahkan metode pembayaran',
-      'Garansi tidak berlaku jika menambahkan WhatsApp akun WhatsApp atau BM mati'
-    ] : [
-      'Garansi berlaku 7 hari untuk akun personal',
-      'Garansi tidak berlaku jika akun di-suspend karena pelanggaran kebijakan',
-      'Garansi tidak berlaku jika password diubah tanpa konfirmasi',
-      'Penggantian akun hanya berlaku 1x dalam periode garansi'
-    ];
-
-    return { features, limitations, warrantyTerms };
-  };
 
   // Transform database records to Product interface
   const transformedData = (data || []).map((item: any) => {
-    const defaultDetails = getProductDetails(item.product_type);
-    
     // Calculate real stock from product_accounts pool
     const availableAccounts = (item.product_accounts || []).filter(
       (acc: any) => acc.status === 'available'
@@ -214,10 +171,10 @@ export const fetchProducts = async (
       return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     };
     
-    // Use database values if available, otherwise use defaults
-    const features = item.advantages ? parseTextToArray(item.advantages) : defaultDetails.features;
-    const limitations = item.disadvantages ? parseTextToArray(item.disadvantages) : defaultDetails.limitations;
-    const warrantyTerms = item.warranty_terms ? parseTextToArray(item.warranty_terms) : defaultDetails.warrantyTerms;
+    // Use database values if available, otherwise return empty array (no defaults)
+    const features = parseTextToArray(item.advantages);
+    const limitations = parseTextToArray(item.disadvantages);
+    const warrantyTerms = parseTextToArray(item.warranty_terms);
     
     return {
       id: item.id,
@@ -284,51 +241,7 @@ export const fetchProductById = async (productId: string): Promise<Product> => {
   if (error) throw error;
   if (!data) throw new Error('Product not found');
 
-  // Helper function to get product details based on type
-  const getProductDetails = (productType: string) => {
-    const isBM = productType === 'bm_account';
-    
-    const features = isBM ? [
-      'Sudah di buatkan akun iklan',
-      'Sudah di buatkan fanspage',
-      'Bisa merubah negara dan mata uang',
-      'Tingkat keberhasilan saat mendaftarkan WhatsApp API 70%',
-      'Sangat di rekomendasikan jika di gunakan dalam jangka panjang',
-      'Limit akun iklan bisa naik hingga 1000$'
-    ] : [
-      'Akun personal Facebook yang sudah terverifikasi',
-      'Bisa digunakan untuk iklan dengan limit sesuai kategori',
-      'Akses penuh ke Facebook Ads Manager',
-      'Cocok untuk pemula yang ingin memulai iklan',
-      'Proses setup lebih cepat'
-    ];
 
-    const limitations = isBM ? [
-      'Tidak di rekomendasikan untuk langsung di gunakan setelah pembelian harus di redam beberapa hari',
-      'Tidak aman jika langsung mendaftarkan WhatsApp API setelah pembelian'
-    ] : [
-      'Limit iklan terbatas sesuai kategori akun',
-      'Tidak bisa menambahkan admin tambahan',
-      'Risiko suspend lebih tinggi jika tidak hati-hati'
-    ];
-
-    const warrantyTerms = isBM ? [
-      'Garansi tidak berlaku jika membuat akun iklan baru akun BM mati atau akun iklan mati',
-      'Garansi tidak berlaku akun BM mati saat menambahkan admin baru',
-      'Garansi tidak berlaku jika menambahkan fanspage baru akun BM mati',
-      'Garansi tidak berlaku jika akun iklan atau akun BM mati saat menambahkan metode pembayaran',
-      'Garansi tidak berlaku jika menambahkan WhatsApp akun WhatsApp atau BM mati'
-    ] : [
-      'Garansi berlaku 7 hari untuk akun personal',
-      'Garansi tidak berlaku jika akun di-suspend karena pelanggaran kebijakan',
-      'Garansi tidak berlaku jika password diubah tanpa konfirmasi',
-      'Penggantian akun hanya berlaku 1x dalam periode garansi'
-    ];
-
-    return { features, limitations, warrantyTerms };
-  };
-
-  const defaultDetails = getProductDetails(data.product_type);
 
   // Calculate real stock from product_accounts pool
   const availableAccounts = (data.product_accounts || []).filter(
@@ -342,10 +255,10 @@ export const fetchProductById = async (productId: string): Promise<Product> => {
     return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   };
   
-  // Use database values if available, otherwise use defaults
-  const features = data.advantages ? parseTextToArray(data.advantages) : defaultDetails.features;
-  const limitations = data.disadvantages ? parseTextToArray(data.disadvantages) : defaultDetails.limitations;
-  const warrantyTerms = data.warranty_terms ? parseTextToArray(data.warranty_terms) : defaultDetails.warrantyTerms;
+  // Use database values if available, otherwise return empty array (no defaults)
+  const features = parseTextToArray(data.advantages);
+  const limitations = parseTextToArray(data.disadvantages);
+  const warrantyTerms = parseTextToArray(data.warranty_terms);
 
   // Transform database record to Product interface
   return {
@@ -650,50 +563,178 @@ export const productsService = {
   },
 
   /**
-   * Create new product
+   * Create new product with automatic session refresh
    */
   async create(productData: any): Promise<any> {
-    const { data, error } = await supabase
-      .from('products')
-      .insert([{
+    console.log('📦 productsService.create called with:', productData);
+    
+    try {
+      // Ensure session is valid before making the request
+      await this.ensureValidSession();
+      
+      const insertData = {
         ...productData,
         warranty_duration: productData.warranty_duration || 30,
         warranty_enabled: productData.warranty_enabled !== undefined ? productData.warranty_enabled : true,
         stock_status: productData.stock_status || 'available',
         is_active: productData.is_active !== undefined ? productData.is_active : true,
-      }])
-      .select()
-      .single();
+      };
+      
+      console.log('📤 Inserting to Supabase:', insertData);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .insert([insertData])
+        .select()
+        .single();
 
-    if (error) {
-      console.error('❌ Supabase error creating product:', error);
-      throw new Error(error.message);
+      console.log('📥 Supabase response received');
+      console.log('📥 Data:', data);
+      console.log('📥 Error:', error);
+
+      if (error) {
+        console.error('❌ Supabase error creating product:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error details:', error.details);
+        console.error('❌ Error hint:', error.hint);
+        
+        // Check if it's an auth error and provide helpful message
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          throw new Error('Your session has expired. Please refresh the page and try again.');
+        }
+        
+        throw new Error(error.message);
+      }
+
+      console.log('✅ Product created successfully in service:', data);
+      return data;
+    } catch (err: any) {
+      console.error('❌ Exception in create:', err);
+      
+      // Provide user-friendly error messages
+      if (err.message?.includes('session') || err.message?.includes('JWT')) {
+        throw new Error('Your session has expired. Please refresh the page and try again.');
+      }
+      
+      throw err;
     }
-
-    return data;
   },
 
   /**
-   * Update product
+   * Ensure session is valid and refresh if needed
+   */
+  async ensureValidSession(): Promise<void> {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Error getting session:', error);
+        throw new Error('Session validation failed. Please login again.');
+      }
+      
+      if (!session) {
+        throw new Error('No active session. Please login again.');
+      }
+      
+      // Check if token is about to expire (within 5 minutes)
+      const expiresAt = session.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt ? expiresAt - now : 0;
+      
+      console.log('🔐 Session check:', {
+        expiresAt: expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown',
+        timeUntilExpiry: `${Math.floor(timeUntilExpiry / 60)} minutes`,
+        needsRefresh: timeUntilExpiry < 300
+      });
+      
+      // Refresh token if expiring soon (< 5 minutes) or already expired
+      if (timeUntilExpiry < 300) {
+        console.log('🔄 Token expiring soon, refreshing session...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error('❌ Error refreshing session:', refreshError);
+          throw new Error('Session refresh failed. Please login again.');
+        }
+        
+        if (!refreshData.session) {
+          throw new Error('Session refresh failed. Please login again.');
+        }
+        
+        console.log('✅ Session refreshed successfully');
+      }
+    } catch (err: any) {
+      console.error('❌ Session validation error:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Update product with automatic session refresh
    */
   async update(id: string, productData: any): Promise<any> {
-    const { data, error } = await supabase
-      .from('products')
-      .update(productData)
-      .eq('id', id)
-      .select()
-      .single();
+    console.log('📝 productsService.update called with:', { id, productData });
+    
+    try {
+      // Ensure session is valid before making the request
+      await this.ensureValidSession();
+      
+      console.log('📤 Updating product in Supabase:', { id, data: productData });
+      console.log('🔍 Supabase client ready:', !!supabase.auth);
+      
+      // Add timeout wrapper (30 seconds for better reliability)
+      const updatePromise = supabase
+        .from('products')
+        .update(productData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Update timeout after 30 seconds. Please check your connection.')), 30000)
+      );
+      
+      console.log('⏳ Waiting for Supabase response...');
+      const { data, error } = await Promise.race([updatePromise, timeoutPromise]) as any;
 
-    if (error) {
-      console.error('❌ Supabase error updating product:', error);
-      throw new Error(error.message);
+      console.log('📥 Supabase update response received');
+      console.log('📥 Data:', data);
+      console.log('📥 Error:', error);
+
+      if (error) {
+        console.error('❌ Supabase error updating product:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error details:', error.details);
+        console.error('❌ Error hint:', error.hint);
+        
+        // Check if it's an auth error and provide helpful message
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          throw new Error('Your session has expired. Please refresh the page and try again.');
+        }
+        
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        console.error('❌ No data returned after update');
+        throw new Error('Product not found');
+      }
+
+      console.log('✅ Product updated successfully in service:', data);
+      return data;
+    } catch (err: any) {
+      console.error('❌ Exception in update:', err);
+      console.error('❌ Exception stack:', err.stack);
+      
+      // Provide user-friendly error messages
+      if (err.message?.includes('session') || err.message?.includes('JWT')) {
+        throw new Error('Your session has expired. Please refresh the page and try again.');
+      }
+      
+      throw err;
     }
-
-    if (!data) {
-      throw new Error('Product not found');
-    }
-
-    return data;
   },
 
   /**
@@ -723,19 +764,58 @@ export const productsService = {
    * Duplicate product
    */
   async duplicate(id: string): Promise<any> {
-    // Get original product
-    const original = await this.getById(id);
+    console.log('📋 Duplicating product:', id);
+    
+    try {
+      // Get original product (without relationships)
+      const { data: original, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    // Create duplicate with modified name
-    const duplicateData = {
-      ...original,
-      id: undefined, // Let Supabase generate new ID
-      product_name: `${original.product_name} (Copy)`,
-      created_at: undefined,
-      updated_at: undefined,
-    };
+      if (fetchError) {
+        console.error('❌ Error fetching original product:', fetchError);
+        throw new Error(fetchError.message);
+      }
 
-    return this.create(duplicateData);
+      if (!original) {
+        throw new Error('Product not found');
+      }
+
+      console.log('✅ Original product fetched:', original);
+
+      // Create duplicate with only the fields that should be copied
+      const duplicateData = {
+        product_name: `${original.product_name} (Copy)`,
+        product_type: original.product_type,
+        category: original.category,
+        description: original.description,
+        price: original.price,
+        stock_status: original.stock_status,
+        is_active: original.is_active,
+        warranty_duration: original.warranty_duration,
+        warranty_enabled: original.warranty_enabled,
+        ad_limit: original.ad_limit,
+        verification_status: original.verification_status,
+        ad_account_type: original.ad_account_type,
+        advantages: original.advantages,
+        disadvantages: original.disadvantages,
+        warranty_terms: original.warranty_terms,
+        detail_fields: original.detail_fields,
+      };
+
+      console.log('📤 Creating duplicate with data:', duplicateData);
+
+      // Use the create method which handles session refresh
+      const newProduct = await this.create(duplicateData);
+      
+      console.log('✅ Product duplicated successfully:', newProduct);
+      return newProduct;
+    } catch (err: any) {
+      console.error('❌ Error duplicating product:', err);
+      throw err;
+    }
   },
 
   /**

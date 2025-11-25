@@ -7,7 +7,7 @@ export const useAccountFields = (productId: string): UseQueryResult<ProductAccou
   return useQuery({
     queryKey: ['accountFields', productId],
     queryFn: () => service.fetchAccountFields(productId),
-    enabled: !!productId,
+    enabled: false, // DISABLED: Backend API not available (frontend-only app)
     staleTime: 2 * 60 * 1000
   });
 };
@@ -57,7 +57,7 @@ export const useAccounts = (productId: string, status?: 'available' | 'sold'): U
   return useQuery({
     queryKey: ['accounts', productId, status],
     queryFn: () => service.fetchAccounts(productId, status),
-    enabled: !!productId,
+    enabled: false, // DISABLED: Backend API not available (frontend-only app)
     staleTime: 30 * 1000 // 30 seconds - refresh more often for stock updates
   });
 };

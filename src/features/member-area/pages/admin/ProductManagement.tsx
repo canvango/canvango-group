@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon, CheckCircleIcon, XCircleIcon, TagIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { supabase } from '../../services/supabase';
 import { productsService } from '../../services/products.service';
 import ProductDetailModal from './ProductDetailModal';
+import CategoryManagementModal from '../../components/admin/CategoryManagementModal';
 import { DynamicDetailFields, DetailField } from '../../components/products/DynamicDetailFields';
+import { useSessionRefresh } from '../../hooks/useSessionRefresh';
 
 interface Product {
   id: string;
@@ -22,6 +25,8 @@ interface Product {
   advantages?: string | null;
   disadvantages?: string | null;
   warranty_terms?: string | null;
+  warranty_duration?: number; // Warranty duration in days
+  warranty_enabled?: boolean; // Whether warranty is enabled
   detail_fields?: DetailField[];
   available_stock?: number; // Real stock from product_accounts pool
 }
@@ -46,7 +51,11 @@ interface ProductFormData {
 }
 
 const ProductManagement = () => {
+  // Auto-refresh session to prevent token expiration
+  useSessionRefresh();
+  
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Array<{ slug: string; name: string; product_type: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [productTypeFilter, setProductTypeFilter] = useState('all');
@@ -58,6 +67,7 @@ const ProductManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState('');
@@ -87,7 +97,24 @@ const ProductManagement = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, [currentPage, searchQuery, productTypeFilter, stockStatusFilter, activeStatusFilter]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('slug, name, product_type')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching categories:', error);
+      toast.error('Failed to load categories');
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -186,6 +213,8 @@ const ProductManagement = () => {
   };
 
   const openEditModal = (product: Product) => {
+    // Reset submitting state before opening modal
+    setIsSubmitting(false);
     setSelectedProduct(product);
     setFormData({
       product_name: product.product_name,
@@ -195,8 +224,8 @@ const ProductManagement = () => {
       price: product.price.toString(),
       stock_status: product.stock_status,
       is_active: product.is_active,
-      warranty_duration: '30',
-      warranty_enabled: true,
+      warranty_duration: (product.warranty_duration || 30).toString(),
+      warranty_enabled: product.warranty_enabled !== undefined ? product.warranty_enabled : true,
       ad_limit: product.ad_limit || '',
       verification_status: product.verification_status || '',
       ad_account_type: product.ad_account_type || '',
@@ -221,10 +250,25 @@ const ProductManagement = () => {
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
+    console.log('🎯 handleCreateProduct called');
+    console.log('📋 Current form data:', formData);
+    console.log('⏳ isSubmitting:', isSubmitting);
+    
+    if (isSubmitting) {
+      console.log('⚠️ Already submitting, returning...');
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.product_name || !formData.category || !formData.price) {
+      console.error('❌ Validation failed: Missing required fields');
+      toast.error('Please fill in all required fields (Product Name, Category, Price)');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
+      console.log('✅ Validation passed, creating product...');
       
       const payload = {
         product_name: formData.product_name,
@@ -245,26 +289,64 @@ const ProductManagement = () => {
         detail_fields: formData.detail_fields,
       };
     
+      console.log('🚀 Sending payload to API:', payload);
+      
       const product = await productsService.create(payload);
-      console.log('✅ Product created:', product);
-      toast.success('Product created successfully');
+      console.log('✅ Product created successfully:', product);
+      
+      // Close modal and reset state FIRST (don't wait for anything)
       setIsCreateModalOpen(false);
+      setIsSubmitting(false);
       resetForm();
-      fetchProducts();
+      
+      // Show success message
+      toast.success('Product created successfully');
+      
+      // Refresh products list in background (don't await)
+      fetchProducts().catch(err => console.error('Failed to refresh products:', err));
     } catch (error: any) {
       console.error('❌ Error creating product:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        full: error
+      });
       toast.error(error.message || 'Failed to create product');
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct || isSubmitting) return;
+    
+    console.log('🎯 handleUpdateProduct called');
+    console.log('📋 Selected product:', selectedProduct);
+    console.log('📋 Current form data:', formData);
+    console.log('⏳ isSubmitting:', isSubmitting);
+    
+    if (!selectedProduct) {
+      console.error('❌ No product selected');
+      toast.error('No product selected');
+      return;
+    }
+    
+    if (isSubmitting) {
+      console.log('⚠️ Already submitting, returning...');
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.product_name || !formData.category || !formData.price) {
+      console.error('❌ Validation failed: Missing required fields');
+      toast.error('Please fill in all required fields (Product Name, Category, Price)');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
+      console.log('✅ Validation passed, updating product...');
       
       const payload = {
         product_name: formData.product_name,
@@ -285,16 +367,32 @@ const ProductManagement = () => {
         detail_fields: formData.detail_fields,
       };
 
+      console.log('🚀 Sending update payload to API:', payload);
+      
       const product = await productsService.update(selectedProduct.id, payload);
-      console.log('✅ Product updated:', product);
-      toast.success('Product updated successfully');
+      console.log('✅ Product updated successfully:', product);
+      
+      // Close modal and reset state FIRST (don't wait for anything)
       setIsEditModalOpen(false);
+      setIsSubmitting(false);
+      setSelectedProduct(null);
       resetForm();
-      fetchProducts();
+      
+      // Show success message
+      toast.success('Product updated successfully');
+      
+      // Refresh products list in background (don't await)
+      fetchProducts().catch(err => console.error('Failed to refresh products:', err));
     } catch (error: any) {
       console.error('❌ Error updating product:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        full: error
+      });
       toast.error(error.message || 'Failed to update product');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -372,8 +470,6 @@ const ProductManagement = () => {
     const labels: Record<string, string> = {
       bm_account: 'BM Account',
       personal_account: 'Personal Account',
-      verified_bm: 'Verified BM',
-      api: 'API',
     };
     return labels[type] || type;
   };
@@ -382,16 +478,25 @@ const ProductManagement = () => {
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Kelola Produk</h1>
-        <button
-          onClick={() => {
-            resetForm();
-            setIsCreateModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Tambah Produk
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <TagIcon className="w-5 h-5" />
+            Manage Categories
+          </button>
+          <button
+            onClick={() => {
+              resetForm();
+              setIsCreateModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Tambah Produk
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -431,8 +536,6 @@ const ProductManagement = () => {
           <option value="all">All Product Types</option>
           <option value="bm_account">BM Account</option>
           <option value="personal_account">Personal Account</option>
-          <option value="verified_bm">Verified BM</option>
-          <option value="api">API</option>
         </select>
 
         <select
@@ -661,6 +764,12 @@ const ProductManagement = () => {
         product={selectedProduct}
       />
 
+      {/* Category Management Modal */}
+      <CategoryManagementModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
+
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -702,6 +811,7 @@ const ProductManagement = () => {
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setIsEditModalOpen(false);
+                  setIsSubmitting(false);
                   resetForm();
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -770,26 +880,40 @@ const ProductManagement = () => {
                       <select
                         required
                         value={formData.product_type}
-                        onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
+                        onChange={(e) => {
+                          // Reset category when product type changes
+                          setFormData({ ...formData, product_type: e.target.value, category: '' });
+                        }}
                         className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="bm_account">BM Account</option>
                         <option value="personal_account">Personal Account</option>
-                        <option value="verified_bm">Verified BM</option>
-                        <option value="api">API</option>
                       </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Product type determines which page displays this product (/akun-bm or /akun-personal)
+                      </p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                      <input
-                        type="text"
+                      <select
                         required
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., limit_250, limit_500"
-                      />
+                      >
+                        <option value="">-- Select Category --</option>
+                        {categories
+                          .filter(cat => cat.product_type === formData.product_type)
+                          .map((cat) => (
+                            <option key={cat.slug} value={cat.slug}>
+                              {cat.name}
+                            </option>
+                          ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Categories filtered by product type ({formData.product_type === 'bm_account' ? 'BM Account' : 'Personal Account'})
+                      </p>
                     </div>
                   </div>
 
@@ -954,6 +1078,7 @@ const ProductManagement = () => {
                   onClick={() => {
                     setIsCreateModalOpen(false);
                     setIsEditModalOpen(false);
+                    setIsSubmitting(false);
                     resetForm();
                   }}
                   className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50"

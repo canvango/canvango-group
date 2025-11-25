@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Package, TrendingUp, CheckCircle } from 'lucide-react';
+import { Package, TrendingUp, CheckCircle, Layers } from 'lucide-react';
+import { FaMeta } from 'react-icons/fa6';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import CategoryTabs from '../components/products/CategoryTabs';
 import SearchSortBar, { SortOption } from '../components/products/SearchSortBar';
@@ -7,8 +8,8 @@ import ProductGrid from '../components/products/ProductGrid';
 import Pagination from '../../../shared/components/Pagination';
 import { useProducts, useProductStats } from '../hooks/useProducts';
 import { usePurchase } from '../hooks/usePurchase';
+import { useCategories } from '../hooks/useCategories';
 import { ProductCategory, Product } from '../types/product';
-import { BM_CATEGORIES, getBMCategoryTabs } from '../config/bm-categories.config';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { usePersistedFilters } from '../../../shared/hooks/usePersistedFilters';
 import PurchaseModal from '../components/products/PurchaseModal';
@@ -44,6 +45,11 @@ const BMAccounts: React.FC = () => {
   const currentPage = filters.page;
   const pageSize = 12;
 
+  // Fetch categories from Supabase
+  const { data: categories } = useCategories({ 
+    productType: 'bm_account' 
+  });
+
   // Debug: Monitor activeCategory changes
   useEffect(() => {
     console.log('activeCategory changed to:', activeCategory);
@@ -69,27 +75,26 @@ const BMAccounts: React.FC = () => {
     }
   }, [sortValue]);
 
-  // Get product type from active category
-  const productType = useMemo(() => {
-    const category = BM_CATEGORIES.find((cat) => cat.id === activeCategory);
-    return category?.type;
+  // Get category slug for filtering (null if 'all' is selected)
+  const categorySlug = useMemo(() => {
+    return activeCategory !== 'all' ? activeCategory : undefined;
   }, [activeCategory]);
 
   // Fetch products
   const { data: productsData, isLoading: isLoadingProducts, error: productsError } = useProducts({
     category: ProductCategory.BM,
-    type: productType,
+    categorySlug: categorySlug,
     search: searchQuery || undefined,
     sortBy,
     sortOrder,
     page: currentPage,
     pageSize,
-  });
+  } as any);
 
   // Debug logging
   console.log('BMAccounts Debug:', {
     activeCategory,
-    productType,
+    categorySlug,
     searchQuery,
     sortBy,
     sortOrder,
@@ -97,7 +102,8 @@ const BMAccounts: React.FC = () => {
     isLoading: isLoadingProducts,
     error: productsError,
     productsData,
-    productsCount: productsData?.data?.length
+    productsCount: productsData?.data?.length,
+    categoriesCount: categories?.length
   });
 
   // Fetch product stats
@@ -169,8 +175,19 @@ const BMAccounts: React.FC = () => {
 
 
 
-  // Get category tabs
-  const categoryTabs = getBMCategoryTabs();
+  // Build category tabs from Supabase data
+  const categoryTabs = useMemo(() => {
+    if (!categories) return [{ id: 'all', label: 'All Accounts', icon: Layers }];
+    
+    return [
+      { id: 'all', label: 'All Accounts', icon: Layers },
+      ...categories.map(cat => ({
+        id: cat.slug,
+        label: cat.name,
+        icon: FaMeta,
+      }))
+    ];
+  }, [categories]);
 
   return (
     <div className="space-y-3 md:space-y-5">

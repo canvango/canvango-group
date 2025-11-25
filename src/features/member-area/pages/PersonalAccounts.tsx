@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, TrendingUp, CheckCircle } from 'lucide-react';
+import { Package, TrendingUp, CheckCircle, User } from 'lucide-react';
+import { FaMeta } from 'react-icons/fa6';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import CategoryTabs from '../components/products/CategoryTabs';
 import SearchSortBar, { SortOption } from '../components/products/SearchSortBar';
@@ -9,8 +10,8 @@ import Pagination from '../../../shared/components/Pagination';
 import { useProducts } from '../hooks/useProducts';
 import { usePurchase } from '../hooks/usePurchase';
 import { usePersonalStats } from '../hooks/usePersonalStats';
+import { useCategories } from '../hooks/useCategories';
 import { ProductCategory, Product } from '../types/product';
-import { PERSONAL_TYPES, getPersonalTypeTabs } from '../config/personal-types.config';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { usePersistedFilters } from '../../../shared/hooks/usePersistedFilters';
 import PurchaseModal from '../components/products/PurchaseModal';
@@ -47,6 +48,11 @@ const PersonalAccounts: React.FC = () => {
   const currentPage = filters.page;
   const pageSize = 12;
 
+  // Fetch categories from Supabase
+  const { data: categories } = useCategories({ 
+    productType: 'personal_account' 
+  });
+
   // Parse sort value
   const { sortBy, sortOrder } = useMemo(() => {
     switch (sortValue) {
@@ -67,22 +73,21 @@ const PersonalAccounts: React.FC = () => {
     }
   }, [sortValue]);
 
-  // Get product type from active type
-  const productType = useMemo(() => {
-    const type = PERSONAL_TYPES.find((t) => t.id === activeType);
-    return type?.type;
+  // Get category slug for filtering (null if 'all' is selected)
+  const categorySlug = useMemo(() => {
+    return activeType !== 'all' ? activeType : undefined;
   }, [activeType]);
 
   // Fetch products
   const { data: productsData, isLoading: isLoadingProducts } = useProducts({
     category: ProductCategory.PERSONAL,
-    type: productType,
+    categorySlug: categorySlug,
     search: searchQuery || undefined,
     sortBy,
     sortOrder,
     page: currentPage,
     pageSize,
-  });
+  } as any);
 
   // Fetch Personal Account statistics from Supabase (real-time data)
   const { data: stats, isLoading: isLoadingStats } = usePersonalStats();
@@ -160,8 +165,19 @@ const PersonalAccounts: React.FC = () => {
 
 
 
-  // Get type tabs
-  const typeTabs = getPersonalTypeTabs();
+  // Build type tabs from Supabase data
+  const typeTabs = useMemo(() => {
+    if (!categories) return [{ id: 'all', label: 'All Accounts', icon: User }];
+    
+    return [
+      { id: 'all', label: 'All Accounts', icon: User },
+      ...categories.map(cat => ({
+        id: cat.slug,
+        label: cat.name,
+        icon: FaMeta,
+      }))
+    ];
+  }, [categories]);
 
   return (
     <div className="space-y-3 md:space-y-5">
