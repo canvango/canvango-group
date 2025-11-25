@@ -4,7 +4,7 @@ import AccountPoolTab from '../../../../features/admin/components/products/Accou
 import AccountFormModal from '../../../../features/admin/components/products/AccountFormModal';
 import FieldEditorModal from '../../../../features/admin/components/products/FieldEditorModal';
 import { useAccountFields, useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount, useBulkCreateFields } from '../../../../features/admin/hooks/useProductAccounts';
-import { ProductAccount, ProductAccountField } from '../../../../features/admin/types/productAccount';
+import { ProductAccount } from '../../../../features/admin/types/productAccount';
 import toast from 'react-hot-toast';
 
 interface Product {
