@@ -77,8 +77,8 @@ export const getAllWarrantyClaims = async (
       .from('warranty_claims')
       .select(`
         *,
-        user:users(id, username, email, full_name),
-        purchase:purchases(
+        user:users!warranty_claims_user_id_fkey(id, username, email, full_name),
+        purchase:purchases!warranty_claims_purchase_id_fkey(
           id,
           product_id,
           product_name,
@@ -140,8 +140,8 @@ export const updateWarrantyClaimStatus = async (
       .eq('id', claimId)
       .select(`
         *,
-        user:users(id, username, email, full_name),
-        purchase:purchases(
+        user:users!warranty_claims_user_id_fkey(id, username, email, full_name),
+        purchase:purchases!warranty_claims_purchase_id_fkey(
           id,
           product_id,
           product_name,

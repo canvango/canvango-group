@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
 import {
   WarrantyStatusCards,
   ClaimSubmissionSection,
@@ -13,20 +12,44 @@ import {
   useWarrantyStats,
   useSubmitClaim
 } from '../hooks/useWarranty';
+import { useWarrantyRealtime } from '../hooks/useWarrantyRealtime';
 import { WarrantyClaim, ClaimStatus } from '../types/warranty';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner';
-import { useConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { ErrorFallback } from '../../../shared/components/ErrorFallback';
 import { ApplicationError } from '../../../shared/utils/errors';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../../../shared/hooks/useToast';
+import ToastContainer from '../../../shared/components/ToastContainer';
 
 const ClaimWarranty: React.FC = () => {
   usePageTitle('Claim Warranty');
+  const { user } = useAuth();
   const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Confirmation dialog
-  const { confirm, ConfirmDialog } = useConfirmDialog();
+  // Toast notifications
+  const toast = useToast();
+
+  // Handle real-time status changes
+  const handleStatusChange = useCallback((claim: any, _oldStatus: string, newStatus: string) => {
+    const claimId = claim.id?.slice(0, 8) || 'Unknown';
+    
+    if (newStatus === 'approved') {
+      toast.success(`Klaim #${claimId} telah disetujui! Akun pengganti akan segera dikirimkan.`, 7000);
+    } else if (newStatus === 'rejected') {
+      toast.error(`Klaim #${claimId} ditolak. Silakan lihat detail untuk informasi lebih lanjut.`, 7000);
+    } else if (newStatus === 'reviewing') {
+      toast.info(`Klaim #${claimId} sedang direview oleh tim kami.`, 5000);
+    } else if (newStatus === 'completed') {
+      toast.success(`Klaim #${claimId} selesai diproses!`, 5000);
+    }
+  }, [toast]);
+
+  // Enable real-time updates for warranty claims
+  useWarrantyRealtime(user?.id, {
+    onStatusChange: handleStatusChange
+  });
 
   // Fetch data
   const { data: claimsData, isLoading: claimsLoading, error: claimsError, refetch: refetchClaims } = useWarrantyClaims();
@@ -36,27 +59,15 @@ const ClaimWarranty: React.FC = () => {
 
   // Handle claim submission
   const handleSubmitClaim = async (data: ClaimSubmissionFormData) => {
-    const account = eligibleData?.accounts.find(acc => acc.id === data.accountId);
-    const accountInfo = account ? `${account.type} - ${account.transactionId}` : 'Selected account';
-
-    confirm({
-      title: 'Confirm Warranty Claim',
-      message: `Are you sure you want to submit a warranty claim for ${accountInfo}? Once submitted, this claim will be reviewed by our team.`,
-      variant: 'warning',
-      confirmLabel: 'Submit Claim',
-      cancelLabel: 'Cancel',
-      onConfirm: async () => {
-        try {
-          await submitClaimMutation.mutateAsync(data);
-          // Show success notification (you can add a toast notification here)
-          alert('Klaim garansi berhasil diajukan! Anda akan menerima notifikasi setelah klaim diproses.');
-        } catch (error) {
-          // Show error notification
-          console.error('Failed to submit claim:', error);
-          alert('Gagal mengajukan klaim. Silakan coba lagi.');
-        }
-      },
-    });
+    try {
+      await submitClaimMutation.mutateAsync(data);
+      // Show success toast notification
+      toast.success('Klaim garansi berhasil diajukan! Anda akan menerima notifikasi setelah klaim diproses.', 7000);
+    } catch (error) {
+      // Show error toast notification
+      console.error('Failed to submit claim:', error);
+      toast.error('Gagal mengajukan klaim. Silakan coba lagi.', 7000);
+    }
   };
 
   // Handle view response
@@ -73,28 +84,32 @@ const ClaimWarranty: React.FC = () => {
 
   // Calculate stats
   const stats = statsData || {
+    total: 0,
     pending: 0,
+    reviewing: 0,
     approved: 0,
     rejected: 0,
-    successRate: 0
+    completed: 0
   };
 
   // If we have claims data, calculate stats from it
   if (claimsData?.claims && !statsData) {
     const claims = claimsData.claims;
-    const pending = claims.filter(c => c.status === ClaimStatus.PENDING).length;
-    const approved = claims.filter(c => c.status === ClaimStatus.APPROVED).length;
-    const rejected = claims.filter(c => c.status === ClaimStatus.REJECTED).length;
-    const total = approved + rejected;
-    const successRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    const pending = claims.filter(c => c.status === ClaimStatus.PENDING || c.status === 'pending').length;
+    const reviewing = claims.filter(c => c.status === 'reviewing').length;
+    const approved = claims.filter(c => c.status === ClaimStatus.APPROVED || c.status === 'approved').length;
+    const rejected = claims.filter(c => c.status === ClaimStatus.REJECTED || c.status === 'rejected').length;
+    const completed = claims.filter(c => c.status === ClaimStatus.COMPLETED || c.status === 'completed').length;
 
+    stats.total = claims.length;
     stats.pending = pending;
+    stats.reviewing = reviewing;
     stats.approved = approved;
     stats.rejected = rejected;
-    stats.successRate = successRate;
+    stats.completed = completed;
   }
 
-  const claims = claimsData?.claims || [];
+  const claims = (claimsData?.claims || []) as any[]; // WarrantyClaimDB[] compatible with WarrantyClaim[]
   const eligibleAccounts = eligibleData?.accounts || [];
 
   // Loading state
@@ -151,8 +166,8 @@ const ClaimWarranty: React.FC = () => {
         onClose={handleCloseModal}
       />
 
-      {/* Confirmation Dialog */}
-      <ConfirmDialog />
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
     </div>
   );
 };

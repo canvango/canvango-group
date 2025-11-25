@@ -113,12 +113,8 @@ const ClaimSubmissionSection: React.FC<ClaimSubmissionSectionProps> = ({
 
         if (error) throw error;
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('warranty-screenshots')
-          .getPublicUrl(fileName);
-
-        urls.push(urlData.publicUrl);
+        // Store the file path (not URL) - we'll generate signed URLs when viewing
+        urls.push(fileName);
       }
 
       return urls;

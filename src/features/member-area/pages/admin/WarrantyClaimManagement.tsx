@@ -13,6 +13,7 @@ import { LoadingSpinner } from '../../../../shared/components/LoadingSpinner';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { formatDate } from '../../utils/formatters';
+import EvidenceImagesViewer from '../../components/warranty/EvidenceImagesViewer';
 
 const WarrantyClaimManagement: React.FC = () => {
   usePageTitle('Warranty Claim Management');
@@ -396,6 +397,16 @@ const WarrantyClaimManagement: React.FC = () => {
                     <p className="text-sm text-gray-700">{selectedClaim.reason || 'No reason provided'}</p>
                   </div>
                 </div>
+
+                {/* Evidence Images */}
+                {selectedClaim.evidence_urls && selectedClaim.evidence_urls.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">
+                      Evidence Screenshots ({selectedClaim.evidence_urls.length})
+                    </h3>
+                    <EvidenceImagesViewer evidenceUrls={selectedClaim.evidence_urls} />
+                  </div>
+                )}
 
                 {/* Admin Notes */}
                 <div>

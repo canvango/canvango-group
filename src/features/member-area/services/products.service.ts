@@ -338,33 +338,44 @@ export interface PurchaseResponse {
 export const purchaseProduct = async (
   data: PurchaseProductData
 ): Promise<PurchaseResponse> => {
-  // Use backend API endpoint for purchase
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('User not authenticated');
-
-  const response = await fetch('http://localhost:3000/api/purchase', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({
-      productId: data.productId,
-      quantity: data.quantity,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Purchase failed');
+  console.log('🛒 purchaseProduct called with:', data);
+  
+  // Get authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error('❌ Authentication error:', authError);
+    throw new Error('User not authenticated');
   }
 
-  const result = await response.json();
+  console.log('✅ User authenticated:', user.id);
+
+  // Call Supabase RPC function to handle purchase atomically
+  const { data: result, error } = await supabase.rpc('purchase_product', {
+    p_user_id: user.id,
+    p_product_id: data.productId,
+    p_quantity: data.quantity,
+  });
+
+  console.log('📥 Purchase RPC result:', result);
+  console.log('📥 Purchase RPC error:', error);
+
+  if (error) {
+    console.error('❌ Supabase RPC error:', error);
+    throw new Error(error.message || 'Purchase failed');
+  }
+
+  // Check if RPC function returned an error
+  if (!result.success) {
+    console.error('❌ Purchase failed:', result.error);
+    throw new Error(result.error || 'Purchase failed');
+  }
+
+  console.log('✅ Purchase completed successfully');
   
   return {
     status: 'success',
-    transactionId: result.data.transactionId,
-    message: result.data.message || 'Purchase completed successfully',
+    transactionId: result.transaction_id,
+    message: result.message || 'Purchase completed successfully',
   };
 };
 
@@ -405,27 +416,34 @@ export interface ProductStats {
 export const fetchProductStats = async (
   category: ProductCategory
 ): Promise<ProductStats> => {
-  // Get total stock
+  // Map category enum to product_type
+  const productTypeMap: Record<string, string> = {
+    'bm': 'bm_account',
+    'personal': 'personal_account',
+  };
+  const mappedType = productTypeMap[category] || category;
+
+  // Get total stock from product_accounts pool (real available stock)
   const { count: totalStock } = await supabase
-    .from('products')
-    .select('*', { count: 'exact', head: true })
-    .eq('category', category)
-    .eq('is_active', true)
-    .eq('stock_status', 'available');
+    .from('product_accounts')
+    .select('*, product:products!inner(product_type)', { count: 'exact', head: true })
+    .eq('product.product_type', mappedType)
+    .eq('product.is_active', true)
+    .eq('status', 'available');
 
   // Get total sold from purchases
   const { data: purchases } = await supabase
     .from('purchases')
-    .select('quantity, product:products!inner(category)')
-    .eq('product.category', category);
+    .select('quantity, product:products!inner(product_type)')
+    .eq('product.product_type', mappedType);
 
   const totalSold = (purchases || []).reduce((sum, p) => sum + p.quantity, 0);
 
   // Calculate success rate (simplified - based on completed transactions)
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('status, product:products!inner(category)')
-    .eq('product.category', category)
+    .select('status, product:products!inner(product_type)')
+    .eq('product.product_type', mappedType)
     .eq('transaction_type', 'purchase');
 
   const total = transactions?.length || 0;

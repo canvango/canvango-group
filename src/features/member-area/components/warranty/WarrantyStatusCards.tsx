@@ -1,18 +1,15 @@
 import React from 'react';
 import { Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
-
-export interface WarrantyStats {
-  pending: number;
-  approved: number;
-  rejected: number;
-  successRate: number; // percentage
-}
+import { WarrantyStats as ServiceWarrantyStats } from '../../services/warranty.service';
 
 interface WarrantyStatusCardsProps {
-  stats: WarrantyStats;
+  stats: ServiceWarrantyStats;
 }
 
 const WarrantyStatusCards: React.FC<WarrantyStatusCardsProps> = ({ stats }) => {
+  // Calculate success rate
+  const total = stats.approved + stats.rejected;
+  const successRate = total > 0 ? Math.round((stats.approved / total) * 100) : 0;
   const statusCards = [
     {
       label: 'Pending',
@@ -40,7 +37,7 @@ const WarrantyStatusCards: React.FC<WarrantyStatusCardsProps> = ({ stats }) => {
     },
     {
       label: 'Success Rate',
-      value: `${stats.successRate}%`,
+      value: `${successRate}%`,
       icon: TrendingUp,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',

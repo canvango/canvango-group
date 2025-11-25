@@ -214,7 +214,7 @@ export const submitWarrantyClaim = async (claimData: SubmitClaimData): Promise<W
         .insert({
           user_id: user.id,
           purchase_id: claimData.accountId,
-          claim_type: 'warranty',
+          claim_type: 'replacement', // Fixed: Changed from 'warranty' to match DB constraint
           reason: claimData.reason,
           evidence_urls: claimData.screenshotUrls || [],
           status: 'pending',

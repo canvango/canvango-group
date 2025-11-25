@@ -1,65 +1,35 @@
 import React, { useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, Info, AlertCircle, X } from 'lucide-react';
 
+export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
+
+// Support both old and new format for backward compatibility
 export interface ToastProps {
   id: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
   message: string;
-  description?: string;
+  variant?: ToastVariant;
+  type?: ToastVariant; // Alias for variant (backward compatibility)
+  description?: string; // Optional description (backward compatibility)
   duration?: number;
-  action?: {
+  action?: { // Optional action button (backward compatibility)
     label: string;
     onClick: () => void;
   };
   onClose: (id: string) => void;
 }
 
-const iconMap = {
-  success: CheckCircle,
-  error: AlertCircle,
-  warning: AlertTriangle,
-  info: Info
-};
-
-const colorMap = {
-  success: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    text: 'text-green-900'
-  },
-  error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-600',
-    text: 'text-red-900'
-  },
-  warning: {
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    icon: 'text-orange-600',
-    text: 'text-orange-900'
-  },
-  info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: 'text-blue-600',
-    text: 'text-blue-900'
-  }
-};
-
-export const Toast: React.FC<ToastProps> = ({
+const Toast: React.FC<ToastProps> = ({
   id,
-  type = 'info',
   message,
+  variant,
+  type,
   description,
   duration = 5000,
   action,
   onClose
 }) => {
-  const Icon = iconMap[type];
-  const colors = colorMap[type];
-
+  // Support both variant and type (backward compatibility)
+  const toastVariant = variant || type || 'info';
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
@@ -70,42 +40,69 @@ export const Toast: React.FC<ToastProps> = ({
     }
   }, [id, duration, onClose]);
 
+  const getVariantStyles = () => {
+    switch (toastVariant) {
+      case 'success':
+        return {
+          bg: 'bg-green-50 border-green-200',
+          icon: <CheckCircle className="w-5 h-5 text-green-600" />,
+          text: 'text-green-900'
+        };
+      case 'error':
+        return {
+          bg: 'bg-red-50 border-red-200',
+          icon: <XCircle className="w-5 h-5 text-red-600" />,
+          text: 'text-red-900'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-yellow-50 border-yellow-200',
+          icon: <AlertCircle className="w-5 h-5 text-yellow-600" />,
+          text: 'text-yellow-900'
+        };
+      case 'info':
+      default:
+        return {
+          bg: 'bg-blue-50 border-blue-200',
+          icon: <Info className="w-5 h-5 text-blue-600" />,
+          text: 'text-blue-900'
+        };
+    }
+  };
+
+  const styles = getVariantStyles();
+
   return (
     <div
-      className={`${colors.bg} ${colors.border} border rounded-3xl shadow-lg p-4 mb-3 min-w-[320px] max-w-md animate-slide-in-right`}
+      className={`${styles.bg} border rounded-xl p-4 shadow-lg flex items-start gap-3 min-w-[320px] max-w-md animate-slide-in`}
       role="alert"
-      aria-live="polite"
     >
-      <div className="flex items-start gap-3">
-        <Icon className={`${colors.icon} w-5 h-5 flex-shrink-0 mt-0.5`} aria-hidden="true" />
-        
-        <div className="flex-1 min-w-0">
-          <p className={`${colors.text} font-medium text-sm`}>
-            {message}
-          </p>
-          {description && (
-            <p className={`${colors.text} text-sm mt-1 opacity-90`}>
-              {description}
-            </p>
-          )}
-          {action && (
-            <button
-              onClick={action.onClick}
-              className={`${colors.text} text-sm font-medium mt-2 hover:underline focus:outline-none focus:underline`}
-            >
-              {action.label}
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={() => onClose(id)}
-          className={`${colors.text} hover:opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${type}-500 rounded-xl`}
-          aria-label="Close notification"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <div className="flex-shrink-0 mt-0.5">{styles.icon}</div>
+      <div className="flex-1">
+        <div className={`text-sm font-medium ${styles.text}`}>{message}</div>
+        {description && (
+          <div className={`text-xs mt-1 ${styles.text} opacity-80`}>{description}</div>
+        )}
+        {action && (
+          <button
+            onClick={action.onClick}
+            className={`text-xs mt-2 font-medium ${styles.text} hover:underline`}
+          >
+            {action.label}
+          </button>
+        )}
       </div>
+      <button
+        onClick={() => onClose(id)}
+        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        aria-label="Close notification"
+      >
+        <X className="w-4 h-4" />
+      </button>
     </div>
   );
 };
+
+// Export both named and default for compatibility
+export { Toast };
+export default Toast;
