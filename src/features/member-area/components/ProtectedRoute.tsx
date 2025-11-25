@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../services/supabase';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,8 +29,9 @@ const LoadingScreen: React.FC = () => (
  * Features:
  * - Redirects unauthenticated users to login
  * - Preserves intended destination for post-login redirect
- * - Supports role-based access control
- * - Shows loading state during auth check
+ * - Supports role-based access control with fresh database queries
+ * - Shows loading state during auth and role verification
+ * - Queries fresh role from database on every route access
  * 
  * @param children - The protected content to render
  * @param requiredRole - Optional role requirement ('member' or 'admin')
@@ -42,9 +44,76 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
+  const [roleCheck, setRoleCheck] = useState<'checking' | 'allowed' | 'denied'>('checking');
+  const [freshRole, setFreshRole] = useState<string | null>(null);
 
-  // Show loading screen while checking authentication
-  if (isLoading) {
+  // Query fresh role from database when user or requiredRole changes
+  useEffect(() => {
+    const checkRole = async () => {
+      // Reset to checking state
+      setRoleCheck('checking');
+      
+      // If no user or still loading auth, wait
+      if (!user || isLoading) {
+        return;
+      }
+
+      // If no role requirement, allow access
+      if (!requiredRole) {
+        setRoleCheck('allowed');
+        return;
+      }
+
+      try {
+        // Query fresh role from database
+        const { data, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Failed to verify role:', error);
+          // On error, fall back to user state role
+          const currentRole = user.role;
+          setFreshRole(currentRole);
+          
+          if (currentRole === requiredRole) {
+            setRoleCheck('allowed');
+          } else {
+            setRoleCheck('denied');
+          }
+          return;
+        }
+
+        const currentRole = data?.role;
+        setFreshRole(currentRole);
+
+        // Check if role matches requirement
+        if (currentRole === requiredRole) {
+          setRoleCheck('allowed');
+        } else {
+          setRoleCheck('denied');
+        }
+      } catch (error) {
+        console.error('Role verification exception:', error);
+        // On exception, fall back to user state role
+        const currentRole = user.role;
+        setFreshRole(currentRole);
+        
+        if (currentRole === requiredRole) {
+          setRoleCheck('allowed');
+        } else {
+          setRoleCheck('denied');
+        }
+      }
+    };
+
+    checkRole();
+  }, [user, requiredRole, isLoading]);
+
+  // Show loading screen while checking authentication or role
+  if (isLoading || roleCheck === 'checking') {
     return <LoadingScreen />;
   }
 
@@ -61,7 +130,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check role-based access control
-  if (requiredRole && user?.role !== requiredRole) {
+  if (roleCheck === 'denied') {
     // User is authenticated but doesn't have required role
     return (
       <Navigate 
@@ -69,7 +138,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         replace 
         state={{ 
           requiredRole,
-          userRole: user?.role,
+          userRole: freshRole || user?.role,
           from: location.pathname 
         }}
       />

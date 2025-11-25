@@ -10,7 +10,23 @@ export default {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       useESM: true,
+      tsconfig: {
+        jsx: 'react-jsx',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
     }],
+  },
+  globals: {
+    'import.meta': {
+      env: {
+        VITE_ROLE_POLLING_INTERVAL: '5000',
+        VITE_ROLE_POLLING_ENABLED: 'true',
+        VITE_USE_REALTIME_ROLE_UPDATES: 'false',
+        VITE_SUPABASE_URL: 'https://test.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'test-key',
+      },
+    },
   },
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   collectCoverageFrom: [

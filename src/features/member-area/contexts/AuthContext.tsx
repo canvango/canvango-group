@@ -4,6 +4,14 @@ import * as authService from '../services/auth.service';
 import { supabase } from '../services/supabase';
 import { clearAllFilterPreferences } from '../../../shared/hooks/useLocalStorageFilters';
 import { refreshCSRFToken, clearCSRFToken } from '../../../shared/utils/csrf';
+import { useNotification } from '../../../shared/hooks/useNotification';
+import { 
+  getRolePollingInterval, 
+  isRolePollingEnabled, 
+  useRealtimeRoleUpdates 
+} from '../config/rolePolling.config';
+import { queryUserRole } from '../utils/rolePollingUtils';
+import { subscribeToRoleChanges } from '../utils/roleRealtimeUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Token storage keys
 const TOKEN_KEY = 'authToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
-const USER_DATA_KEY = 'userData'; // Store user data including role
+// USER_DATA_KEY removed - role is no longer cached in localStorage
 
 // Flag to prevent race conditions
 let isFetchingProfile = false;
@@ -31,9 +39,11 @@ let isFetchingProfile = false;
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const notification = useNotification();
 
   /**
    * Fetch user profile from Supabase with race condition prevention
+   * Note: User data (including role) is NOT cached in localStorage
    */
   const fetchUserProfile = useCallback(async (): Promise<User | null> => {
     // Prevent multiple simultaneous fetches
@@ -46,23 +56,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     try {
       const userData = await authService.getCurrentUser();
-      
-      if (userData) {
-        // Store user data in localStorage for persistence
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-      }
-      
       return userData;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      
-      // Try to get cached user data from localStorage
-      const cachedUserData = localStorage.getItem(USER_DATA_KEY);
-      if (cachedUserData) {
-        console.log('Using cached user data due to fetch error');
-        return JSON.parse(cachedUserData);
-      }
-      
       return null;
     } finally {
       isFetchingProfile = false;
@@ -73,57 +69,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    * Initialize auth state on mount
    * Check for stored token and validate by fetching user data
    * Also listen for Supabase auth state changes
-   * 
-   * OPTIMIZED: Non-blocking initialization for faster app startup
    */
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem(TOKEN_KEY);
       
       if (token) {
-        // OPTIMIZATION: Load cached user data immediately and set loading to false
-        // This allows the app to render immediately with cached data
-        const cachedUserData = localStorage.getItem(USER_DATA_KEY);
-        if (cachedUserData) {
-          try {
-            const parsedUserData = JSON.parse(cachedUserData);
-            setUser(parsedUserData);
-          } catch (error) {
-            console.error('Failed to parse cached user data:', error);
-          }
+        // Fetch fresh user data from database (no caching)
+        const userData = await fetchUserProfile();
+        if (userData) {
+          setUser(userData);
+        } else {
+          // Clear tokens if fetch failed
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
+          setUser(null);
         }
-        
-        // Set loading to false immediately to unblock UI
-        setIsLoading(false);
-        
-        // OPTIMIZATION: Fetch fresh user data in background (non-blocking)
-        // This happens after the UI is already rendered
-        fetchUserProfile()
-          .then(userData => {
-            if (userData) {
-              setUser(userData);
-            } else if (!cachedUserData) {
-              // Only clear tokens if we have no cached data and fetch failed
-              localStorage.removeItem(TOKEN_KEY);
-              localStorage.removeItem(REFRESH_TOKEN_KEY);
-              localStorage.removeItem(USER_DATA_KEY);
-              setUser(null);
-            }
-          })
-          .catch(error => {
-            console.error('Background auth refresh failed:', error);
-            // Keep using cached data on error
-            if (!cachedUserData) {
-              localStorage.removeItem(TOKEN_KEY);
-              localStorage.removeItem(REFRESH_TOKEN_KEY);
-              localStorage.removeItem(USER_DATA_KEY);
-              setUser(null);
-            }
-          });
-      } else {
-        // No token, set loading to false immediately
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
     };
 
     initializeAuth();
@@ -160,7 +124,92 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [fetchUserProfile]);
 
   /**
+   * Role change detection mechanism
+   * Uses either polling or Realtime subscription based on configuration
+   * Updates user state and triggers notifications when role changes
+   */
+  useEffect(() => {
+    // Only run if user is logged in
+    if (!user) return;
+
+    // Check if role detection is enabled
+    if (!isRolePollingEnabled()) {
+      console.log('🔕 Role change detection is disabled');
+      return;
+    }
+
+    // Determine which method to use
+    const useRealtime = useRealtimeRoleUpdates();
+    
+    if (useRealtime) {
+      // Use Realtime subscription for instant updates
+      console.log('🔄 Starting Realtime subscription for user:', user.id);
+      
+      const unsubscribe = subscribeToRoleChanges(user.id, {
+        currentRole: user.role,
+        onRoleChange: (newRole, oldRole) => {
+          console.log('🔔 Role changed (Realtime):', oldRole, '->', newRole);
+          
+          // Validate role type
+          const validRole = (newRole === 'guest' || newRole === 'member' || newRole === 'admin') 
+            ? newRole 
+            : 'member';
+          
+          // Update user state with new role
+          setUser({ ...user, role: validRole });
+          
+          // Show notification to user
+          notification.info(`Your role has been updated to ${validRole}`);
+        },
+        onError: (error) => {
+          console.error('❌ Realtime subscription error:', error);
+          // Errors are logged but don't disrupt user experience
+        },
+      });
+      
+      return () => {
+        console.log('🛑 Stopping Realtime subscription');
+        unsubscribe();
+      };
+    } else {
+      // Use polling with configurable interval and error handling
+      const pollingInterval = getRolePollingInterval();
+      console.log(`🔄 Starting role polling for user: ${user.id} (interval: ${pollingInterval}ms)`);
+
+      const pollInterval = setInterval(async () => {
+        // Query role with error handling and retry logic
+        const { role: currentRole, fromCache } = await queryUserRole(user.id, user.role);
+
+        // Check if role has changed
+        if (currentRole && currentRole !== user.role) {
+          console.log('🔔 Role changed (polling):', user.role, '->', currentRole);
+          
+          // Validate role type
+          const validRole = (currentRole === 'guest' || currentRole === 'member' || currentRole === 'admin') 
+            ? currentRole 
+            : 'member';
+          
+          // Update user state with new role
+          setUser({ ...user, role: validRole });
+          
+          // Show notification to user
+          notification.info(`Your role has been updated to ${validRole}`);
+        } else if (fromCache) {
+          // Role query failed, using cached value
+          console.log('⚠️ Using cached role due to query failure');
+        }
+      }, pollingInterval);
+
+      return () => {
+        console.log('🛑 Stopping role polling');
+        clearInterval(pollInterval);
+      };
+    }
+  }, [user, notification]);
+
+  /**
    * Login user with credentials using Supabase Auth
+   * Note: User data is NOT cached in localStorage
    */
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
@@ -168,19 +217,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       const { token, refreshToken, user: userData } = await authService.login(credentials);
 
-      // Store tokens
+      // Store tokens only (no user data caching)
       localStorage.setItem(TOKEN_KEY, token);
       if (refreshToken) {
         localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       }
 
-      // Store user data including role
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-
       // Generate new CSRF token for the session
       refreshCSRFToken();
 
-      // Set user state
+      // Set user state (in memory only)
       setUser(userData);
       console.log('User logged in with role:', userData.role);
     } catch (error: any) {
@@ -203,6 +249,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   /**
    * Register new user with Supabase Auth
+   * Note: User data is NOT cached in localStorage
    */
   const register = async (data: import('../types/user').RegisterData): Promise<void> => {
     try {
@@ -214,20 +261,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (sessionData?.session) {
-        // Store tokens
+        // Store tokens only (no user data caching)
         localStorage.setItem(TOKEN_KEY, sessionData.session.access_token);
         if (sessionData.session.refresh_token) {
           localStorage.setItem(REFRESH_TOKEN_KEY, sessionData.session.refresh_token);
         }
       }
 
-      // Store user data including role
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-
       // Generate new CSRF token for the session
       refreshCSRFToken();
 
-      // Set user state
+      // Set user state (in memory only)
       setUser(userData);
       console.log('User registered with role:', userData.role);
     } catch (error: any) {
@@ -248,23 +292,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   /**
    * Logout user and clear tokens
+   * Uses timeout to prevent hanging on expired sessions
    */
   const logout = useCallback(async () => {
     console.log('🔄 Starting logout process...');
     
+    // Clear user state immediately for instant UI feedback
+    setUser(null);
+    
     try {
-      // Call Supabase logout and wait for it to complete
-      await authService.logout();
+      // Call Supabase logout with timeout to prevent hanging
+      const logoutPromise = authService.logout();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Logout timeout')), 3000)
+      );
+      
+      await Promise.race([logoutPromise, timeoutPromise]);
       console.log('✅ Supabase logout successful');
     } catch (error) {
-      console.error('❌ Logout error:', error);
-      // Continue with cleanup even if Supabase logout fails
+      console.error('❌ Logout error (continuing with cleanup):', error);
+      // Continue with cleanup even if Supabase logout fails or times out
     }
     
     // Clear tokens from storage
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_DATA_KEY);
     
     // Clear CSRF token
     clearCSRFToken();
@@ -272,14 +324,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Clear filter preferences
     clearAllFilterPreferences();
     
-    // Clear user state immediately
-    setUser(null);
-    
     console.log('✅ User logged out, all data cleared');
   }, []);
 
   /**
    * Update user profile
+   * Note: User data is NOT cached in localStorage
    */
   const updateProfile = async (data: Partial<User>): Promise<void> => {
     if (!user) {
@@ -313,8 +363,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updatedAt: updatedData.updated_at,
       };
       
-      // Update local user state and cache
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
+      // Update local user state (in memory only)
       setUser(updatedUser);
       console.log('Profile updated:', updatedUser);
     } catch (error: any) {
@@ -405,22 +454,14 @@ export const setAuthToken = (token: string): void => {
 export const clearAuthTokens = (): void => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(USER_DATA_KEY);
 };
 
 /**
- * Get cached user data
+ * @deprecated User data is no longer cached in localStorage
+ * Role is always fetched fresh from database
  */
 export const getCachedUserData = (): User | null => {
-  const cachedData = localStorage.getItem(USER_DATA_KEY);
-  if (cachedData) {
-    try {
-      return JSON.parse(cachedData);
-    } catch (error) {
-      console.error('Failed to parse cached user data:', error);
-      return null;
-    }
-  }
+  console.warn('getCachedUserData is deprecated - user data is no longer cached');
   return null;
 };
 

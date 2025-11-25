@@ -14,7 +14,8 @@
         "get_advisors",
         "list_migrations",
         "get_project_url",
-        "get_anon_key"
+        "get_anon_key",
+        "search_docs"
       ]
     }
   }

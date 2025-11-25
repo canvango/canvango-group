@@ -45,7 +45,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       {/* User Info with Avatar */}
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-64">
         <div className="flex items-center">
           <div 
             className={`
@@ -70,24 +70,24 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
       </td>
 
       {/* Email */}
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-48">
         <div className="text-sm text-gray-900">{user.email}</div>
       </td>
 
       {/* Phone */}
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-36">
         <div className="text-sm text-gray-900">{user.phone || '-'}</div>
       </td>
 
       {/* Balance */}
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-32">
         <div className="text-sm text-gray-900">
           Rp {user.balance?.toLocaleString('id-ID') || 0}
         </div>
       </td>
 
       {/* Role Selector */}
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-32">
         <SelectDropdown
           value={user.role}
           onChange={(value) => onRoleChange(user.id, value)}
@@ -99,7 +99,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
       </td>
 
       {/* Registration Date */}
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-32">
         {new Date(user.created_at).toLocaleDateString('id-ID', {
           year: 'numeric',
           month: 'short',

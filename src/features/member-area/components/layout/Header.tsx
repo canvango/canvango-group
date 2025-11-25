@@ -95,9 +95,18 @@ const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuC
     };
   }, [isDropdownOpen]);
 
-  const handleLogoutClick = () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogoutClick = async () => {
     setIsDropdownOpen(false);
-    onLogout();
+    setIsLoggingOut(true);
+    
+    try {
+      await onLogout();
+    } finally {
+      // Reset state after a short delay (in case navigation doesn't happen)
+      setTimeout(() => setIsLoggingOut(false), 1000);
+    }
   };
 
   return (
@@ -203,12 +212,13 @@ const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuC
                 {/* Logout menu item */}
                 <button
                   onClick={handleLogoutClick}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:bg-red-50"
+                  disabled={isLoggingOut}
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   role="menuitem"
                   type="button"
                 >
-                  <LogOut className="w-4 h-4" aria-hidden="true" />
-                  <span>Logout</span>
+                  <LogOut className={`w-4 h-4 ${isLoggingOut ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                 </button>
               </div>
             )}

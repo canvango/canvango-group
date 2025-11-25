@@ -42,37 +42,37 @@ const AdminUsersTable: React.FC<AdminUsersTableProps> = ({
             <tr>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-64"
               >
                 User
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-48"
               >
                 Email
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-36"
               >
                 Phone
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-32"
               >
                 Balance
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-32"
               >
                 Role
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-32"
               >
                 Registered
               </th>
