@@ -6,6 +6,8 @@ import { validateForm, ValidationRules } from '../../../../shared/utils';
 import Button from '../../../../shared/components/Button';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../../../../shared/contexts/ToastContext';
+import { TurnstileWidget } from '../../../../shared/components';
+import { useTurnstile } from '../../../../shared/hooks';
 
 /**
  * LoginForm component with validation
@@ -27,6 +29,10 @@ export const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string>('');
+  
+  // Turnstile verification
+  const { token, setToken, verifyToken, isVerifying, reset: resetTurnstile } = useTurnstile();
+  const isTurnstileEnabled = !!import.meta.env.VITE_TURNSTILE_SITE_KEY;
   
   // Debug: Log when loginError changes
   React.useEffect(() => {
@@ -72,6 +78,24 @@ export const LoginForm: React.FC = () => {
     if (!validateFormData()) {
       console.log('❌ Validation failed');
       return;
+    }
+
+    // Verify Turnstile if enabled
+    if (isTurnstileEnabled) {
+      if (!token) {
+        setLoginError('Silakan selesaikan verifikasi keamanan terlebih dahulu.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      const isVerified = await verifyToken();
+      
+      if (!isVerified) {
+        setLoginError('Verifikasi keamanan gagal. Silakan refresh halaman dan coba lagi.');
+        setIsSubmitting(false);
+        resetTurnstile();
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -121,6 +145,11 @@ export const LoginForm: React.FC = () => {
       
       // Don't clear form data - let user correct their input
       // formData state is preserved, only password can be cleared for security if needed
+      
+      // Reset Turnstile on error
+      if (isTurnstileEnabled) {
+        resetTurnstile();
+      }
     } finally {
       console.log('🔵 Setting isSubmitting to false');
       setIsSubmitting(false);
@@ -222,6 +251,16 @@ export const LoginForm: React.FC = () => {
             </div>
           )}
 
+          {/* Turnstile Widget */}
+          {isTurnstileEnabled && (
+            <TurnstileWidget
+              onSuccess={setToken}
+              onError={resetTurnstile}
+              onExpire={resetTurnstile}
+              className="my-2"
+            />
+          )}
+
           {/* Remember Me & Forgot Password */}
           <div className="flex items-center justify-between">
             <label className="flex items-center cursor-pointer">
@@ -245,10 +284,11 @@ export const LoginForm: React.FC = () => {
           <Button
             type="submit"
             variant="primary"
-            loading={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors mt-4"
+            loading={isSubmitting || isVerifying}
+            disabled={isTurnstileEnabled && !token}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Masuk
+            {isVerifying ? 'Memverifikasi...' : 'Masuk'}
           </Button>
 
           {/* Register Link */}

@@ -46,6 +46,7 @@ export { default as CopyButton } from './CopyButton';
 export { default as AnalyticsProvider } from './AnalyticsProvider';
 export { SafeContent } from './SafeContent';
 export { RateLimitIndicator, RateLimitBadge } from './RateLimitIndicator';
+export { TurnstileWidget } from './TurnstileWidget';
 
 export type { ButtonProps } from './Button';
 export type { InputProps } from './Input';

@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { ApplicationError, getErrorMessage, getErrorSuggestion } from '../utils/errors';
-import { getApiErrorMessage, isRetryableError } from '../../features/member-area/services/api';
 import { isDev } from '../utils/env';
 
 interface ErrorHandlerOptions {
@@ -76,10 +75,10 @@ export const useErrorHandler = () => {
       let isRetryable = false;
 
       if (error instanceof ApplicationError) {
-        // Use custom message if provided, otherwise use API-specific message
-        message = customMessage || getApiErrorMessage(error);
+        // Use custom message if provided, otherwise use error message
+        message = customMessage || error.message || getErrorMessage(error);
         description = getErrorSuggestion(error);
-        isRetryable = isRetryableError(error);
+        isRetryable = error.type === 'network' || error.type === 'server';
       } else {
         // Handle non-ApplicationError errors
         message = customMessage || getErrorMessage(error);
