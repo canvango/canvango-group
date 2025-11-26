@@ -96,6 +96,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state changed:', event);
       
+      // Ignore USER_UPDATED and PASSWORD_RECOVERY events to prevent unnecessary re-renders
+      if (event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY') {
+        console.log('ℹ️ Ignoring', event, 'event');
+        return;
+      }
+      
       if (event === 'SIGNED_OUT') {
         // Auth state listener: Just ensure state is cleared
         // The logout() function already handles cleanup, so we only need to ensure consistency
@@ -213,7 +219,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    */
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      setIsLoading(true);
+      // Don't set loading state here - let the form component handle it
+      // This prevents GuestRoute from re-rendering and causing issues
       
       const { token, refreshToken, user: userData } = await authService.login(credentials);
 
@@ -232,18 +239,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: any) {
       console.error('Login failed:', error);
       
-      // Provide more specific error messages
-      if (error.message?.includes('Invalid login credentials')) {
-        throw new Error('Invalid email/username or password');
-      } else if (error.message?.includes('Email not confirmed')) {
-        throw new Error('Please verify your email before logging in');
-      } else if (error.status === 429) {
-        throw new Error('Too many login attempts. Please try again later.');
-      } else {
-        throw new Error(error.message || 'Login failed. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
+      // Pass through the error message from auth.service (already in Indonesian)
+      throw error;
     }
   };
 

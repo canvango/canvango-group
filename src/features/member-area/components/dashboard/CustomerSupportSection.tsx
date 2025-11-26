@@ -38,7 +38,7 @@ const CustomerSupportSection: React.FC<CustomerSupportSectionProps> = ({
             <p className="font-semibold text-gray-900 text-sm md:text-base leading-tight">Pelaporan Penipuan</p>
           </div>
           <p className="text-xs md:text-sm text-gray-700 mb-1.5 leading-snug">
-            Jika menemukan pihak yang mengatasnamakan <span className="italic">Rere Media Group</span> di platform lain (WhatsApp, Telegram, Instagram, atau media sosial lainnya), segera laporkan kepada tim keamanan kami untuk di tindak lanjuti.
+            Jika menemukan pihak yang mengatasnamakan <span className="italic">Canvango Group</span> di platform lain (WhatsApp, Telegram, Instagram, atau media sosial lainnya), segera laporkan kepada tim keamanan kami untuk di tindak lanjuti.
           </p>
           <div className="flex items-center space-x-2 text-xs md:text-sm mb-1.5">
             <Mail className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-600 flex-shrink-0" aria-hidden="true" />

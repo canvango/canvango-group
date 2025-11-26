@@ -4,6 +4,7 @@ import { Header, Sidebar, MainContent, WhatsAppButton, Footer } from './layout';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import { SkipLink } from '../../../shared/components';
+import { useToast } from '../../../shared/contexts/ToastContext';
 
 interface MemberAreaLayoutProps {
   children: React.ReactNode;
@@ -13,10 +14,18 @@ const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children }) => {
   const { user, logout, isLoading } = useAuth();
   const { sidebarOpen, toggleSidebar, closeSidebar } = useUI();
   const navigate = useNavigate();
+  const { showInfo } = useToast();
 
   const handleLogout = async () => {
     try {
       await logout();
+      
+      // Show logout success notification
+      showInfo('Anda telah keluar. Sampai jumpa lagi! 👋');
+      
+      // Small delay to ensure toast is visible
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);

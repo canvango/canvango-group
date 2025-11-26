@@ -1,159 +1,46 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
-import { useToast } from '../../../shared/contexts/ToastContext';
+import React from 'react';
+import { ResetPasswordForm } from '../components/auth/ResetPasswordForm';
 
-export default function ResetPassword() {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-
-  useEffect(() => {
-    // Check if user came from reset password email link
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsValidSession(true);
-      } else {
-        showToast({ type: 'error', message: 'Invalid or expired reset link' });
-        setTimeout(() => navigate('/forgot-password'), 2000);
-      }
-    });
-  }, [navigate, showToast]);
-
-  const validatePassword = (password: string): boolean => {
-    if (password.length < 8) {
-      showToast({ type: 'error', message: 'Password must be at least 8 characters long' });
-      return false;
-    }
-    if (!/[A-Z]/.test(password)) {
-      showToast({ type: 'error', message: 'Password must contain at least one uppercase letter' });
-      return false;
-    }
-    if (!/[a-z]/.test(password)) {
-      showToast({ type: 'error', message: 'Password must contain at least one lowercase letter' });
-      return false;
-    }
-    if (!/[0-9]/.test(password)) {
-      showToast({ type: 'error', message: 'Password must contain at least one number' });
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newPassword || !confirmPassword) {
-      showToast({ type: 'error', message: 'Please fill in all fields' });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      showToast({ type: 'error', message: 'Passwords do not match' });
-      return;
-    }
-
-    if (!validatePassword(newPassword)) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (updateError) {
-        showToast({ type: 'error', message: updateError.message });
-      } else {
-        showToast({ type: 'success', message: 'Password updated successfully' });
-        setTimeout(() => navigate('/login'), 2000);
-      }
-    } catch (err) {
-      showToast({ type: 'error', message: 'Failed to reset password. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isValidSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verifying reset link...</p>
-        </div>
-      </div>
-    );
-  }
-
+/**
+ * Reset Password page with two-column layout
+ * Matches Login and Register page design
+ */
+const ResetPassword: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Your Password
+    <div className="min-h-screen flex">
+      {/* Left Column - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-primary-700 p-12 flex-col justify-center items-center">
+        <div className="max-w-lg text-center">
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="bg-white rounded-full px-8 py-4 shadow-lg flex items-center gap-4">
+              <img 
+                src="/logo.png" 
+                alt="Canvango Group" 
+                className="h-12 w-auto"
+              />
+              <h1 className="text-2xl font-bold" style={{ color: '#5271ff' }}>CANVANGO GROUP</h1>
+            </div>
+          </div>
+          
+          {/* Heading */}
+          <h2 className="text-white text-3xl font-bold mb-4 leading-tight">
+            Buat Password Baru Yang Aman
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your new password below
+          
+          {/* Description */}
+          <p className="text-primary-100 text-lg leading-relaxed">
+            Pastikan password baru Anda kuat dan mudah diingat. Gunakan kombinasi huruf besar, huruf kecil, dan angka untuk keamanan maksimal.
           </p>
         </div>
+      </div>
 
-        <div className="card p-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="newPassword" className="label">
-                New Password
-              </label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                required
-                className="input"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={loading}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters with uppercase, lowercase, and number
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="label">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className="input"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                className="btn-primary w-full"
-                disabled={loading}
-              >
-                {loading ? 'Resetting...' : 'Reset Password'}
-              </button>
-            </div>
-          </form>
-        </div>
+      {/* Right Column - Reset Password Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+        <ResetPasswordForm />
       </div>
     </div>
   );
-}
+};
+
+export default ResetPassword;

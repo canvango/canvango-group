@@ -20,6 +20,7 @@ export const useWarrantyRealtime = (userId?: string, callbacks?: WarrantyRealtim
     console.log('🔔 [Realtime] New warranty claim:', payload.new);
     
     // Invalidate queries to refetch data
+    // This will automatically update the eligible accounts list (removing claimed products)
     queryClient.invalidateQueries({ queryKey: ['warranty', 'claims'] });
     queryClient.invalidateQueries({ queryKey: ['warranty', 'stats'] });
     queryClient.invalidateQueries({ queryKey: ['warranty', 'eligible-accounts'] });

@@ -5,6 +5,7 @@ import { LoginCredentials } from '../../types/user';
 import { validateForm, ValidationRules } from '../../../../shared/utils';
 import Button from '../../../../shared/components/Button';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../../../../shared/contexts/ToastContext';
 
 /**
  * LoginForm component with validation
@@ -14,6 +15,7 @@ export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { showSuccess } = useToast();
   
   const [formData, setFormData] = useState<LoginCredentials>({
     identifier: '',
@@ -25,6 +27,11 @@ export const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string>('');
+  
+  // Debug: Log when loginError changes
+  React.useEffect(() => {
+    console.log('🔴 loginError state changed to:', loginError);
+  }, [loginError]);
 
   const validationRules: ValidationRules = {
     identifier: {
@@ -58,16 +65,30 @@ export const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+    
+    console.log('🔵 Form submitted');
 
     if (!validateFormData()) {
+      console.log('❌ Validation failed');
       return;
     }
 
     setIsSubmitting(true);
     setLoginError('');
+    
+    console.log('🔵 Starting login process...');
 
     try {
       await login(formData);
+      
+      console.log('✅ Login successful, redirecting...');
+      
+      // Show success notification
+      showSuccess('Login berhasil! Selamat datang kembali 🎉');
+      
+      // Small delay to ensure toast is visible before redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Redirect after login based on role (Requirement: 1.4)
       // If user was trying to access a specific page, redirect there
@@ -82,10 +103,26 @@ export const LoginForm: React.FC = () => {
         navigate('/dashboard', { replace: true });
       }
     } catch (error: any) {
-      // Show error message
-      setLoginError(error?.message || 'Username atau kata sandi salah. Silakan coba lagi.');
-      console.error('Login error:', error);
+      // Prevent any navigation on error
+      console.log('❌ Login failed in LoginForm, setting error state');
+      console.log('Error object:', error);
+      console.log('Error message:', error?.message);
+      
+      // Show error message - form values are preserved automatically
+      const errorMessage = error?.message || 'Username atau kata sandi salah. Silakan coba lagi.';
+      
+      console.log('Setting loginError to:', errorMessage);
+      
+      // Use setTimeout to ensure state update happens after current render cycle
+      setTimeout(() => {
+        setLoginError(errorMessage);
+        console.log('✅ loginError state set to:', errorMessage);
+      }, 0);
+      
+      // Don't clear form data - let user correct their input
+      // formData state is preserved, only password can be cleared for security if needed
     } finally {
+      console.log('🔵 Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };

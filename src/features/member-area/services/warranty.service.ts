@@ -190,12 +190,11 @@ export const submitWarrantyClaim = async (claimData: SubmitClaimData): Promise<W
     throw new Error('This purchase does not have warranty coverage');
   }
   
-  // Check if already claimed (approved or pending)
+  // Check if already claimed - database constraint will also prevent this
   const { data: existingClaim, error: claimCheckError } = await supabase
     .from('warranty_claims')
     .select('id, status')
     .eq('purchase_id', claimData.accountId)
-    .in('status', ['pending', 'reviewing', 'approved'])
     .maybeSingle();
   
   if (claimCheckError) {
@@ -203,7 +202,7 @@ export const submitWarrantyClaim = async (claimData: SubmitClaimData): Promise<W
   }
   
   if (existingClaim) {
-    throw new Error('A warranty claim is already pending or approved for this purchase');
+    throw new Error('Produk ini sudah pernah di-claim sebelumnya. Setiap produk hanya dapat di-claim satu kali.');
   }
   
   // Submit claim using mutation handler
@@ -246,6 +245,7 @@ export const submitWarrantyClaim = async (claimData: SubmitClaimData): Promise<W
 
 /**
  * Fetch accounts eligible for warranty claim - Direct Supabase
+ * Excludes purchases that already have a warranty claim
  */
 export const fetchEligibleAccounts = async (): Promise<EligibleAccountsResponse> => {
   // Get current user
@@ -254,10 +254,23 @@ export const fetchEligibleAccounts = async (): Promise<EligibleAccountsResponse>
     throw new Error('Not authenticated');
   }
   
-  // Query purchases with active warranty using error handler
-  const data = await handleSupabaseOperation(
+  // First, get all purchase IDs that already have claims
+  const claimedPurchaseIds = await handleSupabaseOperation(
     async () => {
       return await supabase
+        .from('warranty_claims')
+        .select('purchase_id')
+        .eq('user_id', user.id);
+    },
+    'fetchEligibleAccounts:getClaimedPurchases'
+  );
+  
+  const claimedIds = (claimedPurchaseIds || []).map(c => c.purchase_id);
+  
+  // Query purchases with active warranty, excluding already claimed ones
+  const data = await handleSupabaseOperation(
+    async () => {
+      let query = supabase
         .from('purchases')
         .select(`
           *,
@@ -271,8 +284,14 @@ export const fetchEligibleAccounts = async (): Promise<EligibleAccountsResponse>
         .eq('user_id', user.id)
         .eq('status', 'active')
         .not('warranty_expires_at', 'is', null)
-        .gt('warranty_expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+        .gt('warranty_expires_at', new Date().toISOString());
+      
+      // Exclude already claimed purchases
+      if (claimedIds.length > 0) {
+        query = query.not('id', 'in', `(${claimedIds.join(',')})`);
+      }
+      
+      return await query.order('created_at', { ascending: false });
     },
     'fetchEligibleAccounts'
   );

@@ -98,7 +98,7 @@ describe('Sidebar Navigation - URL Duplication Fix', () => {
         { label: 'Kelola Klaim', expectedPath: '/admin/claims' },
         { label: 'Kelola Tutorial', expectedPath: '/admin/tutorials' },
         { label: 'Kelola Produk', expectedPath: '/admin/products' },
-        { label: 'Kelola Kategori', expectedPath: '/admin/categories' },
+        { label: 'Kelola Announcement', expectedPath: '/admin/announcements' },
         { label: 'Pengaturan Sistem', expectedPath: '/admin/settings' },
         { label: 'Log Aktivitas', expectedPath: '/admin/audit-logs' },
       ];
@@ -117,7 +117,7 @@ describe('Sidebar Navigation - URL Duplication Fix', () => {
       expect(ROUTES.ADMIN.CLAIMS).toBe('admin/claims');
       expect(ROUTES.ADMIN.TUTORIALS).toBe('admin/tutorials');
       expect(ROUTES.ADMIN.PRODUCTS).toBe('admin/products');
-      expect(ROUTES.ADMIN.CATEGORIES).toBe('admin/categories');
+      expect(ROUTES.ADMIN.ANNOUNCEMENTS).toBe('admin/announcements');
       expect(ROUTES.ADMIN.SETTINGS).toBe('admin/settings');
       expect(ROUTES.ADMIN.AUDIT_LOGS).toBe('admin/audit-logs');
     });

@@ -27,6 +27,8 @@ import { ErrorBoundary } from './shared/components/ErrorBoundary';
 // Import auth pages
 import Login from './features/member-area/pages/Login';
 import Register from './features/member-area/pages/Register';
+import ForgotPassword from './features/member-area/pages/ForgotPassword';
+import ResetPassword from './features/member-area/pages/ResetPassword';
 import { GuestRoute } from './features/member-area/components/auth/GuestRoute';
 
 // Import main app component
@@ -82,6 +84,10 @@ if (!root) {
                         {/* Auth routes - accessible only to guests */}
                         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
                         <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+                        <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+                        
+                        {/* Password reset - accessible with valid token from email */}
+                        <Route path="/reset-password" element={<ResetPassword />} />
                         
                         {/* Member area routes - all other routes */}
                         <Route path="/*" element={<MemberArea />} />

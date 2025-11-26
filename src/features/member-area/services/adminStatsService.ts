@@ -111,7 +111,7 @@ class AdminStatsService {
       // Get transaction stats
       const { data: transactions, error: transactionsError } = await supabase
         .from('transactions')
-        .select('status, amount');
+        .select('status, amount, transaction_type');
       
       if (transactionsError) {
         console.error('❌ Error fetching transactions:', transactionsError);
@@ -126,15 +126,31 @@ class AdminStatsService {
 
       console.log('📊 Transactions by status:', transactionsByStatus);
 
-      // Calculate total revenue (only from completed transactions)
+      // Calculate total revenue (only from completed PURCHASE transactions)
       const totalRevenue = transactions?.reduce((sum, txn) => {
-        if (txn.status === 'completed') {
+        if (txn.status === 'completed' && txn.transaction_type === 'purchase') {
           return sum + (txn.amount || 0);
         }
         return sum;
       }, 0) || 0;
 
-      console.log('💰 Total revenue:', totalRevenue);
+      // Calculate revenue breakdown for verification
+      const purchaseRevenue = transactions?.reduce((sum, txn) => {
+        if (txn.status === 'completed' && txn.transaction_type === 'purchase') {
+          return sum + (txn.amount || 0);
+        }
+        return sum;
+      }, 0) || 0;
+
+      const topupRevenue = transactions?.reduce((sum, txn) => {
+        if (txn.status === 'completed' && txn.transaction_type === 'topup') {
+          return sum + (txn.amount || 0);
+        }
+        return sum;
+      }, 0) || 0;
+
+      console.log('💰 Total revenue (purchase only):', totalRevenue);
+      console.log('📊 Revenue breakdown - Purchase:', purchaseRevenue, '| Topup:', topupRevenue);
 
       // Get claims stats
       const { data: claims, error: claimsError } = await supabase

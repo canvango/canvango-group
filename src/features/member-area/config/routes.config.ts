@@ -52,7 +52,7 @@ export const ROUTES = {
     CLAIMS: 'admin/claims',
     TUTORIALS: 'admin/tutorials',
     PRODUCTS: 'admin/products',
-    CATEGORIES: 'admin/categories',
+    ANNOUNCEMENTS: 'admin/announcements',
     SETTINGS: 'admin/settings',
     AUDIT_LOGS: 'admin/audit-logs',
   },
@@ -141,10 +141,10 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     label: 'Kelola Produk',
     description: 'Manage product catalog and inventory',
   },
-  ADMIN_CATEGORIES: {
-    path: ROUTES.ADMIN.CATEGORIES,
-    label: 'Kelola Kategori',
-    description: 'Manage product categories',
+  ADMIN_ANNOUNCEMENTS: {
+    path: ROUTES.ADMIN.ANNOUNCEMENTS,
+    label: 'Kelola Announcement',
+    description: 'Manage announcements and updates for members',
   },
   ADMIN_SETTINGS: {
     path: ROUTES.ADMIN.SETTINGS,

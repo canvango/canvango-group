@@ -61,7 +61,7 @@ export const login = async (credentials: LoginCredentials): Promise<{
           code: userError?.code,
           details: userError?.details
         });
-        throw new Error('Invalid username or password');
+        throw new Error('Username atau password salah. Silakan coba lagi.');
       }
       
       email = userData.email;

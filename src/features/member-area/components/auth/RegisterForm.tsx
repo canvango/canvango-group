@@ -5,6 +5,7 @@ import { RegisterData } from '../../types/user';
 import { validateForm, ValidationRules, ValidationPatterns } from '../../../../shared/utils';
 import Button from '../../../../shared/components/Button';
 import { AlertCircle, Eye, EyeOff, Smartphone } from 'lucide-react';
+import { useToast } from '../../../../shared/contexts/ToastContext';
 
 interface RegisterFormData extends RegisterData {
   phone: string;
@@ -17,6 +18,7 @@ interface RegisterFormData extends RegisterData {
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { showSuccess } = useToast();
   
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
@@ -100,6 +102,12 @@ export const RegisterForm: React.FC = () => {
         ...formData,
         phone: normalizedPhone
       });
+      
+      // Show success notification
+      showSuccess('Pendaftaran berhasil! Selamat datang 🎉');
+      
+      // Small delay to ensure toast is visible before redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Redirect to dashboard after successful registration (Requirement: 1.4)
       navigate('/dashboard', { replace: true });
@@ -295,7 +303,7 @@ export const RegisterForm: React.FC = () => {
 
           {/* Error Message */}
           {registerError && (
-            <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl animate-shake">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-red-700 flex-1">
                 {registerError}

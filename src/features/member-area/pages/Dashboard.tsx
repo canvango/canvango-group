@@ -20,22 +20,7 @@ const Dashboard: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const [mockUpdates] = useState([
-    {
-      id: '1',
-      title: 'Peningkatan Sistem Keamanan',
-      description: 'Kami telah meningkatkan sistem keamanan untuk melindungi data Anda dengan lebih baik.',
-      date: '15 Nov 2025',
-      type: 'feature' as const
-    },
-    {
-      id: '2',
-      title: 'Pemeliharaan Terjadwal',
-      description: 'Sistem akan menjalani pemeliharaan rutin pada 20 Nov 2025 pukul 02:00 - 04:00 WIB.',
-      date: '14 Nov 2025',
-      type: 'maintenance' as const
-    }
-  ]);
+
 
   // Fetch recent transactions (public - all users)
   // OPTIMIZED: Defer loading to improve initial page render
@@ -60,10 +45,7 @@ const Dashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleRefreshUpdates = () => {
-    console.log('Refreshing updates...');
-    // In real implementation, this would fetch latest updates from API
-  };
+
 
   return (
     <div>
@@ -107,11 +89,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="mb-6">
-        <UpdatesSection 
-          updates={mockUpdates}
-          onRefresh={handleRefreshUpdates}
-          isLoading={false}
-        />
+        <UpdatesSection limit={5} />
       </div>
 
       {/* Show recent transactions from all users */}

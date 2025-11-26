@@ -21,9 +21,9 @@ const TransactionManagement = lazy(() => import('./pages/admin/TransactionManage
 const WarrantyClaimManagement = lazy(() => import('./pages/admin/WarrantyClaimManagement'));
 const TutorialManagement = lazy(() => import('./pages/admin/TutorialManagement'));
 const ProductManagement = lazy(() => import('./pages/admin/ProductManagement'));
-const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement'));
 const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'));
 const AuditLog = lazy(() => import('./pages/admin/AuditLog'));
+const AnnouncementManagement = lazy(() => import('./pages/admin/AnnouncementManagement'));
 
 /**
  * Loading component displayed while pages are being lazy loaded
@@ -168,14 +168,6 @@ const MemberRoutes: React.FC = () => {
           } 
         />
         <Route 
-          path="admin/categories" 
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <CategoryManagement />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
           path="admin/settings" 
           element={
             <ProtectedRoute requiredRole="admin">
@@ -188,6 +180,14 @@ const MemberRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AuditLog />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/announcements" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AnnouncementManagement />
             </ProtectedRoute>
           } 
         />

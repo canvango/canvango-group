@@ -164,17 +164,21 @@ const ClaimSubmissionSection: React.FC<ClaimSubmissionSectionProps> = ({
   // Empty state when no eligible accounts
   if (eligibleAccounts.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-            <Shield className="w-8 h-8 text-gray-400" />
+      <div className="bg-white rounded-3xl border border-gray-200 p-12">
+        <div className="text-center max-w-md mx-auto">
+          {/* Icon */}
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full mb-6">
+            <Shield className="w-10 h-10 text-blue-500" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Tidak Ada Akun yang Memenuhi Syarat
+          
+          {/* Title */}
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            Tidak ada akun yang dapat di-claim
           </h3>
-          <p className="text-sm text-gray-600 max-w-md mx-auto">
-            Saat ini Anda tidak memiliki akun yang memenuhi syarat untuk klaim garansi. 
-            Akun harus memiliki garansi aktif dan belum pernah diklaim sebelumnya.
+          
+          {/* Description */}
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Semua akun Anda sudah melewati masa garansi, tidak memiliki garansi, atau sudah pernah di-claim.
           </p>
         </div>
       </div>

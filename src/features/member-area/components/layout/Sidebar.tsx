@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faHouse, faClockRotateLeft, faWallet, faUser, faCircleCheck,
   faShield, faCode, faBook, faUsers, faChartLine, faCreditCard,
-  faShieldHalved, faBox, faGear, faClipboardList, faFolderTree, 
-  faChevronDown, faChevronRight
+  faShieldHalved, faBox, faGear, faClipboardList, 
+  faChevronDown, faChevronRight, faBullhorn
 } from '@fortawesome/free-solid-svg-icons';
 import { faMeta } from '@fortawesome/free-brands-svg-icons';
 import { ROUTES } from '../../config/routes.config';
@@ -108,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     { icon: faShieldHalved, label: 'Kelola Klaim', path: ROUTES.ADMIN.CLAIMS },
     { icon: faBook, label: 'Kelola Tutorial', path: ROUTES.ADMIN.TUTORIALS },
     { icon: faBox, label: 'Kelola Produk', path: ROUTES.ADMIN.PRODUCTS },
-    { icon: faFolderTree, label: 'Kelola Kategori', path: ROUTES.ADMIN.CATEGORIES },
+    { icon: faBullhorn, label: 'Kelola Announcement', path: ROUTES.ADMIN.ANNOUNCEMENTS },
     { icon: faGear, label: 'Pengaturan Sistem', path: ROUTES.ADMIN.SETTINGS },
     { icon: faClipboardList, label: 'Log Aktivitas', path: ROUTES.ADMIN.AUDIT_LOGS }
   ] : [];
