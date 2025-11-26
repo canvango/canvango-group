@@ -31,7 +31,7 @@ export const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({
   }
 
   return (
-    <div className={`flex justify-center ${className}`}>
+    <div className={`w-full ${className}`}>
       <Turnstile
         ref={turnstileRef}
         siteKey={siteKey}
@@ -46,7 +46,7 @@ export const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({
         }}
         options={{
           theme: 'light',
-          size: 'normal',
+          size: 'flexible',
         }}
       />
     </div>
