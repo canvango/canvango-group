@@ -33,6 +33,13 @@ export const useTurnstile = (): UseTurnstileReturn => {
       return false;
     }
 
+    // Skip verification in development mode (Vercel Edge Function not available locally)
+    if (import.meta.env.DEV) {
+      console.log('🔧 Development mode: Skipping Turnstile verification');
+      setIsVerified(true);
+      return true;
+    }
+
     setIsVerifying(true);
     setError(null);
 
