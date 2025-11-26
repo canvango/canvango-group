@@ -342,12 +342,13 @@ export const RegisterForm: React.FC = () => {
 
           {/* Turnstile Widget */}
           {isTurnstileEnabled && (
-            <TurnstileWidget
-              onSuccess={setToken}
-              onError={resetTurnstile}
-              onExpire={resetTurnstile}
-              className="my-2"
-            />
+            <div className="mb-1">
+              <TurnstileWidget
+                onSuccess={setToken}
+                onError={resetTurnstile}
+                onExpire={resetTurnstile}
+              />
+            </div>
           )}
 
           {/* Submit Button */}

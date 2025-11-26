@@ -137,11 +137,13 @@ export const ForgotPasswordForm = () => {
 
           {/* Turnstile Widget */}
           {isTurnstileEnabled && (
-            <TurnstileWidget
-              onSuccess={setToken}
-              onError={resetTurnstile}
-              onExpire={resetTurnstile}
-            />
+            <div className="mb-2">
+              <TurnstileWidget
+                onSuccess={setToken}
+                onError={resetTurnstile}
+                onExpire={resetTurnstile}
+              />
+            </div>
           )}
 
           {/* Submit Button */}
