@@ -1,95 +1,128 @@
 import { supabase } from '@/clients/supabase';
-import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
-import { VerifiedBMOrder, VerifiedBMOrderStats } from '../types/verified-bm';
+import { 
+  VerifiedBMRequest, 
+  VerifiedBMRequestStats,
+  SubmitVerifiedBMRequestResponse 
+} from '../types/verified-bm';
 
 /**
- * Fetch verified BM order statistics - Direct Supabase
+ * Verified BM Service
+ * Handles all verified BM related API calls
  */
-export const fetchVerifiedBMStats = async (): Promise<VerifiedBMOrderStats> => {
-  return handleSupabaseOperation(async () => {
+
+/**
+ * Fetch verified BM request statistics
+ */
+export const fetchVerifiedBMStats = async (): Promise<VerifiedBMRequestStats> => {
+  try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
     if (!user) throw new Error('Not authenticated');
 
-    const { data: orders, error } = await supabase
-      .from('verified_bm_orders')
-      .select('*')
+    const { data: requests, error } = await supabase
+      .from('verified_bm_requests')
+      .select('status')
       .eq('user_id', user.id);
 
     if (error) throw error;
 
-    const stats: VerifiedBMOrderStats = {
-      totalOrders: orders?.length || 0,
-      pendingOrders: orders?.filter(o => o.status === 'pending').length || 0,
-      completedOrders: orders?.filter(o => o.status === 'completed').length || 0,
-      failedOrders: orders?.filter(o => o.status === 'failed').length || 0,
+    // Empty array is valid - user might not have any requests yet
+    const reqs = requests || [];
+    const stats: VerifiedBMRequestStats = {
+      totalRequests: reqs.length,
+      pendingRequests: reqs.filter(r => r.status === 'pending').length,
+      processingRequests: reqs.filter(r => r.status === 'processing').length,
+      completedRequests: reqs.filter(r => r.status === 'completed').length,
+      failedRequests: reqs.filter(r => r.status === 'failed').length,
     };
 
-    return { data: stats, error: null };
-  });
+    return stats;
+  } catch (error: any) {
+    console.error('fetchVerifiedBMStats error:', error);
+    throw new Error(error.message || 'Gagal mengambil statistik');
+  }
 };
 
 /**
- * Fetch verified BM orders - Direct Supabase
+ * Fetch verified BM requests for current user with URL details
  */
-export const fetchVerifiedBMOrders = async (): Promise<VerifiedBMOrder[]> => {
-  return handleSupabaseOperation(async () => {
+export const fetchVerifiedBMRequests = async (): Promise<VerifiedBMRequest[]> => {
+  try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
     if (!user) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
-      .from('verified_bm_orders')
+    const { data: requests, error } = await supabase
+      .from('verified_bm_requests')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { data: data || [], error: null };
-  });
+
+    // Empty array is valid - user might not have any requests yet
+    if (!requests || requests.length === 0) return [];
+
+    // Fetch URL details for all requests
+    const requestIds = requests.map(r => r.id);
+    const { data: urlDetails, error: urlError } = await supabase
+      .from('verified_bm_urls')
+      .select('*')
+      .in('request_id', requestIds)
+      .order('url_index', { ascending: true });
+
+    if (urlError) throw urlError;
+
+    // Group URL details by request_id
+    const urlsByRequest = new Map();
+    (urlDetails || []).forEach(url => {
+      if (!urlsByRequest.has(url.request_id)) {
+        urlsByRequest.set(url.request_id, []);
+      }
+      urlsByRequest.get(url.request_id).push(url);
+    });
+
+    // Attach URL details to requests
+    const requestsWithUrls = requests.map(request => ({
+      ...request,
+      url_details: urlsByRequest.get(request.id) || []
+    }));
+
+    return requestsWithUrls;
+  } catch (error: any) {
+    console.error('fetchVerifiedBMRequests error:', error);
+    throw new Error(error.message || 'Gagal mengambil daftar request');
+  }
 };
 
 /**
- * Submit a new verified BM order
+ * Submit verified BM request
+ * Calls database function that handles balance deduction
  */
-export interface SubmitVerifiedBMOrderData {
-  quantity: number;
-  urls: string[];
-}
-
-export interface SubmitVerifiedBMOrderResponse {
-  orderId: string;
-  status: 'pending' | 'success' | 'failed';
-  message: string;
-}
-
-export const submitVerifiedBMOrder = async (
-  data: SubmitVerifiedBMOrderData
-): Promise<SubmitVerifiedBMOrderResponse> => {
-  return handleSupabaseOperation(async () => {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error('Not authenticated');
-
-    const { data: order, error } = await supabase
-      .from('verified_bm_orders')
-      .insert({
-        user_id: user.id,
-        quantity: data.quantity,
-        urls: data.urls,
-        status: 'pending',
-      })
-      .select()
-      .single();
+export const submitVerifiedBMRequest = async (
+  quantity: number,
+  urls: string[]
+): Promise<SubmitVerifiedBMRequestResponse> => {
+  try {
+    const { data, error } = await supabase.rpc('submit_verified_bm_request', {
+      p_quantity: quantity,
+      p_urls: urls
+    });
 
     if (error) throw error;
+    if (!data) throw new Error('Tidak ada data yang dikembalikan');
 
-    const response: SubmitVerifiedBMOrderResponse = {
-      orderId: order.id,
-      status: 'pending',
-      message: 'Order submitted successfully',
-    };
-
-    return { data: response, error: null };
-  });
+    return data;
+  } catch (error: any) {
+    console.error('submitVerifiedBMRequest error:', error);
+    
+    // Handle specific error messages from database function
+    if (error.message?.includes('Saldo tidak mencukupi')) {
+      throw new Error('Saldo tidak mencukupi untuk request ini');
+    }
+    
+    throw new Error(error.message || 'Gagal membuat request');
+  }
 };
+
+

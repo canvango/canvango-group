@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
-import { TutorialCategory } from '../types/tutorial';
 import { useTutorials } from '../hooks/useTutorials';
 import {
   TutorialSearchBar,
@@ -22,47 +21,25 @@ const TutorialCenter: React.FC = () => {
   });
 
   // Extract filter values
-  const searchValue = filters.search;
-  const activeCategory = filters.category as TutorialCategory | 'all';
+  const searchValue = filters.search as string;
+  const activeCategory = filters.category as string;
 
-  // Fetch tutorials with filters
+  // Fetch tutorials with filters - filtering done by Supabase
   const { data: tutorials = [], isLoading } = useTutorials({
     category: activeCategory,
     search: searchValue
   });
 
-  // Filter tutorials based on search and category
-  const filteredTutorials = useMemo(() => {
-    let filtered = tutorials;
-
-    // Filter by search
-    if (searchValue) {
-      const searchLower = searchValue.toLowerCase();
-      filtered = filtered.filter(
-        (tutorial) =>
-          tutorial.title.toLowerCase().includes(searchLower) ||
-          tutorial.content.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Filter by category
-    if (activeCategory !== 'all') {
-      filtered = filtered.filter((tutorial) => tutorial.category === activeCategory);
-    }
-
-    return filtered;
-  }, [tutorials, searchValue, activeCategory]);
-
   const handleTutorialClick = (slug: string) => {
     // Navigate to tutorial detail page
-    navigate(`/member/tutorials/${slug}`);
+    navigate(`/member/tutorial/${slug}`);
   };
 
   const handleSearchChange = (value: string) => {
     setFilter('search', value);
   };
 
-  const handleCategoryChange = (category: TutorialCategory | 'all') => {
+  const handleCategoryChange = (category: string) => {
     setFilter('category', category);
   };
 
@@ -95,13 +72,13 @@ const TutorialCenter: React.FC = () => {
       {/* Total Count */}
       {!searchValue && (
         <div className="text-sm text-gray-600">
-          Total {filteredTutorials.length} tutorial tersedia
+          Total {tutorials.length} tutorial tersedia
         </div>
       )}
 
       {/* Tutorial Grid */}
       <TutorialGrid
-        tutorials={filteredTutorials}
+        tutorials={tutorials}
         isLoading={isLoading}
         onTutorialClick={handleTutorialClick}
       />

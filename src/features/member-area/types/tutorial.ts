@@ -1,21 +1,28 @@
-export enum TutorialCategory {
-  GETTING_STARTED = 'getting-started',
-  ACCOUNT = 'account',
-  TRANSACTION = 'transaction',
-  API = 'api',
-  TROUBLESHOOT = 'troubleshoot'
-}
+/**
+ * Tutorial types for member area
+ * Matches database schema exactly
+ */
+
+export type TutorialCategory = 
+  | 'bm_management' 
+  | 'advertising' 
+  | 'troubleshooting' 
+  | 'api';
 
 export interface Tutorial {
   id: string;
   title: string;
   slug: string;
-  category: TutorialCategory;
+  category: string; // Allow any string for flexibility
+  description: string | null;
   content: string;
-  thumbnail?: string;
-  readTime: number;
-  views: number;
-  published: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  video_url: string | null;
+  thumbnail_url: string | null;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
+  duration_minutes: number | null;
+  view_count: number;
+  is_published: boolean;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
 }

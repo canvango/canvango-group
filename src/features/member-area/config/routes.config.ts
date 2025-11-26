@@ -53,6 +53,7 @@ export const ROUTES = {
     TUTORIALS: 'admin/tutorials',
     PRODUCTS: 'admin/products',
     ANNOUNCEMENTS: 'admin/announcements',
+    VERIFIED_BM: 'admin/verified-bm',
     SETTINGS: 'admin/settings',
     AUDIT_LOGS: 'admin/audit-logs',
   },
@@ -145,6 +146,11 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     path: ROUTES.ADMIN.ANNOUNCEMENTS,
     label: 'Kelola Announcement',
     description: 'Manage announcements and updates for members',
+  },
+  ADMIN_VERIFIED_BM: {
+    path: ROUTES.ADMIN.VERIFIED_BM,
+    label: 'Kelola Verified BM',
+    description: 'Manage verified BM requests and orders',
   },
   ADMIN_SETTINGS: {
     path: ROUTES.ADMIN.SETTINGS,

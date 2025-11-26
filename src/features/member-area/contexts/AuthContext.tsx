@@ -5,13 +5,7 @@ import { supabase } from '../services/supabase';
 import { clearAllFilterPreferences } from '../../../shared/hooks/useLocalStorageFilters';
 import { refreshCSRFToken, clearCSRFToken } from '../../../shared/utils/csrf';
 import { useNotification } from '../../../shared/hooks/useNotification';
-import { 
-  getRolePollingInterval, 
-  isRolePollingEnabled, 
-  useRealtimeRoleUpdates 
-} from '../config/rolePolling.config';
-import { queryUserRole } from '../utils/rolePollingUtils';
-import { subscribeToRoleChanges } from '../utils/roleRealtimeUtils';
+
 
 interface AuthContextType {
   user: User | null;
@@ -130,87 +124,61 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [fetchUserProfile]);
 
   /**
-   * Role change detection mechanism
-   * Uses either polling or Realtime subscription based on configuration
-   * Updates user state and triggers notifications when role changes
+   * Role and Balance change detection mechanism
+   * Uses Realtime subscription for instant updates
+   * Updates user state when role or balance changes
    */
   useEffect(() => {
     // Only run if user is logged in
     if (!user) return;
 
-    // Check if role detection is enabled
-    if (!isRolePollingEnabled()) {
-      console.log('🔕 Role change detection is disabled');
-      return;
-    }
-
-    // Determine which method to use
-    const useRealtime = useRealtimeRoleUpdates();
+    console.log('🔄 Starting Realtime subscription for user:', user.id);
     
-    if (useRealtime) {
-      // Use Realtime subscription for instant updates
-      console.log('🔄 Starting Realtime subscription for user:', user.id);
-      
-      const unsubscribe = subscribeToRoleChanges(user.id, {
-        currentRole: user.role,
-        onRoleChange: (newRole, oldRole) => {
-          console.log('🔔 Role changed (Realtime):', oldRole, '->', newRole);
-          
-          // Validate role type
-          const validRole = (newRole === 'guest' || newRole === 'member' || newRole === 'admin') 
-            ? newRole 
-            : 'member';
-          
-          // Update user state with new role
-          setUser({ ...user, role: validRole });
-          
-          // Show notification to user
-          notification.info(`Your role has been updated to ${validRole}`);
+    // Subscribe to user table changes for this specific user
+    const channel = supabase
+      .channel(`user-changes-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users',
+          filter: `id=eq.${user.id}`
         },
-        onError: (error) => {
-          console.error('❌ Realtime subscription error:', error);
-          // Errors are logged but don't disrupt user experience
-        },
-      });
-      
-      return () => {
-        console.log('🛑 Stopping Realtime subscription');
-        unsubscribe();
-      };
-    } else {
-      // Use polling with configurable interval and error handling
-      const pollingInterval = getRolePollingInterval();
-      console.log(`🔄 Starting role polling for user: ${user.id} (interval: ${pollingInterval}ms)`);
-
-      const pollInterval = setInterval(async () => {
-        // Query role with error handling and retry logic
-        const { role: currentRole, fromCache } = await queryUserRole(user.id, user.role);
-
-        // Check if role has changed
-        if (currentRole && currentRole !== user.role) {
-          console.log('🔔 Role changed (polling):', user.role, '->', currentRole);
+        (payload) => {
+          console.log('🔔 User data changed:', payload);
           
-          // Validate role type
-          const validRole = (currentRole === 'guest' || currentRole === 'member' || currentRole === 'admin') 
-            ? currentRole 
-            : 'member';
+          const newData = payload.new as any;
           
-          // Update user state with new role
-          setUser({ ...user, role: validRole });
+          // Check if role changed
+          if (newData.role && newData.role !== user.role) {
+            console.log('🔔 Role changed:', user.role, '->', newData.role);
+            notification.info(`Your role has been updated to ${newData.role}`);
+          }
           
-          // Show notification to user
-          notification.info(`Your role has been updated to ${validRole}`);
-        } else if (fromCache) {
-          // Role query failed, using cached value
-          console.log('⚠️ Using cached role due to query failure');
+          // Check if balance changed
+          if (newData.balance !== undefined && newData.balance !== user.balance) {
+            console.log('💰 Balance changed:', user.balance, '->', newData.balance);
+          }
+          
+          // Update user state with new data
+          setUser({
+            ...user,
+            role: newData.role || user.role,
+            balance: newData.balance !== undefined ? newData.balance : user.balance,
+            username: newData.username || user.username,
+            email: newData.email || user.email,
+            fullName: newData.full_name || user.fullName,
+            updatedAt: newData.updated_at || user.updatedAt,
+          });
         }
-      }, pollingInterval);
-
-      return () => {
-        console.log('🛑 Stopping role polling');
-        clearInterval(pollInterval);
-      };
-    }
+      )
+      .subscribe();
+    
+    return () => {
+      console.log('🛑 Stopping Realtime subscription');
+      supabase.removeChannel(channel);
+    };
   }, [user, notification]);
 
   /**

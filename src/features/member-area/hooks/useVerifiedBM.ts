@@ -1,50 +1,59 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchVerifiedBMStats,
-  fetchVerifiedBMOrders,
-  submitVerifiedBMOrder,
-  SubmitVerifiedBMOrderData
-} from '../services/verified-bm.service';
+  fetchVerifiedBMRequests,
+  submitVerifiedBMRequest
+} from '../services';
 
 /**
- * Hook to fetch verified BM order statistics
- * Note: Will return empty data for guest users
+ * Hook to fetch verified BM request statistics
+ * Automatically fetches when component mounts and refetches on mount
  */
 export const useVerifiedBMStats = () => {
   return useQuery({
     queryKey: ['verified-bm-stats'],
     queryFn: fetchVerifiedBMStats,
-    staleTime: 30000, // 30 seconds
-    retry: false, // Don't retry on auth errors
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    retry: 2, // Retry 2 times on failure
+    refetchOnMount: 'always', // Always refetch on mount (even if data is fresh)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: true, // Refetch when reconnecting
   });
 };
 
 /**
- * Hook to fetch verified BM orders
- * Note: Will return empty data for guest users
+ * Hook to fetch verified BM requests
+ * Automatically fetches when component mounts and refetches on mount
  */
-export const useVerifiedBMOrders = () => {
+export const useVerifiedBMRequests = () => {
   return useQuery({
-    queryKey: ['verified-bm-orders'],
-    queryFn: fetchVerifiedBMOrders,
-    staleTime: 30000, // 30 seconds
-    retry: false, // Don't retry on auth errors
+    queryKey: ['verified-bm-requests'],
+    queryFn: fetchVerifiedBMRequests,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    retry: 2, // Retry 2 times on failure
+    refetchOnMount: 'always', // Always refetch on mount (even if data is fresh)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: true, // Refetch when reconnecting
   });
 };
 
 /**
- * Hook to submit a verified BM order
+ * Hook to submit verified BM request
+ * Note: Balance is now managed by AuthContext via Realtime subscription
  */
-export const useSubmitVerifiedBMOrder = () => {
+export const useSubmitVerifiedBMRequest = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SubmitVerifiedBMOrderData) => submitVerifiedBMOrder(data),
+    mutationFn: ({ quantity, urls }: { quantity: number; urls: string[] }) => 
+      submitVerifiedBMRequest(quantity, urls),
     onSuccess: () => {
-      // Invalidate and refetch
+      // Invalidate and refetch stats and requests
       queryClient.invalidateQueries({ queryKey: ['verified-bm-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['verified-bm-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['verified-bm-requests'] });
+      // Balance will be updated automatically via Realtime subscription in AuthContext
     },
   });
 };

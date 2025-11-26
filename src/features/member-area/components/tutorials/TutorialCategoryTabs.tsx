@@ -1,26 +1,25 @@
 import React from 'react';
-import { BookOpen, Rocket, User, CreditCard, Code, AlertCircle, LucideIcon } from 'lucide-react';
-import { TutorialCategory } from '../../types/tutorial';
+import { BookOpen, Briefcase, TrendingUp, Code, AlertCircle, LucideIcon } from 'lucide-react';
 
 interface CategoryTab {
   id: string;
   label: string;
   icon: LucideIcon;
-  value: TutorialCategory | 'all';
+  value: string;
 }
 
 interface TutorialCategoryTabsProps {
-  activeCategory: TutorialCategory | 'all';
-  onCategoryChange: (category: TutorialCategory | 'all') => void;
+  activeCategory: string;
+  onCategoryChange: (category: string) => void;
 }
 
+// Match actual database categories
 const categoryTabs: CategoryTab[] = [
   { id: 'all', label: 'Semua', icon: BookOpen, value: 'all' },
-  { id: 'getting-started', label: 'Memulai', icon: Rocket, value: TutorialCategory.GETTING_STARTED },
-  { id: 'account', label: 'Akun', icon: User, value: TutorialCategory.ACCOUNT },
-  { id: 'transaction', label: 'Transaksi', icon: CreditCard, value: TutorialCategory.TRANSACTION },
-  { id: 'api', label: 'API', icon: Code, value: TutorialCategory.API },
-  { id: 'troubleshoot', label: 'Troubleshoot', icon: AlertCircle, value: TutorialCategory.TROUBLESHOOT }
+  { id: 'bm_management', label: 'BM Management', icon: Briefcase, value: 'bm_management' },
+  { id: 'advertising', label: 'Advertising', icon: TrendingUp, value: 'advertising' },
+  { id: 'api', label: 'API', icon: Code, value: 'api' },
+  { id: 'troubleshooting', label: 'Troubleshooting', icon: AlertCircle, value: 'troubleshooting' }
 ];
 
 const TutorialCategoryTabs: React.FC<TutorialCategoryTabsProps> = ({

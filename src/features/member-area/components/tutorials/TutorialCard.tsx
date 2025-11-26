@@ -1,6 +1,6 @@
 import React from 'react';
-import { Clock, BookOpen } from 'lucide-react';
-import { Tutorial, TutorialCategory } from '../../types/tutorial';
+import { Clock, BookOpen, Eye } from 'lucide-react';
+import { Tutorial } from '../../types/tutorial';
 import Badge from '../../../../shared/components/Badge';
 
 interface TutorialCardProps {
@@ -8,27 +8,38 @@ interface TutorialCardProps {
   onClick: (slug: string) => void;
 }
 
-const categoryLabels: Record<TutorialCategory, string> = {
-  [TutorialCategory.GETTING_STARTED]: 'Memulai',
-  [TutorialCategory.ACCOUNT]: 'Akun',
-  [TutorialCategory.TRANSACTION]: 'Transaksi',
-  [TutorialCategory.API]: 'API',
-  [TutorialCategory.TROUBLESHOOT]: 'Troubleshoot'
+// Category labels mapping
+const categoryLabels: Record<string, string> = {
+  'bm_management': 'BM Management',
+  'advertising': 'Advertising',
+  'troubleshooting': 'Troubleshooting',
+  'api': 'API',
 };
 
-const categoryColors: Record<TutorialCategory, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
-  [TutorialCategory.GETTING_STARTED]: 'success',
-  [TutorialCategory.ACCOUNT]: 'info',
-  [TutorialCategory.TRANSACTION]: 'default',
-  [TutorialCategory.API]: 'warning',
-  [TutorialCategory.TROUBLESHOOT]: 'error'
+// Category colors mapping
+const categoryColors: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
+  'bm_management': 'info',
+  'advertising': 'success',
+  'troubleshooting': 'error',
+  'api': 'warning',
+};
+
+// Calculate read time from content (average 200 words per minute)
+const calculateReadTime = (content: string): number => {
+  const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 200));
 };
 
 const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
-  // Extract first 150 characters of content as description
-  const description = tutorial.content
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .substring(0, 150) + (tutorial.content.length > 150 ? '...' : '');
+  // Use description if available, otherwise extract from content
+  const description = tutorial.description || 
+    tutorial.content
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .substring(0, 150) + (tutorial.content.length > 150 ? '...' : '');
+
+  const readTime = tutorial.duration_minutes || calculateReadTime(tutorial.content);
+  const categoryLabel = categoryLabels[tutorial.category] || tutorial.category;
+  const categoryColor = categoryColors[tutorial.category] || 'default';
 
   return (
     <div
@@ -37,9 +48,9 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
     >
       {/* Thumbnail Image */}
       <div className="relative w-full" style={{ paddingTop: '50%' }}>
-        {tutorial.thumbnail ? (
+        {tutorial.thumbnail_url ? (
           <img
-            src={tutorial.thumbnail}
+            src={tutorial.thumbnail_url}
             alt={tutorial.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -51,10 +62,26 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
         
         {/* Category Badge Overlay */}
         <div className="absolute top-2 left-2 md:top-3 md:left-3">
-          <Badge variant={categoryColors[tutorial.category]} size="sm">
-            {categoryLabels[tutorial.category]}
+          <Badge variant={categoryColor} size="sm">
+            {categoryLabel}
           </Badge>
         </div>
+
+        {/* Difficulty Badge */}
+        {tutorial.difficulty && (
+          <div className="absolute top-2 right-2 md:top-3 md:right-3">
+            <Badge 
+              variant={
+                tutorial.difficulty === 'beginner' ? 'success' :
+                tutorial.difficulty === 'intermediate' ? 'warning' : 'error'
+              } 
+              size="sm"
+            >
+              {tutorial.difficulty === 'beginner' ? 'Pemula' :
+               tutorial.difficulty === 'intermediate' ? 'Menengah' : 'Lanjutan'}
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Tutorial Info */}
@@ -67,10 +94,30 @@ const TutorialCard: React.FC<TutorialCardProps> = ({ tutorial, onClick }) => {
           {description}
         </p>
 
-        {/* Read Time */}
-        <div className="flex items-center text-xs text-gray-500 mt-auto">
-          <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-          <span>{tutorial.readTime} menit baca</span>
+        {/* Tags */}
+        {tutorial.tags && tutorial.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {tutorial.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Meta Info */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
+          <div className="flex items-center">
+            <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+            <span>{readTime} menit</span>
+          </div>
+          <div className="flex items-center">
+            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+            <span>{tutorial.view_count || 0}</span>
+          </div>
         </div>
       </div>
     </div>

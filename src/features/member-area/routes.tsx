@@ -24,6 +24,7 @@ const ProductManagement = lazy(() => import('./pages/admin/ProductManagement'));
 const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'));
 const AuditLog = lazy(() => import('./pages/admin/AuditLog'));
 const AnnouncementManagement = lazy(() => import('./pages/admin/AnnouncementManagement'));
+const VerifiedBMManagement = lazy(() => import('./pages/admin/VerifiedBMManagement'));
 
 /**
  * Loading component displayed while pages are being lazy loaded
@@ -188,6 +189,14 @@ const MemberRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AnnouncementManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/verified-bm" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <VerifiedBMManagement />
             </ProtectedRoute>
           } 
         />

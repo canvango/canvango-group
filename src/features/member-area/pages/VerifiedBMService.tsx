@@ -1,30 +1,51 @@
 import React from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   VerifiedBMStatusCards,
   VerifiedBMOrderForm,
   VerifiedBMOrdersTable
 } from '../components/verified-bm';
-import { useVerifiedBMStats, useVerifiedBMOrders, useSubmitVerifiedBMOrder } from '../hooks/useVerifiedBM';
-import { VerifiedBMOrderFormData } from '../types/verified-bm';
+import { 
+  useVerifiedBMStats, 
+  useVerifiedBMRequests, 
+  useSubmitVerifiedBMRequest 
+} from '../hooks';
+import { VerifiedBMRequestFormData, VerifiedBMRequestStats } from '../types/verified-bm';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { Skeleton } from '../../../shared/components/SkeletonLoader';
 
 const VerifiedBMService: React.FC = () => {
-  usePageTitle('Verified BM Service');
-  const { isGuest } = useAuth();
+  usePageTitle('Jasa Verified BM');
+  const { user, isGuest } = useAuth();
   const [notification, setNotification] = React.useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
-  // Fetch data - accessible to all users including guests
-  const { data: stats, isLoading: statsLoading } = useVerifiedBMStats();
-  const { data: orders, isLoading: ordersLoading } = useVerifiedBMOrders();
-  const submitOrderMutation = useSubmitVerifiedBMOrder();
+  // Fetch data
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useVerifiedBMStats();
+  const { data: requests = [], isLoading: requestsLoading, refetch: refetchRequests } = useVerifiedBMRequests();
+  const submitRequestMutation = useSubmitVerifiedBMRequest();
 
-  const handleOrderSubmit = async (formData: VerifiedBMOrderFormData) => {
+  // Get balance from AuthContext (realtime)
+  const userBalance = user?.balance || 0;
+
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchRequests()
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRequestSubmit = async (formData: VerifiedBMRequestFormData) => {
     setNotification(null);
 
     try {
@@ -34,8 +55,8 @@ const VerifiedBMService: React.FC = () => {
         .map(url => url.trim())
         .filter(url => url !== '');
 
-      // Submit order
-      const response = await submitOrderMutation.mutateAsync({
+      // Submit request
+      const response = await submitRequestMutation.mutateAsync({
         quantity: formData.quantity,
         urls
       });
@@ -43,16 +64,20 @@ const VerifiedBMService: React.FC = () => {
       // Show success notification
       setNotification({
         type: 'success',
-        message: `Pesanan berhasil dibuat! Order ID: #${response.orderId.slice(0, 8)}. Kami akan memproses pesanan Anda dalam 1-3 hari kerja.`
+        message: `Request berhasil dibuat! Request ID: #${response.request_id.slice(0, 8)}. Saldo Anda: ${new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+        }).format(response.new_balance)}`
       });
 
       // Scroll to top to show notification
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
-      console.error('Order submission failed:', error);
+      console.error('Request submission failed:', error);
 
       // Show error notification
-      const errorMessage = error.response?.data?.message || 'Gagal membuat pesanan. Silakan coba lagi.';
+      const errorMessage = error.message || 'Gagal membuat request. Silakan coba lagi.';
       setNotification({
         type: 'error',
         message: errorMessage
@@ -64,30 +89,42 @@ const VerifiedBMService: React.FC = () => {
   };
 
   // Default stats if loading or no data
-  const displayStats = stats || {
-    pending: 0,
-    processing: 0,
-    completed: 0,
-    failed: 0
+  const displayStats: VerifiedBMRequestStats = stats || {
+    totalRequests: 0,
+    pendingRequests: 0,
+    processingRequests: 0,
+    completedRequests: 0,
+    failedRequests: 0
   };
 
-  const displayOrders = orders || [];
+  const displayRequests = requests || [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Jasa Verified BM</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Layanan verifikasi Business Manager untuk meningkatkan kredibilitas akun Anda
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Jasa Verified BM</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Layanan verifikasi Business Manager - Rp 200.000 per akun
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Refresh data"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
       </div>
 
       {/* Notification */}
       {notification && (
         <div
           className={`
-            rounded-lg p-4 flex items-start gap-3
+            rounded-3xl p-4 flex items-start gap-3
             ${notification.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}
           `}
           role="alert"
@@ -113,9 +150,9 @@ const VerifiedBMService: React.FC = () => {
 
       {/* Status Cards */}
       {statsLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
+            <div key={i} className="bg-white rounded-3xl shadow p-6">
               <div className="space-y-3">
                 <Skeleton className="h-12 w-12 rounded-full" />
                 <Skeleton className="h-8 w-16" />
@@ -128,27 +165,28 @@ const VerifiedBMService: React.FC = () => {
         <VerifiedBMStatusCards stats={displayStats} />
       )}
 
-      {/* Order Form */}
+      {/* Request Form */}
       <VerifiedBMOrderForm
-        onSubmit={handleOrderSubmit}
-        loading={submitOrderMutation.isPending}
+        userBalance={userBalance}
+        onSubmit={handleRequestSubmit}
+        loading={submitRequestMutation.isPending}
         isGuest={isGuest}
       />
 
-      {/* Orders Table */}
+      {/* Requests Table */}
       <VerifiedBMOrdersTable 
-        orders={displayOrders}
-        isLoading={ordersLoading}
+        requests={displayRequests}
+        isLoading={requestsLoading}
       />
 
       {/* Information Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-3xl p-4">
         <h3 className="text-sm font-semibold text-blue-900 mb-2">Tentang Layanan Verified BM</h3>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Layanan verifikasi resmi untuk Business Manager Facebook</li>
-          <li>Meningkatkan kredibilitas dan kepercayaan akun bisnis Anda</li>
+          <li>Harga tetap: Rp 200.000 per akun</li>
+          <li>Saldo dipotong langsung setelah submit request</li>
           <li>Proses verifikasi memakan waktu 1-3 hari kerja</li>
-          <li>Garansi uang kembali jika verifikasi gagal</li>
+          <li>Jika gagal, saldo akan dikembalikan otomatis</li>
           <li>Dukungan teknis 24/7 melalui WhatsApp</li>
         </ul>
       </div>

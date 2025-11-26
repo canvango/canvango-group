@@ -1,60 +1,52 @@
 /**
  * Admin Tutorial Management Service
+ * Uses Supabase direct connection (frontend-only architecture)
  */
 
-import { supabase } from './supabase';
-
-export interface TutorialStats {
-  total: number;
-  published: number;
-  draft: number;
-  categories: Array<{ name: string; count: number }>;
-  total_tutorials?: number;
-  total_categories?: number;
-  most_viewed?: Array<{ title: string; view_count: number }>;
-}
-
-export interface CreateTutorialData {
-  title: string;
-  description: string;
-  content: string;
-  category: string;
-  tags?: string[];
-  thumbnail?: string;
-  video_url?: string;
-  duration?: number;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  status?: 'draft' | 'published' | 'archived';
-}
-
-export interface UpdateTutorialData {
-  title?: string;
-  description?: string;
-  content?: string;
-  category?: string;
-  tags?: string[];
-  thumbnail?: string;
-  video_url?: string;
-  duration?: number;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  status?: 'draft' | 'published' | 'archived';
-}
+import { supabase } from '@/clients/supabase';
+import {
+  Tutorial,
+  CreateTutorialData,
+  UpdateTutorialData,
+  TutorialStats,
+  TutorialFilters,
+} from '../types/tutorial.types';
 
 export const adminTutorialService = {
-  async getTutorials(page: number = 1, limit: number = 20) {
+  /**
+   * Get all tutorials with optional filters and pagination
+   */
+  async getTutorials(filters?: TutorialFilters, page: number = 1, limit: number = 20) {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('tutorials')
       .select('*', { count: 'exact' })
-      .range(from, to)
       .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (filters?.category) {
+      query = query.eq('category', filters.category);
+    }
+
+    if (filters?.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
+    if (filters?.is_published !== undefined) {
+      query = query.eq('is_published', filters.is_published);
+    }
+
+    // Apply pagination
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
     return {
-      tutorials: data || [],
+      tutorials: (data || []) as Tutorial[],
       pagination: {
         page,
         limit,
@@ -64,23 +56,29 @@ export const adminTutorialService = {
     };
   },
 
+  /**
+   * Get tutorial statistics
+   */
   async getTutorialStats(): Promise<TutorialStats> {
     const { data, error } = await supabase
       .from('tutorials')
-      .select('status, category');
+      .select('is_published, category, view_count, title, id');
 
     if (error) throw error;
 
-    const stats = {
-      total: data?.length || 0,
-      published: data?.filter(t => t.status === 'published').length || 0,
-      draft: data?.filter(t => t.status === 'draft').length || 0,
-      categories: [] as Array<{ name: string; count: number }>,
+    const tutorials = data || [];
+
+    const stats: TutorialStats = {
+      total: tutorials.length,
+      published: tutorials.filter(t => t.is_published).length,
+      draft: tutorials.filter(t => !t.is_published).length,
+      categories: [],
+      most_viewed: [],
     };
 
     // Count by category
     const categoryMap = new Map<string, number>();
-    data?.forEach(tutorial => {
+    tutorials.forEach(tutorial => {
       const category = tutorial.category || 'Uncategorized';
       categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
     });
@@ -90,21 +88,43 @@ export const adminTutorialService = {
       count,
     }));
 
+    // Get most viewed tutorials (top 5)
+    const sortedByViews = [...tutorials]
+      .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+      .slice(0, 5);
+
+    stats.most_viewed = sortedByViews.map(t => ({
+      id: t.id,
+      title: t.title,
+      view_count: t.view_count || 0,
+    }));
+
     return stats;
   },
 
-  async createTutorial(tutorialData: CreateTutorialData) {
+  /**
+   * Create new tutorial
+   */
+  async createTutorial(tutorialData: CreateTutorialData): Promise<Tutorial> {
     const { data, error } = await supabase
       .from('tutorials')
-      .insert(tutorialData)
+      .insert({
+        ...tutorialData,
+        view_count: 0,
+        is_published: tutorialData.is_published ?? false,
+        tags: tutorialData.tags ?? [],
+      })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Tutorial;
   },
 
-  async updateTutorial(id: string, tutorialData: UpdateTutorialData) {
+  /**
+   * Update existing tutorial
+   */
+  async updateTutorial(id: string, tutorialData: UpdateTutorialData): Promise<Tutorial> {
     const { data, error } = await supabase
       .from('tutorials')
       .update({
@@ -116,15 +136,50 @@ export const adminTutorialService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Tutorial;
   },
 
-  async deleteTutorial(id: string) {
+  /**
+   * Delete tutorial
+   */
+  async deleteTutorial(id: string): Promise<void> {
     const { error } = await supabase
       .from('tutorials')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  /**
+   * Get single tutorial by ID
+   */
+  async getTutorialById(id: string): Promise<Tutorial> {
+    const { data, error } = await supabase
+      .from('tutorials')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data as Tutorial;
+  },
+
+  /**
+   * Toggle tutorial publish status
+   */
+  async togglePublishStatus(id: string, isPublished: boolean): Promise<Tutorial> {
+    const { data, error } = await supabase
+      .from('tutorials')
+      .update({
+        is_published: isPublished,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Tutorial;
   },
 };

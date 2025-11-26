@@ -1,32 +1,32 @@
 import React from 'react';
 import { Clock, Loader, CheckCircle, XCircle } from 'lucide-react';
-import { VerifiedBMOrderStats } from '../../types/verified-bm';
+import { VerifiedBMRequestStats } from '../../types/verified-bm';
 
 interface VerifiedBMStatusCardsProps {
-  stats: VerifiedBMOrderStats;
+  stats: VerifiedBMRequestStats;
 }
 
 const VerifiedBMStatusCards: React.FC<VerifiedBMStatusCardsProps> = ({ stats }) => {
   const statusCards = [
     {
       label: 'Pending',
-      value: stats.pending,
+      value: stats.pendingRequests,
       icon: Clock,
       bgColor: 'bg-yellow-50',
       iconColor: 'text-yellow-600',
       iconBgColor: 'bg-yellow-100'
     },
     {
-      label: 'In Progress',
-      value: stats.processing,
+      label: 'Processing',
+      value: stats.processingRequests,
       icon: Loader,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
       iconBgColor: 'bg-blue-100'
     },
     {
-      label: 'Successful',
-      value: stats.completed,
+      label: 'Completed',
+      value: stats.completedRequests,
       icon: CheckCircle,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
@@ -34,7 +34,7 @@ const VerifiedBMStatusCards: React.FC<VerifiedBMStatusCardsProps> = ({ stats }) 
     },
     {
       label: 'Failed',
-      value: stats.failed,
+      value: stats.failedRequests,
       icon: XCircle,
       bgColor: 'bg-red-50',
       iconColor: 'text-red-600',
@@ -43,13 +43,13 @@ const VerifiedBMStatusCards: React.FC<VerifiedBMStatusCardsProps> = ({ stats }) 
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
       {statusCards.map((card) => {
         const Icon = card.icon;
         return (
           <div
             key={card.label}
-            className={`${card.bgColor} rounded-lg p-5 transition-shadow hover:shadow-md`}
+            className={`${card.bgColor} rounded-3xl p-5 transition-shadow hover:shadow-md`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">

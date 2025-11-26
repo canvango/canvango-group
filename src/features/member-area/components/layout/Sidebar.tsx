@@ -109,6 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     { icon: faBook, label: 'Kelola Tutorial', path: ROUTES.ADMIN.TUTORIALS },
     { icon: faBox, label: 'Kelola Produk', path: ROUTES.ADMIN.PRODUCTS },
     { icon: faBullhorn, label: 'Kelola Announcement', path: ROUTES.ADMIN.ANNOUNCEMENTS },
+    { icon: faCircleCheck, label: 'Kelola Verified BM', path: ROUTES.ADMIN.VERIFIED_BM },
     { icon: faGear, label: 'Pengaturan Sistem', path: ROUTES.ADMIN.SETTINGS },
     { icon: faClipboardList, label: 'Log Aktivitas', path: ROUTES.ADMIN.AUDIT_LOGS }
   ] : [];

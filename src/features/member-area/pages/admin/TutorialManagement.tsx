@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  adminTutorialService,
+  useAdminTutorials,
+  useAdminTutorialStats,
+  useCreateTutorial,
+  useUpdateTutorial,
+  useDeleteTutorial,
+  useToggleTutorialPublish,
+} from '@/hooks/useAdminTutorials';
+import {
+  Tutorial,
   CreateTutorialData,
   UpdateTutorialData,
-  TutorialStats,
-} from '../../services/adminTutorialService';
-import { Tutorial } from '../../types/tutorial.types';
+} from '../../types/tutorial.types';
 
 const TutorialManagement: React.FC = () => {
-  const [tutorials, setTutorials] = useState<Tutorial[]>([]);
-  const [stats, setStats] = useState<TutorialStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // State
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -19,62 +22,43 @@ const TutorialManagement: React.FC = () => {
   const [editingTutorial, setEditingTutorial] = useState<Tutorial | null>(null);
   const [formData, setFormData] = useState<CreateTutorialData>({
     title: '',
+    slug: '',
     description: '',
     content: '',
     category: '',
     tags: [],
+    is_published: false,
   });
   const [tagInput, setTagInput] = useState('');
 
-  useEffect(() => {
-    fetchTutorials();
-    fetchStats();
-  }, [categoryFilter, searchTerm]);
+  // React Query hooks
+  const { data: tutorialsData, isLoading, error } = useAdminTutorials(
+    {
+      category: categoryFilter !== 'all' ? categoryFilter : undefined,
+      search: searchTerm || undefined,
+    },
+    1,
+    50
+  );
 
-  const fetchTutorials = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const params: any = {};
+  const { data: stats } = useAdminTutorialStats();
+  const createMutation = useCreateTutorial();
+  const updateMutation = useUpdateTutorial();
+  const deleteMutation = useDeleteTutorial();
+  const togglePublishMutation = useToggleTutorialPublish();
 
-      if (categoryFilter !== 'all') {
-        params.category = categoryFilter;
-      }
+  const tutorials = tutorialsData?.tutorials || [];
 
-      if (searchTerm) {
-        params.search = searchTerm;
-      }
-
-      const response = await adminTutorialService.getTutorials();
-      setTutorials(response.tutorials);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to fetch tutorials');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await adminTutorialService.getTutorialStats();
-      setStats(response);
-    } catch (err: any) {
-      console.error('Failed to fetch stats:', err);
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchTutorials();
-  };
-
+  // Handlers
   const handleCreate = () => {
     setFormData({
       title: '',
+      slug: '',
       description: '',
       content: '',
       category: '',
       tags: [],
+      is_published: false,
     });
     setTagInput('');
     setShowCreateModal(true);
@@ -84,10 +68,16 @@ const TutorialManagement: React.FC = () => {
     setEditingTutorial(tutorial);
     setFormData({
       title: tutorial.title,
-      description: tutorial.description,
+      slug: tutorial.slug,
+      description: tutorial.description || '',
       content: tutorial.content,
       category: tutorial.category,
       tags: tutorial.tags || [],
+      is_published: tutorial.is_published,
+      difficulty: tutorial.difficulty || undefined,
+      duration_minutes: tutorial.duration_minutes || undefined,
+      video_url: tutorial.video_url || undefined,
+      thumbnail_url: tutorial.thumbnail_url || undefined,
     });
     setTagInput('');
     setShowEditModal(true);
@@ -110,15 +100,28 @@ const TutorialManagement: React.FC = () => {
     });
   };
 
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
   const handleSubmitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await adminTutorialService.createTutorial(formData);
+      // Auto-generate slug if empty
+      const slug = formData.slug || generateSlug(formData.title);
+      
+      await createMutation.mutateAsync({
+        ...formData,
+        slug,
+      });
+      
       setShowCreateModal(false);
-      fetchTutorials();
-      fetchStats();
+      alert('Tutorial berhasil dibuat!');
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to create tutorial');
+      alert(err.message || 'Gagal membuat tutorial');
     }
   };
 
@@ -128,146 +131,173 @@ const TutorialManagement: React.FC = () => {
 
     try {
       const updateData: UpdateTutorialData = {};
+      
       if (formData.title !== editingTutorial.title) updateData.title = formData.title;
+      if (formData.slug !== editingTutorial.slug) updateData.slug = formData.slug;
       if (formData.description !== editingTutorial.description)
         updateData.description = formData.description;
       if (formData.content !== editingTutorial.content) updateData.content = formData.content;
       if (formData.category !== editingTutorial.category) updateData.category = formData.category;
       if (JSON.stringify(formData.tags) !== JSON.stringify(editingTutorial.tags))
         updateData.tags = formData.tags;
+      if (formData.is_published !== editingTutorial.is_published)
+        updateData.is_published = formData.is_published;
+      if (formData.difficulty !== editingTutorial.difficulty)
+        updateData.difficulty = formData.difficulty;
+      if (formData.duration_minutes !== editingTutorial.duration_minutes)
+        updateData.duration_minutes = formData.duration_minutes;
+      if (formData.video_url !== editingTutorial.video_url)
+        updateData.video_url = formData.video_url;
+      if (formData.thumbnail_url !== editingTutorial.thumbnail_url)
+        updateData.thumbnail_url = formData.thumbnail_url;
 
-      await adminTutorialService.updateTutorial(editingTutorial.id, updateData);
+      await updateMutation.mutateAsync({
+        id: editingTutorial.id,
+        data: updateData,
+      });
+
       setShowEditModal(false);
       setEditingTutorial(null);
-      fetchTutorials();
-      fetchStats();
+      alert('Tutorial berhasil diupdate!');
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to update tutorial');
+      alert(err.message || 'Gagal mengupdate tutorial');
     }
   };
 
   const handleDelete = async (tutorial: Tutorial) => {
-    if (!confirm(`Are you sure you want to delete tutorial "${tutorial.title}"?`)) {
+    if (!confirm(`Yakin ingin menghapus tutorial "${tutorial.title}"?`)) {
       return;
     }
 
     try {
-      await adminTutorialService.deleteTutorial(tutorial.id);
-      fetchTutorials();
-      fetchStats();
+      await deleteMutation.mutateAsync(tutorial.id);
+      alert('Tutorial berhasil dihapus!');
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to delete tutorial');
+      alert(err.message || 'Gagal menghapus tutorial');
+    }
+  };
+
+  const handleTogglePublish = async (tutorial: Tutorial) => {
+    try {
+      await togglePublishMutation.mutateAsync({
+        id: tutorial.id,
+        isPublished: !tutorial.is_published,
+      });
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengubah status publish');
     }
   };
 
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Tutorial Management</h1>
-        <p className="text-gray-600 mt-1">Manage tutorials and view statistics</p>
+        <h1 className="text-2xl font-bold text-gray-900">Kelola Tutorial</h1>
+        <p className="text-gray-600 mt-1">Kelola tutorial dan lihat statistik</p>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm font-medium text-gray-500">Total Tutorials</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-6">
+          <div className="card">
+            <div className="card-body">
+              <div className="text-sm font-medium text-gray-500">Total Tutorial</div>
+              <div className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</div>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm font-medium text-gray-500">Total Categories</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.categories.length}</div>
+          <div className="card">
+            <div className="card-body">
+              <div className="text-sm font-medium text-gray-500">Published</div>
+              <div className="text-3xl font-bold text-green-600 mt-2">{stats.published}</div>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm font-medium text-gray-500">Most Viewed</div>
-            <div className="text-sm text-gray-700 mt-2">
-              {stats.most_viewed && stats.most_viewed.length > 0 ? (
-                <div>
-                  <div className="font-semibold">{stats.most_viewed[0].title}</div>
-                  <div className="text-gray-500">{stats.most_viewed[0].view_count} views</div>
-                </div>
-              ) : (
-                'No tutorials yet'
-              )}
+          <div className="card">
+            <div className="card-body">
+              <div className="text-sm font-medium text-gray-500">Draft</div>
+              <div className="text-3xl font-bold text-yellow-600 mt-2">{stats.draft}</div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <div className="text-sm font-medium text-gray-500">Kategori</div>
+              <div className="text-3xl font-bold text-blue-600 mt-2">
+                {stats.categories.length}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* Filters and Create Button */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <form onSubmit={handleSearch} className="flex-1 flex gap-4">
-            <input
-              type="text"
-              placeholder="Search tutorials..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Categories</option>
-              {stats?.categories.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name} ({cat.count})
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Search
+      <div className="card mb-6">
+        <div className="card-body">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex gap-4">
+              <input
+                type="text"
+                placeholder="Cari tutorial..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input flex-1"
+              />
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="input"
+              >
+                <option value="all">Semua Kategori</option>
+                {stats?.categories.map((cat) => (
+                  <option key={cat.name} value={cat.name}>
+                    {cat.name} ({cat.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button onClick={handleCreate} className="btn-primary">
+              + Buat Tutorial
             </button>
-          </form>
-          <button
-            onClick={handleCreate}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Create Tutorial
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-3xl mb-6">
+          {error.message || 'Terjadi kesalahan'}
         </div>
       )}
 
       {/* Tutorials Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
+      <div className="card overflow-hidden">
+        {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading tutorials...</p>
+            <p className="mt-2 text-gray-600">Memuat tutorial...</p>
           </div>
         ) : tutorials.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No tutorials found</div>
+          <div className="p-8 text-center text-gray-500">
+            {searchTerm || categoryFilter !== 'all'
+              ? 'Tidak ada tutorial yang sesuai filter'
+              : 'Belum ada tutorial'}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
+                    Tutorial
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                    Kategori
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Views
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -281,11 +311,11 @@ const TutorialManagement: React.FC = () => {
                           {tutorial.description}
                         </div>
                         {tutorial.tags && tutorial.tags.length > 0 && (
-                          <div className="flex gap-1 mt-1">
+                          <div className="flex gap-1 mt-1 flex-wrap">
                             {tutorial.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
+                                className="badge badge-secondary text-xs"
                               >
                                 {tag}
                               </span>
@@ -295,15 +325,22 @@ const TutorialManagement: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                      <span className="badge badge-primary">
                         {tutorial.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tutorial.views || 0}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => handleTogglePublish(tutorial)}
+                        className={`badge ${
+                          tutorial.is_published ? 'badge-success' : 'badge-warning'
+                        } cursor-pointer hover:opacity-80`}
+                      >
+                        {tutorial.is_published ? '✓ Published' : '○ Draft'}
+                      </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(tutorial.created_at).toLocaleDateString('id-ID')}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {tutorial.view_count || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
@@ -316,7 +353,7 @@ const TutorialManagement: React.FC = () => {
                         onClick={() => handleDelete(tutorial)}
                         className="text-red-600 hover:text-red-900"
                       >
-                        Delete
+                        Hapus
                       </button>
                     </td>
                   </tr>
@@ -330,51 +367,98 @@ const TutorialManagement: React.FC = () => {
       {/* Create Tutorial Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Create Tutorial</h2>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Buat Tutorial Baru</h2>
             <form onSubmit={handleSubmitCreate}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Judul <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => {
+                      setFormData({ 
+                        ...formData, 
+                        title: e.target.value,
+                        slug: generateSlug(e.target.value)
+                      });
+                    }}
+                    className="input w-full"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
+                    Slug <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="input w-full"
+                    placeholder="auto-generated-from-title"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">URL-friendly identifier</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deskripsi
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input w-full"
                     rows={3}
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Konten <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input w-full"
                     rows={8}
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kategori <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tingkat Kesulitan
+                    </label>
+                    <select
+                      value={formData.difficulty || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          difficulty: e.target.value as any,
+                        })
+                      }
+                      className="input w-full"
+                    >
+                      <option value="">Pilih...</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
@@ -389,28 +473,28 @@ const TutorialManagement: React.FC = () => {
                           handleAddTag();
                         }
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Add tag..."
+                      className="input flex-1"
+                      placeholder="Tambah tag..."
                     />
                     <button
                       type="button"
                       onClick={handleAddTag}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                      className="btn-secondary"
                     >
-                      Add
+                      Tambah
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.tags?.map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2"
+                        className="badge badge-primary flex items-center gap-2"
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-current hover:text-red-600"
                         >
                           ×
                         </button>
@@ -418,20 +502,34 @@ const TutorialManagement: React.FC = () => {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_published}
+                      onChange={(e) =>
+                        setFormData({ ...formData, is_published: e.target.checked })
+                      }
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Publish sekarang</span>
+                  </label>
+                </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="btn-secondary flex-1"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  disabled={createMutation.isPending}
+                  className="btn-primary flex-1"
                 >
-                  Create Tutorial
+                  {createMutation.isPending ? 'Menyimpan...' : 'Buat Tutorial'}
                 </button>
               </div>
             </form>
@@ -442,51 +540,90 @@ const TutorialManagement: React.FC = () => {
       {/* Edit Tutorial Modal */}
       {showEditModal && editingTutorial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Edit Tutorial</h2>
             <form onSubmit={handleSubmitEdit}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Judul <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input w-full"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
+                    Slug <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="input w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deskripsi
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input w-full"
                     rows={3}
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Konten <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input w-full"
                     rows={8}
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kategori <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tingkat Kesulitan
+                    </label>
+                    <select
+                      value={formData.difficulty || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          difficulty: e.target.value as any,
+                        })
+                      }
+                      className="input w-full"
+                    >
+                      <option value="">Pilih...</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
@@ -501,34 +638,47 @@ const TutorialManagement: React.FC = () => {
                           handleAddTag();
                         }
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Add tag..."
+                      className="input flex-1"
+                      placeholder="Tambah tag..."
                     />
                     <button
                       type="button"
                       onClick={handleAddTag}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                      className="btn-secondary"
                     >
-                      Add
+                      Tambah
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.tags?.map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2"
+                        className="badge badge-primary flex items-center gap-2"
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-current hover:text-red-600"
                         >
                           ×
                         </button>
                       </span>
                     ))}
                   </div>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_published}
+                      onChange={(e) =>
+                        setFormData({ ...formData, is_published: e.target.checked })
+                      }
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Published</span>
+                  </label>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
@@ -538,15 +688,16 @@ const TutorialManagement: React.FC = () => {
                     setShowEditModal(false);
                     setEditingTutorial(null);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="btn-secondary flex-1"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={updateMutation.isPending}
+                  className="btn-primary flex-1"
                 >
-                  Save Changes
+                  {updateMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
