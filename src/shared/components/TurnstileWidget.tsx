@@ -31,26 +31,24 @@ export const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({
   }
 
   return (
-    <div className={`w-full ${className}`}>
-      <div className="flex justify-center items-center w-full min-h-[65px] p-2 bg-gray-50 border border-gray-300 rounded-xl">
-        <Turnstile
-          ref={turnstileRef}
-          siteKey={siteKey}
-          onSuccess={onSuccess}
-          onError={() => {
-            console.error('Turnstile verification failed');
-            onError?.();
-          }}
-          onExpire={() => {
-            console.warn('Turnstile token expired');
-            onExpire?.();
-          }}
-          options={{
-            theme: 'light',
-            size: 'normal',
-          }}
-        />
-      </div>
+    <div className={`flex justify-center ${className}`}>
+      <Turnstile
+        ref={turnstileRef}
+        siteKey={siteKey}
+        onSuccess={onSuccess}
+        onError={() => {
+          console.error('Turnstile verification failed');
+          onError?.();
+        }}
+        onExpire={() => {
+          console.warn('Turnstile token expired');
+          onExpire?.();
+        }}
+        options={{
+          theme: 'light',
+          size: 'normal',
+        }}
+      />
     </div>
   );
 };
