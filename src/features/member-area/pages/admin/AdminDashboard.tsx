@@ -434,45 +434,96 @@ const AdminDashboard = () => {
       </div>
 
       {/* Product Performance */}
-      <div className="bg-white rounded-3xl shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Product Performance</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Transactions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Avg Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {transactionStats.byProduct.map((product, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {product.productType}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatNumber(product.count)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatCurrency(product.totalAmount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatCurrency(product.totalAmount / product.count)}
-                  </td>
+      <div>
+        {/* Desktop View */}
+        <div className="hidden md:block bg-white rounded-3xl shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Product Performance</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Transactions
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Revenue
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Avg Amount
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {transactionStats.byProduct.map((product, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {product.productType}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {formatNumber(product.count)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {formatCurrency(product.totalAmount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {formatCurrency(product.totalAmount / product.count)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-3">
+          {/* Header */}
+          <div className="bg-white rounded-3xl border border-gray-200 p-4">
+            <h2 className="text-lg font-semibold text-gray-900">Product Performance</h2>
+          </div>
+
+          {/* Product Cards */}
+          {transactionStats.byProduct.map((product, index) => (
+            <div 
+              key={index}
+              className="bg-white rounded-3xl border border-gray-200 p-4 divide-y divide-dashed divide-gray-200 hover:shadow-md transition-shadow duration-200"
+            >
+              {/* Product Type */}
+              <div className="flex justify-between items-start py-2.5 first:pt-0">
+                <span className="text-xs text-gray-500">Product Type</span>
+                <span className="text-xs font-semibold text-gray-900 text-right">
+                  {product.productType}
+                </span>
+              </div>
+
+              {/* Transactions */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Transactions</span>
+                <span className="text-xs font-medium text-gray-700 text-right">
+                  {formatNumber(product.count)}
+                </span>
+              </div>
+
+              {/* Total Revenue */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Total Revenue</span>
+                <span className="text-xs font-medium text-gray-700 text-right">
+                  {formatCurrency(product.totalAmount)}
+                </span>
+              </div>
+
+              {/* Avg Amount */}
+              <div className="flex justify-between items-start py-2.5 last:pb-0">
+                <span className="text-xs text-gray-500">Avg Amount</span>
+                <span className="text-xs font-medium text-gray-700 text-right">
+                  {formatCurrency(product.totalAmount / product.count)}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

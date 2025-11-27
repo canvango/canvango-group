@@ -136,8 +136,8 @@ const ClaimWarranty: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Claim Garansi</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Claim Garansi</h1>
+        <p className="text-sm leading-relaxed text-gray-600">
           Ajukan klaim garansi untuk akun yang mengalami masalah
         </p>
       </div>

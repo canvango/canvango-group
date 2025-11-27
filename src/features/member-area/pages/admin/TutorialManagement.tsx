@@ -12,13 +12,17 @@ import {
   CreateTutorialData,
   UpdateTutorialData,
 } from '../../types/tutorial.types';
+import { toast } from 'sonner';
 
 const TutorialManagement: React.FC = () => {
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // New: status filter
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [tutorialToDelete, setTutorialToDelete] = useState<Tutorial | null>(null);
   const [editingTutorial, setEditingTutorial] = useState<Tutorial | null>(null);
   const [formData, setFormData] = useState<CreateTutorialData>({
     title: '',
@@ -47,7 +51,14 @@ const TutorialManagement: React.FC = () => {
   const deleteMutation = useDeleteTutorial();
   const togglePublishMutation = useToggleTutorialPublish();
 
-  const tutorials = tutorialsData?.tutorials || [];
+  const allTutorials = tutorialsData?.tutorials || [];
+  
+  // Filter by status
+  const tutorials = allTutorials.filter((tutorial) => {
+    if (statusFilter === 'published') return tutorial.is_published;
+    if (statusFilter === 'draft') return !tutorial.is_published;
+    return true;
+  });
 
   // Handlers
   const handleCreate = () => {
@@ -119,9 +130,13 @@ const TutorialManagement: React.FC = () => {
       });
       
       setShowCreateModal(false);
-      alert('Tutorial berhasil dibuat!');
+      toast.success('Tutorial berhasil dibuat!', {
+        description: formData.is_published ? 'Tutorial sudah dipublish' : 'Tutorial disimpan sebagai draft'
+      });
     } catch (err: any) {
-      alert(err.message || 'Gagal membuat tutorial');
+      toast.error('Gagal membuat tutorial', {
+        description: err.message || 'Terjadi kesalahan saat membuat tutorial'
+      });
     }
   };
 
@@ -158,41 +173,65 @@ const TutorialManagement: React.FC = () => {
 
       setShowEditModal(false);
       setEditingTutorial(null);
-      alert('Tutorial berhasil diupdate!');
+      toast.success('Tutorial berhasil diupdate!', {
+        description: 'Perubahan telah disimpan'
+      });
     } catch (err: any) {
-      alert(err.message || 'Gagal mengupdate tutorial');
+      toast.error('Gagal mengupdate tutorial', {
+        description: err.message || 'Terjadi kesalahan saat mengupdate tutorial'
+      });
     }
   };
 
-  const handleDelete = async (tutorial: Tutorial) => {
-    if (!confirm(`Yakin ingin menghapus tutorial "${tutorial.title}"?`)) {
-      return;
-    }
+  const handleDelete = (tutorial: Tutorial) => {
+    setTutorialToDelete(tutorial);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!tutorialToDelete) return;
 
     try {
-      await deleteMutation.mutateAsync(tutorial.id);
-      alert('Tutorial berhasil dihapus!');
+      await deleteMutation.mutateAsync(tutorialToDelete.id);
+      setShowDeleteConfirm(false);
+      setTutorialToDelete(null);
+      toast.success('Tutorial berhasil dihapus!', {
+        description: `"${tutorialToDelete.title}" telah dihapus`
+      });
     } catch (err: any) {
-      alert(err.message || 'Gagal menghapus tutorial');
+      toast.error('Gagal menghapus tutorial', {
+        description: err.message || 'Terjadi kesalahan saat menghapus tutorial'
+      });
     }
   };
 
   const handleTogglePublish = async (tutorial: Tutorial) => {
+    const newStatus = !tutorial.is_published;
     try {
       await togglePublishMutation.mutateAsync({
         id: tutorial.id,
-        isPublished: !tutorial.is_published,
+        isPublished: newStatus,
       });
+      toast.success(
+        newStatus ? 'Tutorial dipublish!' : 'Tutorial di-unpublish!',
+        {
+          description: newStatus 
+            ? 'Tutorial sekarang dapat dilihat oleh member' 
+            : 'Tutorial disimpan sebagai draft'
+        }
+      );
     } catch (err: any) {
-      alert(err.message || 'Gagal mengubah status publish');
+      toast.error('Gagal mengubah status publish', {
+        description: err.message || 'Terjadi kesalahan'
+      });
     }
   };
 
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Kelola Tutorial</h1>
-        <p className="text-gray-600 mt-1">Kelola tutorial dan lihat statistik</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Kelola Tutorial</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-1">Kelola tutorial dan lihat statistik</p>
       </div>
 
       {/* Statistics Cards */}
@@ -230,8 +269,8 @@ const TutorialManagement: React.FC = () => {
       {/* Filters and Create Button */}
       <div className="card mb-6">
         <div className="card-body">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex gap-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row gap-3 md:gap-4">
               <input
                 type="text"
                 placeholder="Cari tutorial..."
@@ -242,7 +281,7 @@ const TutorialManagement: React.FC = () => {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="input"
+                className="input w-full md:w-48"
               >
                 <option value="all">Semua Kategori</option>
                 {stats?.categories.map((cat) => (
@@ -251,10 +290,19 @@ const TutorialManagement: React.FC = () => {
                   </option>
                 ))}
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="input w-full md:w-40"
+              >
+                <option value="all">Semua Status</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+              <button onClick={handleCreate} className="btn-primary whitespace-nowrap">
+                + Buat Tutorial
+              </button>
             </div>
-            <button onClick={handleCreate} className="btn-primary">
-              + Buat Tutorial
-            </button>
           </div>
         </div>
       </div>
@@ -274,29 +322,46 @@ const TutorialManagement: React.FC = () => {
             <p className="mt-2 text-gray-600">Memuat tutorial...</p>
           </div>
         ) : tutorials.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {searchTerm || categoryFilter !== 'all'
-              ? 'Tidak ada tutorial yang sesuai filter'
-              : 'Belum ada tutorial'}
+          <div className="p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all'
+                ? 'Tidak ada tutorial yang sesuai filter'
+                : 'Belum ada tutorial'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all'
+                ? 'Coba ubah filter atau kata kunci pencarian'
+                : 'Mulai dengan membuat tutorial pertama Anda'}
+            </p>
+            {!searchTerm && categoryFilter === 'all' && statusFilter === 'all' && (
+              <button onClick={handleCreate} className="btn-primary">
+                + Buat Tutorial Pertama
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     Tutorial
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     Kategori
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     Views
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -307,9 +372,11 @@ const TutorialManagement: React.FC = () => {
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{tutorial.title}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-md">
-                          {tutorial.description}
-                        </div>
+                        {tutorial.description && (
+                          <div className="text-sm text-gray-600 truncate max-w-md mt-1">
+                            {tutorial.description}
+                          </div>
+                        )}
                         {tutorial.tags && tutorial.tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {tutorial.tags.map((tag) => (
@@ -330,31 +397,51 @@ const TutorialManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleTogglePublish(tutorial)}
+                      <span
                         className={`badge ${
                           tutorial.is_published ? 'badge-success' : 'badge-warning'
-                        } cursor-pointer hover:opacity-80`}
+                        }`}
                       >
                         {tutorial.is_published ? '✓ Published' : '○ Draft'}
-                      </button>
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {tutorial.view_count || 0}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(tutorial)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(tutorial)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Hapus
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        {tutorial.is_published ? (
+                          <button
+                            onClick={() => handleTogglePublish(tutorial)}
+                            className="text-sm font-medium text-yellow-600 hover:text-yellow-700"
+                            title="Unpublish tutorial"
+                          >
+                            Unpublish
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleTogglePublish(tutorial)}
+                            className="text-sm font-medium text-green-600 hover:text-green-700"
+                            title="Publish tutorial"
+                          >
+                            Publish
+                          </button>
+                        )}
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={() => handleEdit(tutorial)}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={() => handleDelete(tutorial)}
+                          className="text-sm font-medium text-red-600 hover:text-red-700"
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -368,7 +455,7 @@ const TutorialManagement: React.FC = () => {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Buat Tutorial Baru</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Buat Tutorial Baru</h2>
             <form onSubmit={handleSubmitCreate}>
               <div className="space-y-4">
                 <div>
@@ -537,11 +624,43 @@ const TutorialManagement: React.FC = () => {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && tutorialToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Konfirmasi Hapus</h2>
+            <p className="text-sm text-gray-700 leading-relaxed mb-6">
+              Apakah Anda yakin ingin menghapus tutorial <strong>"{tutorialToDelete.title}"</strong>? 
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setTutorialToDelete(null);
+                }}
+                className="btn-secondary flex-1"
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteMutation.isPending}
+                className="btn-primary flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Tutorial Modal */}
       {showEditModal && editingTutorial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Edit Tutorial</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Edit Tutorial</h2>
             <form onSubmit={handleSubmitEdit}>
               <div className="space-y-4">
                 <div>

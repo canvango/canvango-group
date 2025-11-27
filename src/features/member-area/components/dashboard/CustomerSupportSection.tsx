@@ -47,7 +47,7 @@ const CustomerSupportSection: React.FC<CustomerSupportSectionProps> = ({
               className="font-medium text-primary-600 hover:text-indigo-800 break-all leading-tight"
               aria-label={`Email report to ${reportEmail}`}
             >
-              ripper@canvangogroup.com
+              ripper@canvango.com
             </a>
           </div>
           <p className="text-xs md:text-sm text-gray-700 leading-snug">
@@ -55,9 +55,24 @@ const CustomerSupportSection: React.FC<CustomerSupportSectionProps> = ({
           </p>
         </div>
 
-        <p className="text-xs md:text-sm text-gray-600 italic pt-1.5 border-t border-gray-200 leading-snug">
-          Kami berkomitmen untuk memberikan layanan terbaik dan menjaga kepercayaan Anda. Setiap masukan akan kami tangani dengan serius dan profesional.
-        </p>
+        <div className="pt-1.5 border-t border-gray-200">
+          <p className="font-semibold text-gray-900 text-sm md:text-base mb-1.5 leading-tight">
+            👨‍💻 Kontak Owner
+          </p>
+          <div className="flex items-center space-x-2 text-xs md:text-sm mb-1.5">
+            <Mail className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-600 flex-shrink-0" aria-hidden="true" />
+            <a
+              href={`mailto:${ownerEmail}`}
+              className="font-medium text-primary-600 hover:text-indigo-800 break-all leading-tight"
+              aria-label={`Email owner at ${ownerEmail}`}
+            >
+              owner@canvango.com
+            </a>
+          </div>
+          <p className="text-xs md:text-sm text-gray-600 italic leading-snug">
+            Kami berkomitmen untuk memberikan layanan terbaik dan menjaga kepercayaan Anda. Setiap masukan akan kami tangani dengan serius dan profesional.
+          </p>
+        </div>
       </div>
     </div>
   );

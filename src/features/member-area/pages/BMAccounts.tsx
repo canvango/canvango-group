@@ -193,7 +193,7 @@ const BMAccounts: React.FC = () => {
     <div className="space-y-3 md:space-y-5">
       {/* Page Header */}
       <div className="px-1">
-        <h1 className="text-lg md:text-2xl font-bold text-gray-900 mb-1">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
           Business Manager Accounts
         </h1>
         <p className="text-xs md:text-sm text-gray-600">
@@ -202,7 +202,7 @@ const BMAccounts: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 md:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
         <SummaryCard
           icon={Package}
           value={stats?.totalStock || 0}

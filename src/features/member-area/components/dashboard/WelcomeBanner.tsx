@@ -36,8 +36,9 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ username, message, operat
           <div className="bg-white/20 backdrop-blur-md p-2.5 rounded-xl shadow-lg border border-white/30">
             <Home className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold break-words text-white drop-shadow-lg tracking-tight">
-            Selamat Datang, {username}
+          <h1 className="text-xl sm:text-2xl break-words text-white drop-shadow-lg tracking-tight flex items-center flex-wrap gap-2">
+            <span>Selamat Datang,</span>
+            <span className="font-bold bg-white/25 px-3 py-1 rounded-2xl backdrop-blur-sm border border-white/30 inline-flex items-center">{username}</span>
           </h1>
         </div>
         <p className="text-blue-50 text-sm sm:text-base leading-relaxed font-medium mt-1 drop-shadow-md">

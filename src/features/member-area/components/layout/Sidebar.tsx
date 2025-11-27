@@ -7,7 +7,7 @@ import {
   faShieldHalved, faBox, faGear, faClipboardList, 
   faChevronDown, faChevronRight, faBullhorn
 } from '@fortawesome/free-solid-svg-icons';
-import { faMeta } from '@fortawesome/free-brands-svg-icons';
+import { faMeta, faFacebook } from '@fortawesome/free-brands-svg-icons';
 import { ROUTES } from '../../config/routes.config';
 
 interface SidebarProps {
@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
       section: 'AKUN & LAYANAN',
       items: [
         { icon: faMeta, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
-        { icon: faUser, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
+        { icon: faFacebook, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
         { icon: faCircleCheck, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM }
       ]
     },
@@ -86,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
       section: 'AKUN & LAYANAN',
       items: [
         { icon: faMeta, label: 'Akun BM', path: ROUTES.ACCOUNTS.BM },
-        { icon: faUser, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
+        { icon: faFacebook, label: 'Akun Personal', path: ROUTES.ACCOUNTS.PERSONAL },
         { icon: faCircleCheck, label: 'Jasa Verified BM', path: ROUTES.SERVICES.VERIFIED_BM },
         { icon: faShield, label: 'Claim Garansi', path: ROUTES.WARRANTY }
       ]
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
         {/* Menu Sections */}
         {menuStructure.map((section, idx) => (
           <div key={idx} className="mb-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase mb-1.5 px-2">
+            <div className="text-xs font-semibold text-gray-600 uppercase mb-1.5 px-2">
               {section.section}
             </div>
             <nav className="space-y-0.5">

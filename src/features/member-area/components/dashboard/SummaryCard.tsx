@@ -29,7 +29,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ icon: Icon, value, label, sub
       </div>
       <div className="pr-14">
         <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-0.5">{value}</div>
-        <div className="text-xs md:text-sm text-gray-600">{label}</div>
+        <div className="text-xs md:text-sm text-gray-500">{label}</div>
         {subInfo && (
           <div className={`text-xs font-medium ${colorClasses[subInfo.color]} mt-0.5`}>
             {subInfo.text}

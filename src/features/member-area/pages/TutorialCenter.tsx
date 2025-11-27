@@ -49,9 +49,9 @@ const TutorialCenter: React.FC = () => {
       <div className="bg-white rounded-3xl border border-gray-200 p-4 md:p-6">
         <div className="flex items-center gap-2 md:gap-3 mb-2">
           <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-primary-600 flex-shrink-0" />
-          <h1 className="text-lg md:text-2xl font-bold text-gray-900">Pusat Tutorial</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Pusat Tutorial</h1>
         </div>
-        <p className="text-sm md:text-base text-gray-600">
+        <p className="text-sm leading-relaxed text-gray-600">
           Pelajari cara menggunakan platform kami dengan panduan lengkap dan tutorial step-by-step
         </p>
       </div>

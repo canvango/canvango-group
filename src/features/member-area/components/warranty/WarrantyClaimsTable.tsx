@@ -17,16 +17,63 @@ const WarrantyClaimsTable: React.FC<WarrantyClaimsTableProps> = ({
   onViewResponse,
   isLoading = false 
 }) => {
-  const getStatusBadge = (status: ClaimStatus) => {
-    switch (status) {
-      case ClaimStatus.PENDING:
-        return <Badge variant="warning">Pending</Badge>;
-      case ClaimStatus.APPROVED:
-        return <Badge variant="success">Approved</Badge>;
-      case ClaimStatus.REJECTED:
-        return <Badge variant="error">Rejected</Badge>;
-      default:
-        return <Badge variant="default">{status}</Badge>;
+  const getStatusBadge = (status: ClaimStatus | string) => {
+    const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : status;
+    
+    if (normalizedStatus === ClaimStatus.PENDING || normalizedStatus === 'pending') {
+      return <Badge variant="warning">Pending</Badge>;
+    } else if (normalizedStatus === ClaimStatus.APPROVED || normalizedStatus === 'approved') {
+      return <Badge variant="success">Approved</Badge>;
+    } else if (normalizedStatus === ClaimStatus.REJECTED || normalizedStatus === 'rejected') {
+      return <Badge variant="error">Rejected</Badge>;
+    } else if (normalizedStatus === 'reviewing') {
+      return <Badge variant="info">Reviewing</Badge>;
+    } else if (normalizedStatus === 'completed') {
+      return <Badge variant="success">Completed</Badge>;
+    } else {
+      return <Badge variant="default">{status}</Badge>;
+    }
+  };
+
+  const getStatusBadgeMobile = (status: ClaimStatus | string) => {
+    const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : status;
+    
+    if (normalizedStatus === ClaimStatus.PENDING || normalizedStatus === 'pending') {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-orange-100 text-orange-800 border-orange-200">
+          Pending
+        </span>
+      );
+    } else if (normalizedStatus === ClaimStatus.APPROVED || normalizedStatus === 'approved') {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-green-100 text-green-800 border-green-200">
+          Approved
+        </span>
+      );
+    } else if (normalizedStatus === ClaimStatus.REJECTED || normalizedStatus === 'rejected') {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-red-100 text-red-800 border-red-200">
+          Rejected
+        </span>
+      );
+    } else if (normalizedStatus === 'reviewing') {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-blue-100 text-blue-800 border-blue-200">
+          Reviewing
+        </span>
+      );
+    } else if (normalizedStatus === 'completed') {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-green-100 text-green-800 border-green-200">
+          Completed
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-3 py-1 text-xs font-medium rounded-2xl border bg-gray-100 text-gray-800 border-gray-200">
+          {status}
+        </span>
+      );
     }
   };
 
@@ -95,13 +142,15 @@ const WarrantyClaimsTable: React.FC<WarrantyClaimsTableProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Riwayat Klaim Garansi</h2>
-      </div>
+    <>
+      {/* Desktop View */}
+      <div className="hidden md:block bg-white rounded-3xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Riwayat Klaim Garansi</h2>
+        </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -166,7 +215,7 @@ const WarrantyClaimsTable: React.FC<WarrantyClaimsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   {claim.status !== ClaimStatus.PENDING && claim.status !== 'pending' && (
                     <Button
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
                       onClick={() => onViewResponse(claim)}
                       className="flex items-center gap-1"
@@ -182,6 +231,95 @@ const WarrantyClaimsTable: React.FC<WarrantyClaimsTableProps> = ({
         </table>
       </div>
     </div>
+
+    {/* Mobile View */}
+    <div className="md:hidden space-y-3">
+      {/* Header */}
+      <div className="bg-white rounded-3xl border border-gray-200 p-4">
+        <h2 className="text-lg font-semibold text-gray-900">Riwayat Klaim Garansi</h2>
+      </div>
+
+      {/* Claim Cards */}
+      {claims.map((claim: any) => {
+        const hasResponse = claim.status !== ClaimStatus.PENDING && claim.status !== 'pending';
+        
+        return (
+          <div 
+            key={claim.id}
+            className="bg-white rounded-3xl border border-gray-200 p-4 divide-y divide-dashed divide-gray-200 hover:shadow-md transition-shadow duration-200"
+          >
+            {/* Transaction ID */}
+            <div className="flex justify-between items-start py-2.5 first:pt-0">
+              <span className="text-xs text-gray-500">Transaction ID</span>
+              <span className="text-xs font-medium text-gray-700 text-right font-mono">
+                #{(claim.purchase_id || claim.transactionId || claim.id)?.slice(0, 8) || 'N/A'}
+              </span>
+            </div>
+
+            {/* Tanggal */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Tanggal</span>
+              <span className="text-xs font-medium text-gray-700 text-right">
+                {formatDate(claim.created_at || claim.createdAt)}
+              </span>
+            </div>
+
+            {/* Akun */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Akun</span>
+              <div className="text-right">
+                <span className="text-xs font-medium text-gray-700 font-mono">
+                  #{(claim.purchase_id || claim.accountId || claim.id)?.slice(0, 8) || 'N/A'}
+                </span>
+                {claim.purchases?.products?.product_name && (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {claim.purchases.products.product_name}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Alasan */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Alasan</span>
+              <span className="text-xs font-medium text-gray-700 text-right max-w-[60%]">
+                {getReasonLabel(claim.claim_type || claim.reason)}
+              </span>
+            </div>
+
+            {/* Status */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Status</span>
+              {getStatusBadgeMobile(claim.status)}
+            </div>
+
+            {/* Garansi Berakhir */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Garansi Berakhir</span>
+              <span className="text-xs font-medium text-gray-700 text-right">
+                {claim.purchases?.warranty_expires_at 
+                  ? formatDate(claim.purchases.warranty_expires_at)
+                  : 'N/A'}
+              </span>
+            </div>
+
+            {/* Aksi */}
+            {hasResponse && (
+              <div className="pt-3 last:pb-0">
+                <button
+                  onClick={() => onViewResponse(claim)}
+                  className="w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  View Response
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </>
   );
 };
 

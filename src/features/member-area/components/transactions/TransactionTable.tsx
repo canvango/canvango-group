@@ -121,11 +121,11 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
       <table className="w-full min-w-[800px]">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
               ID Transaksi
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('date')}
             >
               <div className="flex items-center gap-1">
@@ -133,14 +133,14 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                 <SortIcon field="date" />
               </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
               Produk
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
               Jumlah
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('amount')}
             >
               <div className="flex items-center gap-1">
@@ -149,7 +149,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
               </div>
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('status')}
             >
               <div className="flex items-center gap-1">
@@ -157,10 +157,10 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                 <SortIcon field="status" />
               </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
               Garansi
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
               Aksi
             </th>
           </tr>
@@ -168,19 +168,19 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
         <tbody className="bg-white divide-y divide-gray-200">
           {sortedTransactions.map((transaction) => (
             <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                 #{transaction.id.slice(0, 8)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                 {formatDateTime(transaction.createdAt)}
               </td>
-              <td className="px-6 py-4 text-sm text-gray-900">
+              <td className="px-6 py-4 text-sm text-gray-700">
                 {transaction.product?.title || '-'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                 {transaction.quantity || '-'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">
                 {formatCurrency(transaction.amount)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">

@@ -74,16 +74,13 @@ const SystemSettings: React.FC = () => {
   const fetchLogs = async () => {
     try {
       setLogsLoading(true);
-      const params: any = {
-        page: currentPage,
+      
+      const response = await getLogs(
+        currentPage, 
         limit,
-      };
-
-      if (resourceFilter) {
-        params.resource = resourceFilter;
-      }
-
-      const response = await getLogs(currentPage, limit);
+        resourceFilter || undefined
+      );
+      
       setLogs(response.logs);
       setTotalPages(Math.ceil(response.total / limit));
     } catch (err: any) {
@@ -150,8 +147,8 @@ const SystemSettings: React.FC = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-        <p className="text-gray-600 mt-1">Configure system-wide settings and view audit logs</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">System Settings</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-1">Configure system-wide settings and view audit logs</p>
       </div>
 
       {/* Tabs */}
@@ -199,7 +196,7 @@ const SystemSettings: React.FC = () => {
         <div className="space-y-6">
           {/* Payment Methods */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Methods</h2>
             <p className="text-sm text-gray-600 mb-4">
               Configure available payment methods for top-up
             </p>
@@ -241,7 +238,7 @@ const SystemSettings: React.FC = () => {
 
           {/* Notification Settings */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Settings</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Notification Settings</h2>
 
             <div className="space-y-4">
               {/* Email Notifications */}
@@ -321,7 +318,7 @@ const SystemSettings: React.FC = () => {
 
           {/* Maintenance Mode */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Maintenance Mode</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Maintenance Mode</h2>
             <p className="text-sm text-gray-600 mb-4">
               Enable maintenance mode to prevent users from accessing the system
             </p>

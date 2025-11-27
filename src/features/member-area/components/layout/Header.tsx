@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Menu, LogOut, ChevronDown, LogIn, UserPlus } from 'lucide-react';
+import { User, Menu, LogOut, ChevronDown, LogIn, UserPlus, Wallet } from 'lucide-react';
 
 /**
  * Props for the Header component
@@ -9,7 +9,7 @@ import { User, Menu, LogOut, ChevronDown, LogIn, UserPlus } from 'lucide-react';
  * @property {string} user.username - Username to display
  * @property {'member' | 'admin'} user.role - User role
  * @property {string} [user.avatar] - Optional avatar image URL
- * @property {() => void} onProfileClick - Callback when profile button is clicked
+ * @property {number} [user.balance] - User balance to display
  * @property {() => void} onLogout - Callback when logout button is clicked
  * @property {() => void} [onMenuClick] - Callback when mobile menu button is clicked
  * @property {boolean} [sidebarOpen=false] - Whether sidebar is currently open (for ARIA)
@@ -19,8 +19,8 @@ interface HeaderProps {
     username: string;
     role: 'guest' | 'member' | 'admin';
     avatar?: string;
+    balance?: number;
   };
-  onProfileClick: () => void;
   onLogout: () => void;
   onMenuClick?: () => void;
   sidebarOpen?: boolean;
@@ -64,7 +64,7 @@ interface HeaderProps {
  * @see {@link Sidebar} for the navigation sidebar
  * @see {@link MemberAreaLayout} for the complete layout structure
  */
-const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuClick, sidebarOpen = false }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogout, onMenuClick, sidebarOpen = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -130,7 +130,7 @@ const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuC
           <img 
             src="/logo.png" 
             alt="Canvango Group" 
-            className="h-8 w-auto"
+            className="h-6 w-auto"
           />
           <span className="text-lg md:text-xl font-bold text-gray-900">Canvango Group</span>
         </div>
@@ -189,25 +189,44 @@ const Header: React.FC<HeaderProps> = ({ user, onProfileClick, onLogout, onMenuC
                 role="menu"
                 aria-orientation="vertical"
               >
-                {/* Profile info in dropdown (mobile) */}
-                <div className="px-4 py-3 border-b border-gray-100 sm:hidden">
-                  <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                  <div className="text-xs text-gray-500 capitalize">{user.role}</div>
-                </div>
+                {/* User info with balance */}
+                {user.balance !== undefined && (
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex items-center space-x-3 mb-2">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full" aria-hidden="true" />
+                      ) : (
+                        <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                          <User className="w-5 h-5 text-primary-600" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                        <div className="text-xs text-gray-500 capitalize">{user.role}</div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-2 rounded-xl border border-green-200">
+                      <div className="text-xs text-gray-600 mb-0.5">Saldo Anda</div>
+                      <div className="flex items-center space-x-1.5">
+                        <Wallet className="w-4 h-4 text-green-600" aria-hidden="true" />
+                        <span className="text-sm font-bold text-green-700">
+                          Rp {user.balance.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {/* Profile menu item */}
-                <button
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    onProfileClick();
-                  }}
+                {/* Topup Saldo menu item */}
+                <a
+                  href="/top-up"
+                  onClick={() => setIsDropdownOpen(false)}
                   className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50"
                   role="menuitem"
-                  type="button"
                 >
-                  <User className="w-4 h-4 text-gray-500" aria-hidden="true" />
-                  <span>Profile Saya</span>
-                </button>
+                  <Wallet className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                  <span>Topup Saldo</span>
+                </a>
 
                 {/* Logout menu item */}
                 <button

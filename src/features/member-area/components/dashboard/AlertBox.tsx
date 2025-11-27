@@ -24,13 +24,13 @@ const AlertBox: React.FC<AlertBoxProps> = ({ type, icon: Icon, title, content })
   };
 
   return (
-    <div className={`bg-white border-l-4 ${typeStyles[type]} p-6 rounded-lg shadow-sm`}>
-      <div className="flex items-start space-x-3">
-        <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconStyles[type]}`} />
-        <div className="flex-1">
-          <h3 className="font-bold mb-3 text-gray-900">{title}</h3>
-          <div className="text-sm text-gray-700">{content}</div>
+    <div className={`bg-white border-l-4 ${typeStyles[type]} p-6 rounded-lg shadow-sm text-left`}>
+      <div className="space-y-3">
+        <div className="flex items-start space-x-3">
+          <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconStyles[type]}`} />
+          <h3 className="font-bold text-gray-900 text-left">{title}</h3>
         </div>
+        <div className="text-sm text-gray-700 text-left">{content}</div>
       </div>
     </div>
   );

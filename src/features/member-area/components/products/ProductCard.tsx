@@ -139,7 +139,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuy, onViewDetails
           {product.title}
         </h3>
         
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed flex-1">
+        <p className="text-xs text-gray-700 mb-3 line-clamp-2 leading-relaxed flex-1">
           {product.description}
         </p>
 

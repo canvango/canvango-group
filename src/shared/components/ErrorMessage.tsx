@@ -27,7 +27,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
       <div className="flex items-start gap-3">
         <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-red-900 mb-1">
+          <h3 className="text-base font-semibold text-red-900 mb-1">
             {title}
           </h3>
           <p className="text-sm text-red-800 mb-2">

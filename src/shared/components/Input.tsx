@@ -114,7 +114,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               ${hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}
               ${prefixIcon ? 'pl-10' : 'pl-3'}
               ${suffixIcon ? 'pr-10' : 'pr-3'}
-              py-2.5 text-gray-900 placeholder-gray-400
+              py-2.5 text-sm text-gray-900 placeholder:text-gray-400
               focus:outline-none focus:ring-2 focus:ring-offset-0
               disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
               transition-colors duration-200
@@ -145,7 +145,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         
         {helperText && !error && (
-          <p id={`${inputId}-helper`} className="mt-1 text-sm text-gray-500">
+          <p id={`${inputId}-helper`} className="mt-1 text-xs text-gray-500">
             {helperText}
           </p>
         )}

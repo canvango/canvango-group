@@ -1,65 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
-import api from '../../utils/api';
-
-interface AuditLog {
-  id: string;
-  admin_id: string;
-  action: string;
-  resource: string;
-  resource_id: string | null;
-  changes: Record<string, any> | null;
-  ip_address: string | null;
-  user_agent: string | null;
-  created_at: string;
-}
+import { useAuditLogs } from '../../hooks/useAuditLogs';
+import { AuditLogWithAdmin } from '@/types/auditLog';
+import type { AuditAction, AuditResource } from '@/types/auditLog';
 
 const AuditLog = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
   const [adminFilter, setAdminFilter] = useState('');
-  const [actionFilter, setActionFilter] = useState('all');
-  const [entityFilter, setEntityFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all');
+  const [entityFilter, setEntityFilter] = useState<AuditResource | 'all'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [selectedLog, setSelectedLog] = useState<AuditLogWithAdmin | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const limit = 20;
 
-  useEffect(() => {
-    fetchLogs();
-  }, [currentPage, adminFilter, actionFilter, entityFilter, startDate, endDate]);
+  // Fetch audit logs using React Query
+  const { data, isLoading, error } = useAuditLogs({
+    admin_id: adminFilter || undefined,
+    action: actionFilter,
+    resource: entityFilter,
+    start_date: startDate || undefined,
+    end_date: endDate || undefined,
+    page: currentPage,
+    limit
+  });
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const params: any = {
-        page: currentPage,
-        limit,
-      };
+  const logs = data?.logs || [];
+  const totalPages = data?.pagination.totalPages || 1;
 
-      if (adminFilter) params.admin = adminFilter;
-      if (actionFilter !== 'all') params.action = actionFilter;
-      if (entityFilter !== 'all') params.entity = entityFilter;
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-
-      const response = await api.get('/admin/audit-logs', { params });
-      setLogs(response.data.data.logs);
-      setTotalPages(response.data.data.pagination.totalPages);
-    } catch (error: any) {
-      console.error('Error fetching audit logs:', error);
-      toast.error('Failed to load audit logs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openDetailModal = (log: AuditLog) => {
+  const openDetailModal = (log: AuditLogWithAdmin) => {
     setSelectedLog(log);
     setIsDetailModalOpen(true);
   };
@@ -107,7 +78,7 @@ const AuditLog = () => {
         <select
           value={actionFilter}
           onChange={(e) => {
-            setActionFilter(e.target.value);
+            setActionFilter(e.target.value as AuditAction | 'all');
             setCurrentPage(1);
           }}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -121,7 +92,7 @@ const AuditLog = () => {
         <select
           value={entityFilter}
           onChange={(e) => {
-            setEntityFilter(e.target.value);
+            setEntityFilter(e.target.value as AuditResource | 'all');
             setCurrentPage(1);
           }}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -159,9 +130,16 @@ const AuditLog = () => {
       </div>
 
       {/* Audit Logs Table */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : error ? (
+        <div className="card">
+          <div className="card-body text-center">
+            <p className="text-sm text-red-600">Failed to load audit logs</p>
+            <p className="text-xs text-gray-500 mt-1">{error.message}</p>
+          </div>
         </div>
       ) : logs.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -203,8 +181,15 @@ const AuditLog = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(log.created_at)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className="font-mono text-xs">{log.admin_id.substring(0, 8)}...</span>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {log.admin ? (
+                          <div>
+                            <div className="font-medium text-gray-900">{log.admin.username}</div>
+                            <div className="text-xs text-gray-500">{log.admin.email}</div>
+                          </div>
+                        ) : (
+                          <span className="font-mono text-xs text-gray-500">{log.admin_id?.substring(0, 8)}...</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getActionBadgeColor(log.action)}`}>
@@ -293,8 +278,15 @@ const AuditLog = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Admin ID</label>
-                      <p className="text-sm text-gray-900 font-mono">{selectedLog.admin_id}</p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Admin</label>
+                      {selectedLog.admin ? (
+                        <div>
+                          <p className="text-sm text-gray-900 font-medium">{selectedLog.admin.username}</p>
+                          <p className="text-xs text-gray-500">{selectedLog.admin.email}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-900 font-mono">{selectedLog.admin_id}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Entity</label>
@@ -318,11 +310,11 @@ const AuditLog = () => {
                     <p className="text-sm text-gray-900 break-all">{selectedLog.user_agent || '-'}</p>
                   </div>
 
-                  {selectedLog.changes && (
+                  {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Changes</label>
-                      <pre className="mt-2 p-4 bg-gray-50 rounded-lg text-xs overflow-x-auto">
-                        {JSON.stringify(selectedLog.changes, null, 2)}
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>
+                      <pre className="mt-2 p-4 bg-gray-50 rounded-xl text-xs overflow-x-auto">
+                        {JSON.stringify(selectedLog.details, null, 2)}
                       </pre>
                     </div>
                   )}

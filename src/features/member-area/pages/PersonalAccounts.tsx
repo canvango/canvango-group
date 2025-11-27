@@ -183,7 +183,7 @@ const PersonalAccounts: React.FC = () => {
     <div className="space-y-3 md:space-y-5">
       {/* Page Header */}
       <div className="px-1">
-        <h1 className="text-lg md:text-2xl font-bold text-gray-900 mb-1">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
           Personal Facebook Accounts
         </h1>
         <p className="text-xs md:text-sm text-gray-600">

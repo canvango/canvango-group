@@ -3,6 +3,7 @@
  */
 
 import { supabase } from './supabase';
+import { createAuditLog } from './auditLogService';
 
 export interface SystemSettings {
   maintenanceMode?: boolean;
@@ -35,15 +36,26 @@ export const updateSettings = async (settings: Partial<SystemSettings>): Promise
   return adminSettingsService.updateSettings(settings);
 };
 
-export const getLogs = async (page: number = 1, limit: number = 50): Promise<{ logs: AuditLog[]; total: number }> => {
+export const getLogs = async (
+  page: number = 1, 
+  limit: number = 50,
+  resourceFilter?: string
+): Promise<{ logs: AuditLog[]; total: number }> => {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
   
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('audit_logs')
     .select('*', { count: 'exact' })
     .range(from, to)
     .order('created_at', { ascending: false });
+
+  // Apply resource filter if provided
+  if (resourceFilter) {
+    query = query.eq('resource', resourceFilter);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) throw error;
 
@@ -58,9 +70,11 @@ export const adminSettingsService = {
     const { data, error } = await supabase
       .from('system_settings')
       .select('*')
+      .limit(1)
       .single();
 
     if (error) {
+      console.error('Error fetching settings:', error);
       // Return defaults if no settings found
       return {
         maintenanceMode: false,
@@ -69,6 +83,10 @@ export const adminSettingsService = {
         maxUploadSize: 5242880, // 5MB
         emailNotifications: true,
         smsNotifications: false,
+        payment_methods: ['BCA', 'Mandiri', 'BRI', 'DANA', 'OVO'],
+        notification_email: { enabled: true, admin_email: '' },
+        notification_system: { enabled: true, show_alerts: true },
+        maintenance_mode: { enabled: false, message: '' },
       };
     }
 
@@ -76,16 +94,39 @@ export const adminSettingsService = {
   },
 
   async updateSettings(settings: Partial<SystemSettings>): Promise<SystemSettings> {
+    // First, get the existing settings ID
+    const { data: existing, error: fetchError } = await supabase
+      .from('system_settings')
+      .select('id')
+      .limit(1)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Update the existing row
     const { data, error } = await supabase
       .from('system_settings')
-      .upsert({
+      .update({
         ...settings,
         updated_at: new Date().toISOString(),
       })
+      .eq('id', existing.id)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Create audit log
+    await createAuditLog({
+      action: 'UPDATE',
+      resource: 'settings',
+      resource_id: existing.id,
+      details: { 
+        updated_fields: Object.keys(settings),
+        changes: settings 
+      },
+    });
+
     return data as SystemSettings;
   },
 };

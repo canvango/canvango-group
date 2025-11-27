@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { AlertCircle, Info } from 'lucide-react';
+import { AlertCircle, Info, Code, BookOpen, Shield } from 'lucide-react';
 import {
   APIKeyDisplay,
   APIStatsCards,
   APIEndpointCard,
-  APITabNavigation,
   APITab,
 } from '../components/api';
 import {
@@ -17,6 +16,7 @@ import { mockAPIEndpoints } from '../config/api-endpoints.config';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { Skeleton } from '../../../shared/components/SkeletonLoader';
 import { useConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import CategoryTabs from '../components/products/CategoryTabs';
 
 const APIDocumentation: React.FC = () => {
   usePageTitle('API Documentation');
@@ -63,8 +63,8 @@ const APIDocumentation: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">API Documentation</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">API Documentation</h1>
+        <p className="text-sm leading-relaxed text-gray-600">
           Integrate Canvango Group services into your applications using our REST API
         </p>
       </div>
@@ -118,17 +118,25 @@ const APIDocumentation: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 pt-6">
-          <APITabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
+      <div>
+        <CategoryTabs
+          tabs={[
+            { id: 'endpoints', label: 'Endpoints', icon: Code },
+            { id: 'examples', label: 'Usage Examples', icon: BookOpen },
+            { id: 'rate-limits', label: 'Rate Limits', icon: Shield },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as APITab)}
+        />
+      </div>
 
-        <div className="p-6">
+      {/* Tab Content */}
+      <div className="bg-white rounded-3xl border border-gray-200 p-4 md:p-6">
           {/* Endpoints Tab */}
           {activeTab === 'endpoints' && (
             <div className="space-y-4">
               <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   Available Endpoints
                 </h2>
                 <p className="text-sm text-gray-600">
@@ -145,7 +153,7 @@ const APIDocumentation: React.FC = () => {
           {activeTab === 'examples' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
                   Usage Examples
                 </h2>
               </div>
@@ -271,7 +279,7 @@ curl_close($ch);
           {activeTab === 'rate-limits' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   Rate Limits
                 </h2>
                 <p className="text-sm text-gray-600 mb-6">
@@ -428,7 +436,6 @@ X-RateLimit-Reset: 1642345678`}</code>
             </div>
           )}
         </div>
-      </div>
 
       {/* Confirmation Dialog */}
       <ConfirmDialog />

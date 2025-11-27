@@ -46,7 +46,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       </h3>
 
       {/* Description */}
-      <p className="text-sm text-gray-600 max-w-md mb-6">
+      <p className="text-sm text-gray-700 max-w-md mb-6 leading-relaxed">
         {description}
       </p>
 

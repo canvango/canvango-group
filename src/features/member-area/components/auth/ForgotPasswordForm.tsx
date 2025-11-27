@@ -116,23 +116,26 @@ export const ForgotPasswordForm = () => {
       {/* Form Card */}
       <div className="card p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Input */}
+          {/* Email or Username Input */}
           <div>
             <label htmlFor="email" className="label">
-              Alamat Email
+              Email atau Username
             </label>
             <input
               id="email"
               name="email"
-              type="email"
+              type="text"
               autoComplete="email"
               required
               className="input"
-              placeholder="nama@email.com"
+              placeholder="Masukan Email Atau Username Anda"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
+            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              Masukkan email atau username yang terdaftar di sistem kami.
+            </p>
           </div>
 
           {/* Turnstile Widget */}

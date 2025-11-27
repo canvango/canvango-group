@@ -44,7 +44,7 @@ const EmptyState: React.FC = () => {
       <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
         <Package className="w-12 h-12 text-gray-400" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
         No Products Found
       </h3>
       <p className="text-gray-600 text-center max-w-md">

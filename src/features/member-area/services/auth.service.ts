@@ -44,12 +44,14 @@ export const login = async (credentials: LoginCredentials): Promise<{
     
     // If it doesn't contain @, treat it as username and fetch email
     if (!credentials.identifier.includes('@')) {
-      console.log('🔍 Looking up email for username:', credentials.identifier);
+      // Convert username to lowercase for case-insensitive lookup
+      const lowercaseUsername = credentials.identifier.toLowerCase();
+      console.log('🔍 Looking up email for username (case-insensitive):', lowercaseUsername);
       
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('email')
-        .eq('username', credentials.identifier)
+        .ilike('username', lowercaseUsername)
         .single();
       
       console.log('📧 Username lookup result:', { userData, userError });
@@ -295,6 +297,9 @@ export const register = async (data: {
   phone: string;
 }): Promise<User> => {
   try {
+    // Convert username to lowercase for case-insensitive storage
+    const lowercaseUsername = data.username.toLowerCase();
+    
     // Sign up with Supabase Auth
     // Pass user metadata so trigger can extract phone
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -302,8 +307,8 @@ export const register = async (data: {
       password: data.password,
       options: {
         data: {
-          username: data.username,
-          full_name: data.fullName || data.username,
+          username: lowercaseUsername,
+          full_name: data.fullName || lowercaseUsername,
           phone: data.phone,
         }
       }

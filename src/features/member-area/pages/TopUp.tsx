@@ -61,11 +61,11 @@ const TopUp: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Top Up Saldo</h1>
-          <p className="text-sm text-gray-600 mt-1">Tambahkan saldo untuk melakukan pembelian</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Top Up Saldo</h1>
+          <p className="text-sm leading-relaxed text-gray-600 mt-1">Tambahkan saldo untuk melakukan pembelian</p>
         </div>
         <Link
-          to="/member/transactions?tab=topup"
+          to="/riwayat-transaksi"
           className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors shadow-sm"
         >
           <History className="w-4 h-4" />
@@ -98,9 +98,9 @@ const TopUp: React.FC = () => {
               <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
                 <Wallet className="w-6 h-6" />
               </div>
-              <h2 className="text-lg font-semibold drop-shadow-lg">Saldo Saat Ini</h2>
+              <h2 className="text-base font-semibold drop-shadow-lg">Saldo Saat Ini</h2>
             </div>
-            <p className="text-3xl font-bold drop-shadow-lg">{formatCurrency(user.balance)}</p>
+            <p className="text-2xl md:text-3xl font-bold drop-shadow-lg">{formatCurrency(user.balance)}</p>
           </div>
         </div>
       )}
@@ -144,24 +144,24 @@ const TopUp: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-900 mb-3">Informasi Penting</h3>
             <ul className="text-sm text-gray-700 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Minimal top up adalah <strong>Rp 10.000</strong></span>
+              <li className="flex items-start">
+                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
+                <span className="flex-1">Minimal top up adalah <strong>Rp 10.000</strong></span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Saldo akan otomatis masuk setelah pembayaran berhasil</span>
+              <li className="flex items-start">
+                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
+                <span className="flex-1">Saldo akan otomatis masuk setelah pembayaran berhasil</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Proses verifikasi pembayaran memakan waktu <strong>1-5 menit</strong></span>
+              <li className="flex items-start">
+                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
+                <span className="flex-1">Proses verifikasi pembayaran memakan waktu <strong>1-5 menit</strong></span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5">•</span>
-                <span>Simpan bukti pembayaran untuk keperluan konfirmasi</span>
+              <li className="flex items-start">
+                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
+                <span className="flex-1">Simpan bukti pembayaran untuk keperluan konfirmasi</span>
               </li>
             </ul>
           </div>

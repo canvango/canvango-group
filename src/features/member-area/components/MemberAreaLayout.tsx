@@ -59,9 +59,9 @@ const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children }) => {
         user={{
           username: displayUser.username,
           role: displayUser.role,
-          avatar: user?.avatar
+          avatar: user?.avatar,
+          balance: displayUser.balance
         }}
-        onProfileClick={() => console.log('Profile clicked')}
         onLogout={handleLogout}
         onMenuClick={toggleSidebar}
         sidebarOpen={sidebarOpen}
@@ -82,7 +82,7 @@ const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children }) => {
       
       <Footer />
       
-      <WhatsAppButton phoneNumber="6281234567890" />
+      <WhatsAppButton phoneNumber="6289669654782" />
     </div>
   );
 };

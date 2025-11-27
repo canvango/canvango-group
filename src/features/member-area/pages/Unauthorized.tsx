@@ -29,7 +29,7 @@ const Unauthorized: React.FC = () => {
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
           Akses Ditolak
         </h1>
 

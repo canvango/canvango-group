@@ -123,8 +123,8 @@ const VerifiedBMManagement: React.FC = () => {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Kelola Verified BM Requests</h1>
-        <p className="text-gray-600 mt-1">Manage all verified BM service requests</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Kelola Verified BM Requests</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-1">Manage all verified BM service requests</p>
       </div>
 
       {/* Status Tabs */}

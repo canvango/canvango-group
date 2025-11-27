@@ -18,6 +18,7 @@ const TransactionManagement: React.FC = () => {
   // Filters
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | ''>('');
   const [productTypeFilter, setProductTypeFilter] = useState<ProductType | ''>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -32,34 +33,33 @@ const TransactionManagement: React.FC = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [newStatus, setNewStatus] = useState<TransactionStatus>('PENDING');
+  const [newStatus, setNewStatus] = useState<TransactionStatus>('pending');
   const [refundReason, setRefundReason] = useState('');
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, statusFilter, productTypeFilter, startDate, endDate]);
+  }, [currentPage, statusFilter, productTypeFilter, searchQuery, startDate, endDate]);
 
   const fetchTransactions = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const params: any = {
-        page: currentPage,
-        limit,
-      };
+      const filters: any = {};
 
-      if (statusFilter) params.status = statusFilter;
-      if (productTypeFilter) params.product_type = productTypeFilter;
-      if (startDate) params.start_date = startDate;
-      if (endDate) params.end_date = endDate;
+      if (statusFilter) filters.status = statusFilter;
+      if (productTypeFilter) filters.productType = productTypeFilter;
+      if (searchQuery) filters.search = searchQuery;
+      if (startDate) filters.startDate = startDate;
+      if (endDate) filters.endDate = endDate;
 
-      const data = await getAllTransactions(params);
+      const data = await getAllTransactions(filters, currentPage, limit);
       setTransactions(data.transactions);
       setTotalPages(data.pagination.totalPages);
       setTotalCount(data.pagination.total);
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to fetch transactions');
+      console.error('Error fetching transactions:', err);
+      setError(err.message || 'Failed to fetch transactions');
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ const TransactionManagement: React.FC = () => {
 
   const openStatusModal = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    setNewStatus(transaction.status);
+    setNewStatus(transaction.status as TransactionStatus);
     setShowStatusModal(true);
   };
 
@@ -152,22 +152,39 @@ const TransactionManagement: React.FC = () => {
 
   const getStatusBadgeClass = (status: TransactionStatus) => {
     switch (status) {
-      case 'BERHASIL':
-        return 'bg-green-100 text-green-800';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'GAGAL':
-        return 'bg-red-100 text-red-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border border-green-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border border-red-200';
+      case 'refunded':
+        return 'bg-purple-100 text-purple-800 border border-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
+    }
+  };
+
+  const getStatusLabel = (status: TransactionStatus) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'pending':
+        return 'Pending';
+      case 'failed':
+        return 'Failed';
+      case 'refunded':
+        return 'Refunded';
+      default:
+        return status;
     }
   };
 
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Transaction Management</h1>
-        <p className="text-gray-600 mt-2">Manage and monitor all transactions</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Transaction Management</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-2">Manage and monitor all transactions</p>
       </div>
 
       {/* Success Message */}
@@ -197,8 +214,8 @@ const TransactionManagement: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4">
+      <div className="bg-white p-4 rounded-3xl shadow mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Status
@@ -209,12 +226,13 @@ const TransactionManagement: React.FC = () => {
                 setStatusFilter(e.target.value as TransactionStatus | '');
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Status</option>
-              <option value="BERHASIL">BERHASIL</option>
-              <option value="PENDING">PENDING</option>
-              <option value="GAGAL">GAGAL</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
             </select>
           </div>
 
@@ -228,17 +246,34 @@ const TransactionManagement: React.FC = () => {
                 setProductTypeFilter(e.target.value as ProductType | '');
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Products</option>
-              <option value="RMSO_NEW">RMSO NEW</option>
-              <option value="PERSONAL_TUA">PERSONAL TUA</option>
-              <option value="RM_NEW">RM NEW</option>
-              <option value="RM_TUA">RM TUA</option>
-              <option value="J202_VERIFIED_BM">J202 VERIFIED BM</option>
+              <option value="bm_account">BM Account</option>
+              <option value="personal_account">Personal Account</option>
+              <option value="verified_bm">Verified BM</option>
+              <option value="whatsapp_api">WhatsApp API</option>
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search User
+            </label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Email or username..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Start Date
@@ -250,7 +285,7 @@ const TransactionManagement: React.FC = () => {
                 setStartDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -265,14 +300,14 @@ const TransactionManagement: React.FC = () => {
                 setEndDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div className="flex items-end">
             <button
               onClick={handleExport}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
             >
               Export CSV
             </button>
@@ -281,7 +316,7 @@ const TransactionManagement: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-3xl shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -297,57 +332,73 @@ const TransactionManagement: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Product
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Quantity
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Total
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {transactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
+                    <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {transaction.user?.username || 'Unknown'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {transaction.user?.email || 'N/A'}
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-2xl ${
+                          transaction.transaction_type === 'purchase' 
+                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                            : transaction.transaction_type === 'topup'
+                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            : 'bg-purple-100 text-purple-700 border border-purple-200'
+                        }`}>
+                          {transaction.transaction_type === 'purchase' ? 'Purchase' : 
+                           transaction.transaction_type === 'topup' ? 'Top Up' : 
+                           transaction.transaction_type}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{transaction.product_name}</div>
-                        <div className="text-sm text-gray-500">{transaction.product_type}</div>
+                        <div className="text-sm text-gray-700">{transaction.product_name}</div>
+                        <div className="text-xs text-gray-500">{transaction.product_type}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {transaction.quantity}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {transaction.quantity || 1}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(transaction.total_amount)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {formatCurrency(transaction.total_amount || transaction.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                            transaction.status
+                          className={`px-3 py-1 inline-flex text-xs font-medium rounded-2xl ${getStatusBadgeClass(
+                            transaction.status as TransactionStatus
                           )}`}
                         >
-                          {transaction.status}
+                          {getStatusLabel(transaction.status as TransactionStatus)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -356,20 +407,20 @@ const TransactionManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => openDetailModal(transaction)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          className="text-blue-600 hover:text-blue-900 mr-3 transition-colors"
                         >
                           View
                         </button>
                         <button
                           onClick={() => openStatusModal(transaction)}
-                          className="text-primary-600 hover:text-primary-900 mr-3"
+                          className="text-primary-600 hover:text-primary-900 mr-3 transition-colors"
                         >
                           Status
                         </button>
-                        {transaction.status === 'BERHASIL' && (
+                        {transaction.status === 'completed' && (
                           <button
                             onClick={() => openRefundModal(transaction)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 transition-colors"
                           >
                             Refund
                           </button>
@@ -387,14 +438,14 @@ const TransactionManagement: React.FC = () => {
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -411,11 +462,11 @@ const TransactionManagement: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <nav className="relative z-0 inline-flex rounded-xl shadow-sm -space-x-px">
                     <button
                       onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      className="relative inline-flex items-center px-3 py-2 rounded-l-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Previous
                     </button>
@@ -425,7 +476,7 @@ const TransactionManagement: React.FC = () => {
                     <button
                       onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      className="relative inline-flex items-center px-3 py-2 rounded-r-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Next
                     </button>
@@ -439,71 +490,99 @@ const TransactionManagement: React.FC = () => {
 
       {/* Detail Modal */}
       {showDetailModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Transaction Details
               </h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Transaction ID</p>
-                  <p className="text-sm text-gray-900">{selectedTransaction.id}</p>
+                  <p className="text-xs font-medium text-gray-500">Transaction ID</p>
+                  <p className="text-sm text-gray-700 font-mono">{selectedTransaction.id}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">User</p>
-                  <p className="text-sm text-gray-900">
-                    {selectedTransaction.user?.full_name || 'Unknown'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {selectedTransaction.user?.email || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Product</p>
-                  <p className="text-sm text-gray-900">{selectedTransaction.product_name}</p>
-                  <p className="text-sm text-gray-500">{selectedTransaction.product_type}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Quantity</p>
-                  <p className="text-sm text-gray-900">{selectedTransaction.quantity}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                  <p className="text-sm text-gray-900">
-                    {formatCurrency(selectedTransaction.total_amount)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Status</p>
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                      selectedTransaction.status
-                    )}`}
-                  >
-                    {selectedTransaction.status}
+                  <p className="text-xs font-medium text-gray-500">Type</p>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-2xl ${
+                    selectedTransaction.transaction_type === 'purchase' 
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : selectedTransaction.transaction_type === 'topup'
+                      ? 'bg-green-100 text-green-700 border border-green-200'
+                      : 'bg-purple-100 text-purple-700 border border-purple-200'
+                  }`}>
+                    {selectedTransaction.transaction_type === 'purchase' ? 'Purchase' : 
+                     selectedTransaction.transaction_type === 'topup' ? 'Top Up' : 
+                     selectedTransaction.transaction_type}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Created At</p>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-xs font-medium text-gray-500">User</p>
+                  <p className="text-sm text-gray-700">
+                    {selectedTransaction.user?.full_name || selectedTransaction.user?.username || 'Unknown'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {selectedTransaction.user?.email || 'N/A'}
+                  </p>
+                </div>
+                {selectedTransaction.product_name && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Product</p>
+                    <p className="text-sm text-gray-700">{selectedTransaction.product_name}</p>
+                    <p className="text-xs text-gray-500">{selectedTransaction.product_type}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Quantity</p>
+                  <p className="text-sm text-gray-700">{selectedTransaction.quantity || 1}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Total Amount</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatCurrency(selectedTransaction.total_amount || selectedTransaction.amount)}
+                  </p>
+                </div>
+                {selectedTransaction.payment_method && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Payment Method</p>
+                    <p className="text-sm text-gray-700 uppercase">{selectedTransaction.payment_method}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Status</p>
+                  <span
+                    className={`px-3 py-1 inline-flex text-xs font-medium rounded-2xl ${getStatusBadgeClass(
+                      selectedTransaction.status as TransactionStatus
+                    )}`}
+                  >
+                    {getStatusLabel(selectedTransaction.status as TransactionStatus)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Created At</p>
+                  <p className="text-sm text-gray-700">
                     {formatDate(selectedTransaction.created_at)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Updated At</p>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-xs font-medium text-gray-500">Updated At</p>
+                  <p className="text-sm text-gray-700">
                     {formatDate(selectedTransaction.updated_at)}
                   </p>
                 </div>
+                {selectedTransaction.metadata?.admin_notes && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Admin Notes</p>
+                    <p className="text-sm text-gray-700">{selectedTransaction.metadata.admin_notes}</p>
+                  </div>
+                )}
               </div>
-              <div className="mt-4">
+              <div className="mt-6">
                 <button
                   onClick={() => {
                     setShowDetailModal(false);
                     setSelectedTransaction(null);
                   }}
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  className="w-full px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
                 >
                   Close
                 </button>
@@ -515,12 +594,19 @@ const TransactionManagement: React.FC = () => {
 
       {/* Status Update Modal */}
       {showStatusModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Update Transaction Status
               </h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Status: <span className={`px-2 py-1 text-xs font-medium rounded-2xl ${getStatusBadgeClass(selectedTransaction.status as TransactionStatus)}`}>
+                    {getStatusLabel(selectedTransaction.status as TransactionStatus)}
+                  </span>
+                </label>
+              </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   New Status
@@ -528,17 +614,18 @@ const TransactionManagement: React.FC = () => {
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value as TransactionStatus)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="BERHASIL">BERHASIL</option>
-                  <option value="PENDING">PENDING</option>
-                  <option value="GAGAL">GAGAL</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                  <option value="refunded">Refunded</option>
                 </select>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleUpdateStatus}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                 >
                   Update
                 </button>
@@ -547,7 +634,7 @@ const TransactionManagement: React.FC = () => {
                     setShowStatusModal(false);
                     setSelectedTransaction(null);
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -559,16 +646,21 @@ const TransactionManagement: React.FC = () => {
 
       {/* Refund Modal */}
       {showRefundModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Refund Transaction
               </h3>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">
-                  Refund amount: {formatCurrency(selectedTransaction.total_amount)}
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <p className="text-sm text-red-800 mb-1">
+                  <span className="font-medium">Refund amount:</span> {formatCurrency(selectedTransaction.total_amount || selectedTransaction.amount)}
                 </p>
+                <p className="text-xs text-red-600">
+                  This will return the amount to user's balance and change status to "refunded"
+                </p>
+              </div>
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Reason (Optional)
                 </label>
@@ -576,16 +668,16 @@ const TransactionManagement: React.FC = () => {
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter refund reason..."
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleRefund}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                 >
-                  Refund
+                  Confirm Refund
                 </button>
                 <button
                   onClick={() => {
@@ -593,7 +685,7 @@ const TransactionManagement: React.FC = () => {
                     setSelectedTransaction(null);
                     setRefundReason('');
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>

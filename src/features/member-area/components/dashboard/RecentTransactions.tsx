@@ -1,7 +1,8 @@
 import React from 'react';
-import { Eye, RefreshCw, CheckCircle, Clock, XCircle, Calendar, User, Package, CreditCard } from 'lucide-react';
+import { Eye, RefreshCw, CheckCircle, Clock, XCircle } from 'lucide-react';
 import type { Transaction } from '../../types/transaction';
 import { TransactionStatus } from '../../types/transaction';
+import TransactionCard from './TransactionCard';
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -36,7 +37,8 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
+      {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Eye className="w-5 h-5 text-primary-600" />
@@ -46,6 +48,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
         </div>
       </div>
 
+      {/* Content */}
       {isLoading ? (
         <div className="py-8 text-center">
           <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
@@ -57,7 +60,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             <XCircle className="w-6 h-6 text-red-600" />
           </div>
           <h4 className="text-sm font-semibold text-gray-900 mb-1">Gagal Memuat Data</h4>
-          <p className="text-xs text-gray-500">{error}</p>
+          <p className="text-xs text-gray-600">{error}</p>
         </div>
       ) : !filteredTransactions || filteredTransactions.length === 0 ? (
         <div className="py-8 text-center">
@@ -65,56 +68,87 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             <Eye className="w-6 h-6 text-gray-400" />
           </div>
           <h4 className="text-sm font-semibold text-gray-900 mb-1">Belum Ada Transaksi</h4>
-          <p className="text-xs text-gray-500">Transaksi terbaru Anda akan muncul di sini</p>
+          <p className="text-xs text-gray-600">Transaksi terbaru Anda akan muncul di sini</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-200">
-          {filteredTransactions.map((tx) => {
-            const config = statusConfig[tx.status];
-            const Icon = config.icon;
-            
-            return (
-              <div 
-                key={tx.id} 
-                className="p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-900 flex-1">
-                    {tx.productName || tx.product?.title || 'N/A'}
-                  </h4>
-                  <span 
-                    className={`px-2.5 py-1 text-xs font-medium rounded-2xl flex-shrink-0 flex items-center gap-1 ${config.color}`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {config.label}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 mb-2 leading-relaxed">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {(tx as any).username || 'user****'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Package className="w-3 h-3" />
-                      {`${tx.quantity || 1} Akun`}
-                    </span>
-                    <span className="flex items-center gap-1 font-semibold text-gray-900">
-                      <CreditCard className="w-3 h-3" />
-                      Rp {tx.amount.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center text-xs text-gray-500">
-                  <Calendar className="w-3 h-3 mr-1" aria-hidden="true" />
-                  <time dateTime={tx.createdAt.toString()}>
-                    {formatDate(tx.createdAt)}
-                  </time>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <>
+          {/* Mobile View - Card Layout */}
+          <div className="md:hidden p-4 space-y-3">
+            {filteredTransactions.map((tx) => (
+              <TransactionCard key={tx.id} transaction={tx} />
+            ))}
+          </div>
+
+          {/* Desktop View - Table Layout */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    Tanggal
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    Produk
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    Jumlah
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    Total
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((tx) => {
+                  const config = statusConfig[tx.status];
+                  const Icon = config.icon;
+                  const quantity = tx.quantity || (tx as any).metadata?.quantity || 1;
+                  const username = (tx as any).username || 'User';
+                  
+                  // Mask username
+                  const maskUsername = (username: string): string => {
+                    if (!username || username.length <= 3) return username + '******';
+                    return username.substring(0, 3) + '******';
+                  };
+                  
+                  return (
+                    <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">
+                        {maskUsername(username)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {formatDate(tx.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">
+                        {tx.productName || tx.product?.title || 'Layanan Verifikasi BM'}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">
+                        {quantity} Akun
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">
+                        Rp {tx.amount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span 
+                          className={`px-3 py-1 text-xs font-medium rounded-2xl border inline-flex items-center gap-1 ${config.color}`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          {config.label.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

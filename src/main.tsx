@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Toaster as SonnerToaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 
@@ -95,6 +96,7 @@ if (!root) {
                     </React.Suspense>
                   </div>
                   <Toaster position="top-right" />
+                  <SonnerToaster position="top-right" richColors />
                 </AuthProvider>
               </ToastProvider>
             </UIProvider>

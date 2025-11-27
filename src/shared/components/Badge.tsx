@@ -15,18 +15,18 @@ const Badge: React.FC<BadgeProps> = ({
   children,
   className = ''
 }) => {
-  // Using Canvango Group brand colors
+  // Using Canvango Group brand colors with stronger contrast
   const variantStyles = {
-    success: 'bg-success-100 text-success-800 border-success-200',
-    warning: 'bg-warning-100 text-warning-800 border-warning-200',
-    error: 'bg-danger-100 text-danger-800 border-danger-200',
+    success: 'bg-green-100 text-green-800 border-green-200',
+    warning: 'bg-orange-100 text-orange-800 border-orange-200',
+    error: 'bg-red-100 text-red-800 border-red-200',
     info: 'bg-blue-100 text-blue-800 border-blue-200',
     primary: 'bg-primary-100 text-primary-800 border-primary-200',
     default: 'bg-gray-100 text-gray-800 border-gray-200',
     // Status-specific variants
-    pending: 'bg-warning-100 text-warning-800 border-warning-200',
-    approved: 'bg-success-100 text-success-800 border-success-200',
-    rejected: 'bg-danger-100 text-danger-800 border-danger-200',
+    pending: 'bg-orange-100 text-orange-800 border-orange-200',
+    approved: 'bg-green-100 text-green-800 border-green-200',
+    rejected: 'bg-red-100 text-red-800 border-red-200',
   };
 
   const sizeStyles = {

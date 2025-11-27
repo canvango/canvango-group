@@ -1,5 +1,6 @@
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
 interface WhatsAppButtonProps {
   phoneNumber: string;
@@ -21,7 +22,7 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
       className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50 hover:scale-105"
       aria-label="Chat on WhatsApp"
     >
-      <MessageCircle className="w-6 h-6" />
+      <FontAwesomeIcon icon={faWhatsapp} className="w-7 h-7" />
     </button>
   );
 };

@@ -238,8 +238,8 @@ const UserManagement: React.FC = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600 mt-1">Manage all users in the system</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">User Management</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-1">Manage all users in the system</p>
       </div>
 
       {/* Filters */}

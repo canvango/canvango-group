@@ -104,36 +104,38 @@ const VerifiedBMOrdersTable: React.FC<VerifiedBMOrdersTableProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Riwayat Request</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Lihat status detail setiap akun dengan expand request
-            </p>
-          </div>
-          
-          {/* Status Legend */}
-          <div className="flex items-center gap-2 text-xs flex-wrap">
-            <span className="px-2 py-1 bg-green-100 text-green-700 rounded" title="Akun berhasil diverifikasi">
-              ✅ Selesai
-            </span>
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded" title="Sedang diproses admin">
-              ⚠️ Proses
-            </span>
-            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded" title="Menunggu diproses">
-              🕐 Pending
-            </span>
-            <span className="px-2 py-1 bg-red-100 text-red-700 rounded" title="Akun gagal dan sudah di-refund">
-              🔄 Refund
-            </span>
+    <>
+      {/* Desktop View */}
+      <div className="hidden md:block bg-white rounded-3xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Riwayat Request</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Lihat status detail setiap akun dengan expand request
+              </p>
+            </div>
+            
+            {/* Status Legend */}
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="px-2 py-1 bg-green-100 text-green-700 rounded" title="Akun berhasil diverifikasi">
+                ✅ Selesai
+              </span>
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded" title="Sedang diproses admin">
+                ⚠️ Proses
+              </span>
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded" title="Menunggu diproses">
+                🕐 Pending
+              </span>
+              <span className="px-2 py-1 bg-red-100 text-red-700 rounded" title="Akun gagal dan sudah di-refund">
+                🔄 Refund
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full">
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
@@ -358,6 +360,228 @@ const VerifiedBMOrdersTable: React.FC<VerifiedBMOrdersTableProps> = ({
         </table>
       </div>
     </div>
+
+    {/* Mobile View */}
+    <div className="md:hidden space-y-3">
+      {/* Header */}
+      <div className="bg-white rounded-3xl border border-gray-200 p-4">
+        <h2 className="text-lg font-semibold text-gray-900">Riwayat Request</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Tap untuk melihat detail request
+        </p>
+      </div>
+
+      {/* Request Cards */}
+      {requests.map((request) => {
+        const isExpanded = expandedRows.has(request.id);
+        const completed = request.url_details?.filter(u => u.status === 'completed').length || 0;
+        const refunded = request.url_details?.filter(u => u.status === 'refunded').length || 0;
+        const processing = request.url_details?.filter(u => u.status === 'processing').length || 0;
+        const pending = request.url_details?.filter(u => u.status === 'pending').length || 0;
+        const failed = request.url_details?.filter(u => u.status === 'failed').length || 0;
+        const refundAmount = refunded > 0 ? (Number(request.amount) / request.quantity) * refunded : 0;
+
+        return (
+          <div 
+            key={request.id}
+            className="bg-white rounded-3xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
+          >
+            {/* Main Card Content */}
+            <div className="p-4 divide-y divide-dashed divide-gray-200">
+              {/* Request ID */}
+              <div className="flex justify-between items-start py-2.5 first:pt-0">
+                <span className="text-xs text-gray-500">Request ID</span>
+                <span className="text-xs font-medium text-gray-700 text-right font-mono">
+                  #{request.id.slice(0, 8)}
+                </span>
+              </div>
+
+              {/* Tanggal */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Tanggal</span>
+                <span className="text-xs font-medium text-gray-700 text-right">
+                  {formatDate(request.created_at)}
+                </span>
+              </div>
+
+              {/* Jumlah Akun */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Jumlah Akun</span>
+                <div className="text-right">
+                  <span className="text-xs font-medium text-gray-700">
+                    {request.quantity} akun
+                  </span>
+                  {/* URL Status Summary */}
+                  {request.url_details && request.url_details.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1 flex-wrap justify-end">
+                      {completed > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                          ✅ {completed}
+                        </span>
+                      )}
+                      {processing > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                          ⚠️ {processing}
+                        </span>
+                      )}
+                      {pending > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
+                          🕐 {pending}
+                        </span>
+                      )}
+                      {failed > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded">
+                          ❌ {failed}
+                        </span>
+                      )}
+                      {refunded > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded">
+                          🔄 {refunded}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Total</span>
+                <div className="text-right">
+                  <span className="text-xs font-medium text-gray-700">
+                    {formatCurrency(Number(request.amount))}
+                  </span>
+                  {refundAmount > 0 && (
+                    <div className="text-xs text-red-600 mt-1">
+                      Refund: {formatCurrency(refundAmount)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Status</span>
+                {getStatusBadge(request.status)}
+              </div>
+
+              {/* Admin Notes */}
+              {request.admin_notes && (
+                <div className="flex justify-between items-start py-2.5">
+                  <span className="text-xs text-gray-500">Note Admin</span>
+                  <span className="text-xs font-medium text-gray-700 text-right max-w-[60%]">
+                    {request.admin_notes}
+                  </span>
+                </div>
+              )}
+
+              {/* Expand Button */}
+              <div className="pt-3 last:pb-0">
+                <button
+                  onClick={() => toggleRow(request.id)}
+                  className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      Tutup Detail
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Lihat Detail
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Expanded Details */}
+            {isExpanded && (
+              <div className="bg-gray-50 p-4 space-y-4 border-t border-gray-200">
+                {/* URL Details with Status */}
+                {request.url_details && request.url_details.length > 0 ? (
+                  <URLStatusList
+                    urls={request.url_details}
+                    pricePerUrl={Number(request.amount) / request.quantity}
+                    isAdmin={false}
+                  />
+                ) : (
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase mb-2">
+                      URL yang Disubmit ({request.urls.length})
+                    </h4>
+                    <div className="bg-white rounded-2xl border border-gray-200 p-3 max-h-48 overflow-y-auto">
+                      <ul className="space-y-2">
+                        {request.urls.map((url, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <span className="text-gray-500 font-mono">{index + 1}.</span>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:text-primary-700 hover:underline flex-1 break-all flex items-center gap-1"
+                            >
+                              {url}
+                              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Section */}
+                {request.notes && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase mb-2">
+                      Catatan Anda
+                    </h4>
+                    <div className="bg-white rounded-2xl border border-gray-200 p-3">
+                      <p className="text-sm text-gray-700">{request.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                      Dibuat
+                    </h4>
+                    <p className="text-xs text-gray-900">{formatDate(request.created_at)}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                      Diupdate
+                    </h4>
+                    <p className="text-xs text-gray-900">{formatDate(request.updated_at)}</p>
+                  </div>
+                  {request.completed_at && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                        Selesai
+                      </h4>
+                      <p className="text-xs text-gray-900">{formatDate(request.completed_at)}</p>
+                    </div>
+                  )}
+                  {request.failed_at && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                        Gagal
+                      </h4>
+                      <p className="text-xs text-gray-900">{formatDate(request.failed_at)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </>
   );
 };
 

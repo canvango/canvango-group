@@ -142,8 +142,8 @@ const UserManagement: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-1">Kelola role dan akses user</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="text-sm leading-relaxed text-gray-600 mt-1">Kelola role dan akses user</p>
         </div>
         <Button
           onClick={fetchUsers}
@@ -163,7 +163,7 @@ const UserManagement: React.FC = () => {
 
       {/* Administrator Section */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        <h2 className="text-xl font-semibold text-gray-900 mb-3">
           Administrator
         </h2>
         {loading ? (
@@ -181,7 +181,7 @@ const UserManagement: React.FC = () => {
 
       {/* Member & Guest Section */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        <h2 className="text-xl font-semibold text-gray-900 mb-3">
           Member & Guest
         </h2>
         {loading ? (

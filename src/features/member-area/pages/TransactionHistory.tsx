@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ShoppingBag, Wallet, TrendingUp } from 'lucide-react';
+import { ShoppingBag, Wallet, TrendingUp, CheckCircle, Clock, XCircle } from 'lucide-react';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import TabNavigation, { Tab } from '../components/transactions/TabNavigation';
 import TransactionFilters from '../components/transactions/TransactionFilters';
@@ -239,8 +239,8 @@ const TransactionHistory: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Riwayat Transaksi</h1>
-        <p className="text-gray-600 mt-1">Lihat semua transaksi pembelian dan top up Anda</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Riwayat Transaksi</h1>
+        <p className="text-sm leading-relaxed text-gray-600 mt-1">Lihat semua transaksi pembelian dan top up Anda</p>
       </div>
 
       {/* Error Message */}
@@ -331,13 +331,142 @@ const TransactionHistory: React.FC = () => {
         </div>
       )}
 
-      {/* Transaction Table */}
-      <TransactionTable
-        transactions={paginatedTransactions}
-        onViewDetails={handleViewDetails}
-        onViewAccountDetails={handleViewAccountDetails}
-        isLoading={isLoading}
-      />
+      {/* Transaction Table - Desktop */}
+      <div className="hidden md:block">
+        <TransactionTable
+          transactions={paginatedTransactions}
+          onViewDetails={handleViewDetails}
+          onViewAccountDetails={handleViewAccountDetails}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Transaction Cards - Mobile */}
+      <div className="md:hidden space-y-3">
+        {paginatedTransactions.map((transaction) => (
+          <div 
+            key={transaction.id}
+            className="bg-white rounded-3xl border border-gray-200 p-4 divide-y divide-dashed divide-gray-200 hover:shadow-md transition-shadow duration-200"
+          >
+            {/* ID Transaksi */}
+            <div className="flex justify-between items-start py-2.5 first:pt-0">
+              <span className="text-xs text-gray-500">ID Transaksi</span>
+              <span className="text-xs font-medium text-gray-700 text-right font-mono">
+                {transaction.id.substring(0, 8)}...
+              </span>
+            </div>
+
+            {/* Tanggal */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Tanggal</span>
+              <span className="text-xs font-medium text-gray-700 text-right">
+                {new Date(transaction.createdAt).toLocaleDateString('id-ID', { 
+                  day: '2-digit', 
+                  month: 'short', 
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+
+            {/* Produk */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Produk</span>
+              <span className="text-xs font-medium text-gray-700 text-right max-w-[60%]">
+                {transaction.product?.title || 'Top Up Saldo'}
+              </span>
+            </div>
+
+            {/* Jumlah */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Jumlah</span>
+              <span className="text-xs font-medium text-gray-700 text-right">
+                {transaction.quantity || 1} {transaction.type === TransactionType.PURCHASE ? 'Akun' : 'Transaksi'}
+              </span>
+            </div>
+
+            {/* Total */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Total</span>
+              <span className="text-xs font-medium text-gray-700 text-right">
+                Rp {transaction.amount.toLocaleString('id-ID')}
+              </span>
+            </div>
+
+            {/* Status */}
+            <div className="flex justify-between items-start py-2.5">
+              <span className="text-xs text-gray-500">Status</span>
+              <span 
+                className={`px-3 py-1 text-xs font-medium rounded-2xl border flex items-center gap-1 ${
+                  transaction.status === TransactionStatus.SUCCESS || transaction.status === TransactionStatus.COMPLETED
+                    ? 'bg-green-100 text-green-800 border-green-200'
+                    : transaction.status === TransactionStatus.PENDING
+                    ? 'bg-orange-100 text-orange-800 border-orange-200'
+                    : 'bg-red-100 text-red-800 border-red-200'
+                }`}
+              >
+                {transaction.status === TransactionStatus.SUCCESS || transaction.status === TransactionStatus.COMPLETED ? (
+                  <>
+                    <CheckCircle className="w-3 h-3" />
+                    BERHASIL
+                  </>
+                ) : transaction.status === TransactionStatus.PENDING ? (
+                  <>
+                    <Clock className="w-3 h-3" />
+                    PENDING
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3 h-3" />
+                    GAGAL
+                  </>
+                )}
+              </span>
+            </div>
+
+            {/* Garansi - Only for purchase transactions */}
+            {transaction.type === TransactionType.PURCHASE && transaction.warranty && (
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Garansi</span>
+                <span 
+                  className={`px-3 py-1 text-xs font-medium rounded-2xl border ${
+                    transaction.warranty.claimed
+                      ? 'bg-red-100 text-red-800 border-red-200'
+                      : new Date(transaction.warranty.expiresAt) < new Date()
+                      ? 'bg-gray-100 text-gray-800 border-gray-200'
+                      : 'bg-green-100 text-green-800 border-green-200'
+                  }`}
+                >
+                  {transaction.warranty.claimed
+                    ? 'Diklaim'
+                    : new Date(transaction.warranty.expiresAt) < new Date()
+                    ? 'Kadaluarsa'
+                    : 'Aktif'}
+                </span>
+              </div>
+            )}
+
+            {/* Aksi */}
+            <div className="flex gap-2 pt-3 last:pb-0">
+              <button
+                onClick={() => handleViewDetails(transaction)}
+                className="flex-1 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Detail
+              </button>
+              {transaction.type === TransactionType.PURCHASE && transaction.accountDetails && (
+                <button
+                  onClick={() => handleViewAccountDetails(transaction)}
+                  className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Lihat Akun
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Empty State */}
       {!isLoading && filteredTransactions.length === 0 && !error && (
@@ -349,7 +478,7 @@ const TransactionHistory: React.FC = () => {
               <Wallet className="w-16 h-16 mx-auto" />
             )}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Belum Ada Transaksi
           </h3>
           <p className="text-gray-600">

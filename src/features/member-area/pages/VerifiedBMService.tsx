@@ -104,8 +104,8 @@ const VerifiedBMService: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Jasa Verified BM</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Jasa Verified BM</h1>
+          <p className="text-sm leading-relaxed text-gray-600 mt-1">
             Layanan verifikasi Business Manager - Rp 200.000 per akun
           </p>
         </div>

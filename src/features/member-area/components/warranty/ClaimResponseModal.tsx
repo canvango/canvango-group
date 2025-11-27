@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { X } from 'lucide-react';
 import Modal from '../../../../shared/components/Modal';
 import Badge from '../../../../shared/components/Badge';
 import Button from '../../../../shared/components/Button';
@@ -21,29 +21,21 @@ const ClaimResponseModal: React.FC<ClaimResponseModalProps> = ({ claim, isOpen, 
   const accountId = (claim as any).accountId || (claim as any).purchase_id || '';
   const adminResponse = (claim as any).adminResponse || (claim as any).admin_notes || '';
 
-  const getStatusIcon = (status: ClaimStatus) => {
-    switch (status) {
-      case ClaimStatus.APPROVED:
-        return <CheckCircle className="w-12 h-12 text-green-600" />;
-      case ClaimStatus.REJECTED:
-        return <XCircle className="w-12 h-12 text-red-600" />;
-      case ClaimStatus.PENDING:
-        return <Clock className="w-12 h-12 text-yellow-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadge = (status: ClaimStatus) => {
-    switch (status) {
-      case ClaimStatus.PENDING:
-        return <Badge variant="warning">Pending</Badge>;
-      case ClaimStatus.APPROVED:
-        return <Badge variant="success">Approved</Badge>;
-      case ClaimStatus.REJECTED:
-        return <Badge variant="error">Rejected</Badge>;
-      default:
-        return <Badge variant="default">{status}</Badge>;
+  const getStatusBadge = (status: ClaimStatus | string) => {
+    const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : status;
+    
+    if (normalizedStatus === ClaimStatus.PENDING || normalizedStatus === 'pending') {
+      return <Badge variant="warning" size="lg">Pending</Badge>;
+    } else if (normalizedStatus === ClaimStatus.APPROVED || normalizedStatus === 'approved') {
+      return <Badge variant="success" size="lg">Approved</Badge>;
+    } else if (normalizedStatus === ClaimStatus.REJECTED || normalizedStatus === 'rejected') {
+      return <Badge variant="error" size="lg">Rejected</Badge>;
+    } else if (normalizedStatus === 'reviewing') {
+      return <Badge variant="info" size="lg">Reviewing</Badge>;
+    } else if (normalizedStatus === 'completed') {
+      return <Badge variant="success" size="lg">Completed</Badge>;
+    } else {
+      return <Badge variant="default" size="lg">{status}</Badge>;
     }
   };
 
@@ -98,16 +90,19 @@ const ClaimResponseModal: React.FC<ClaimResponseModalProps> = ({ claim, isOpen, 
     }
   };
 
-  const getStatusColor = (status: ClaimStatus): string => {
-    switch (status) {
-      case ClaimStatus.APPROVED:
-        return 'bg-green-50 border-green-200';
-      case ClaimStatus.REJECTED:
-        return 'bg-red-50 border-red-200';
-      case ClaimStatus.PENDING:
-        return 'bg-yellow-50 border-yellow-200';
-      default:
-        return 'bg-gray-50 border-gray-200';
+  const getStatusColor = (status: ClaimStatus | string): string => {
+    const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : status;
+    
+    if (normalizedStatus === ClaimStatus.APPROVED || normalizedStatus === 'approved' || normalizedStatus === 'completed') {
+      return 'bg-green-50 border-green-200';
+    } else if (normalizedStatus === ClaimStatus.REJECTED || normalizedStatus === 'rejected') {
+      return 'bg-red-50 border-red-200';
+    } else if (normalizedStatus === ClaimStatus.PENDING || normalizedStatus === 'pending') {
+      return 'bg-orange-50 border-orange-200';
+    } else if (normalizedStatus === 'reviewing') {
+      return 'bg-blue-50 border-blue-200';
+    } else {
+      return 'bg-gray-50 border-gray-200';
     }
   };
 
@@ -132,90 +127,86 @@ const ClaimResponseModal: React.FC<ClaimResponseModalProps> = ({ claim, isOpen, 
         </div>
 
         {/* Status Banner */}
-        <div className={`${getStatusColor(claim.status)} border rounded-lg p-6 mb-6`}>
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0">
-              {getStatusIcon(claim.status)}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg font-semibold text-gray-900">Status Klaim:</span>
-                {getStatusBadge(claim.status)}
-              </div>
-              <p className="text-sm text-gray-600">
-                {claim.status === ClaimStatus.APPROVED && 'Klaim Anda telah disetujui. Akun pengganti akan segera dikirimkan.'}
-                {claim.status === ClaimStatus.REJECTED && 'Klaim Anda ditolak. Silakan lihat alasan di bawah.'}
-                {claim.status === ClaimStatus.PENDING && 'Klaim Anda sedang dalam proses review oleh tim kami.'}
-              </p>
-            </div>
+        <div className={`${getStatusColor(claim.status)} border rounded-2xl p-6 mb-6`}>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="text-sm font-medium text-gray-900">Status Klaim:</span>
+            {getStatusBadge(claim.status)}
           </div>
         </div>
 
         {/* Claim Details */}
-        <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-200 mb-6">
+          <div className="grid grid-cols-2 divide-x divide-gray-200">
+            <div className="p-4">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
                 Tanggal Klaim
               </label>
-              <p className="text-sm text-gray-900 mt-1">{formatDateTime(claim.createdAt)}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {claim.createdAt ? formatDateTime(claim.createdAt) : 'N/A'}
+              </p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="p-4">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
                 Terakhir Diupdate
               </label>
-              <p className="text-sm text-gray-900 mt-1">{formatDateTime(claim.updatedAt)}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {claim.updatedAt ? formatDateTime(claim.updatedAt) : 'N/A'}
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <div className="grid grid-cols-2 divide-x divide-gray-200">
+            <div className="p-4">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
                 Transaction ID
               </label>
-              <p className="text-sm text-gray-900 mt-1">#{transactionId ? transactionId.slice(0, 12) : 'N/A'}</p>
+              <p className="text-sm font-medium text-gray-900 font-mono">
+                #{transactionId ? transactionId.slice(0, 12) : 'N/A'}
+              </p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="p-4">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
                 Account ID
               </label>
-              <p className="text-sm text-gray-900 mt-1">#{accountId ? accountId.slice(0, 12) : 'N/A'}</p>
+              <p className="text-sm font-medium text-gray-900 font-mono">
+                #{accountId ? accountId.slice(0, 12) : 'N/A'}
+              </p>
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <div className="p-4">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
               Alasan Klaim
             </label>
-            <p className="text-sm font-medium text-blue-600 mt-1">
+            <p className="text-sm font-medium text-blue-600">
               {typeof claim.reason === 'string' ? parseClaimReason(claim.reason).type : getReasonLabel(claim.reason)}
             </p>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <div className="p-4">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">
               Deskripsi Masalah
             </label>
-            <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">
-              {typeof claim.reason === 'string' ? parseClaimReason(claim.reason).description : (claim.description || 'N/A')}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {typeof claim.reason === 'string' ? parseClaimReason(claim.reason).description : (claim.description || 'other')}
             </p>
           </div>
         </div>
 
         {/* Admin Response */}
         {adminResponse && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+            <label className="text-xs font-semibold text-blue-900 uppercase tracking-wider block mb-2">
               Respon Admin
             </label>
-            <p className="text-sm text-gray-900 whitespace-pre-wrap">{adminResponse}</p>
+            <p className="text-sm text-blue-800 whitespace-pre-wrap leading-relaxed">{adminResponse}</p>
           </div>
         )}
 
         {/* No Response Yet */}
         {!adminResponse && claim.status === ClaimStatus.PENDING && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-6">
+            <p className="text-sm text-orange-800 leading-relaxed">
               Klaim Anda sedang dalam proses review. Anda akan menerima notifikasi setelah admin memberikan respon.
             </p>
           </div>

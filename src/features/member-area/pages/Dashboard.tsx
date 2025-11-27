@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
   return (
     <div>
       <WelcomeBanner
-        username={user?.username || user?.fullName || 'Member'}
+        username={user?.fullName || user?.username || 'Member'}
         message="Dapatkan akun iklan premium terlengkap dan terpercaya"
       />
 
@@ -62,26 +62,26 @@ const Dashboard: React.FC = () => {
           icon={AlertTriangle}
           title="PERHATIAN!!!"
           content={
-            <div className="space-y-2 md:space-y-2.5">
-              <div>
-                <p className="font-semibold text-amber-900 mb-1.5 text-sm md:text-base leading-tight">⚠️ PERINGATAN RESMI: RISIKO PENYALAHGUNAAN AKUN ⚠️</p>
-                <p className="mb-1.5 text-sm leading-snug">Kami <span className="font-bold">TIDAK BERTANGGUNG JAWAB</span> atas:</p>
-                <ul className="list-disc list-inside space-y-0.5 ml-2 text-sm leading-snug">
-                  <li>Pelanggaran UU ITE (Pencemaran Nama Baik/Konten Ilegal)</li>
-                  <li>Penipuan Digital/Scam</li>
-                  <li>Penyebaran Hoaks/SARA</li>
-                  <li>Aktivitas Ilegal lainnya</li>
+            <div className="space-y-2 md:space-y-2.5 text-left">
+              <div className="text-left">
+                <p className="font-semibold text-amber-900 mb-1.5 text-sm md:text-base leading-tight text-left">⚠️ PERINGATAN RESMI: RISIKO PENYALAHGUNAAN AKUN ⚠️</p>
+                <p className="mb-1.5 text-sm leading-snug text-left">Kami <span className="font-bold">TIDAK BERTANGGUNG JAWAB</span> atas:</p>
+                <ul className="list-disc list-inside space-y-0.5 ml-2 text-sm leading-snug text-left">
+                  <li className="text-left">Pelanggaran UU ITE (Pencemaran Nama Baik/Konten Ilegal)</li>
+                  <li className="text-left">Penipuan Digital/Scam</li>
+                  <li className="text-left">Penyebaran Hoaks/SARA</li>
+                  <li className="text-left">Aktivitas Ilegal lainnya</li>
                 </ul>
               </div>
-              <p className="font-semibold text-sm leading-snug">Segala konsekuensi hukum (pidana/perdata) menjadi tanggung jawab PEMBELI.</p>
-              <div>
-                <p className="font-semibold mb-1 text-sm leading-snug">Jika menyetujui:</p>
-                <ul className="list-disc list-inside space-y-0.5 ml-2 text-sm leading-snug">
-                  <li>Semua risiko hukum di Indonesia</li>
-                  <li>Pelepasan tanggung jawab kami jika pembeli terkena jerat hukum karna penyalahgunaan akun</li>
+              <p className="font-semibold text-sm leading-snug text-left">Segala konsekuensi hukum (pidana/perdata) menjadi tanggung jawab PEMBELI.</p>
+              <div className="text-left">
+                <p className="font-semibold mb-1 text-sm leading-snug text-left">Jika menyetujui:</p>
+                <ul className="list-disc list-inside space-y-0.5 ml-2 text-sm leading-snug text-left">
+                  <li className="text-left">Semua risiko hukum di Indonesia</li>
+                  <li className="text-left">Pelepasan tanggung jawab kami jika pembeli terkena jerat hukum karna penyalahgunaan akun</li>
                 </ul>
               </div>
-              <p className="font-semibold text-sm leading-snug">Silakan lanjutkan transaksi.</p>
+              <p className="font-semibold text-sm leading-snug text-left">Silakan lanjutkan transaksi.</p>
             </div>
           }
         />

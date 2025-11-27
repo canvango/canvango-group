@@ -22,23 +22,21 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
     tabs: tabs.map(t => ({ id: t.id, label: t.label }))
   });
 
-  // Use horizontal scroll for many tabs (> 4), grid for few tabs
-  const useManyTabsLayout = tabs.length > 4;
-
   return (
     <div className="w-full">
+      {/* Mobile: Always horizontal scroll */}
+      {/* Desktop (md+): Grid if few tabs, horizontal scroll if many tabs */}
       <div 
-        className={
-          useManyTabsLayout
-            ? 'flex gap-2 overflow-x-auto pb-2 scrollbar-hide'
-            : 'grid gap-2 pb-2'
-        }
+        className={`
+          flex gap-2 overflow-x-auto pb-2 scrollbar-hide
+          ${tabs.length <= 4 ? 'md:grid' : ''}
+        `}
         style={
-          useManyTabsLayout
-            ? undefined
-            : { 
+          tabs.length <= 4
+            ? { 
                 gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`,
               }
+            : undefined
         }
       >
         {tabs.map((tab) => {
@@ -54,7 +52,8 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
               className={`
                 inline-flex items-center justify-center px-4 py-2.5 rounded-full font-medium text-sm min-h-[44px]
                 transition-all duration-200
-                ${useManyTabsLayout ? 'flex-shrink-0 whitespace-nowrap' : ''}
+                flex-shrink-0 whitespace-nowrap
+                ${tabs.length <= 4 ? 'md:flex-shrink md:whitespace-normal' : ''}
                 ${
                   isActive
                     ? 'bg-primary-600 text-white shadow-md'
@@ -65,7 +64,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tabs, activeTab, onTabChang
               {Icon && (
                 <Icon className={`w-4 h-4 mr-2 ${isActive ? 'text-white' : 'text-gray-600'}`} />
               )}
-              <span className={useManyTabsLayout ? '' : 'truncate'}>{tab.label}</span>
+              <span className={tabs.length <= 4 ? 'md:truncate' : ''}>{tab.label}</span>
               {tab.count !== undefined && (
                 <span
                   className={`

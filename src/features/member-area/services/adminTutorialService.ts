@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/clients/supabase';
+import { createAuditLog } from './auditLogService';
 import {
   Tutorial,
   CreateTutorialData,
@@ -118,6 +119,19 @@ export const adminTutorialService = {
       .single();
 
     if (error) throw error;
+
+    // Create audit log
+    await createAuditLog({
+      action: 'CREATE',
+      resource: 'tutorials',
+      resource_id: data.id,
+      details: {
+        title: tutorialData.title,
+        category: tutorialData.category,
+        is_published: tutorialData.is_published ?? false,
+      }
+    });
+
     return data as Tutorial;
   },
 
@@ -136,6 +150,18 @@ export const adminTutorialService = {
       .single();
 
     if (error) throw error;
+
+    // Create audit log
+    await createAuditLog({
+      action: 'UPDATE',
+      resource: 'tutorials',
+      resource_id: id,
+      details: {
+        updated_fields: Object.keys(tutorialData),
+        title: tutorialData.title,
+      }
+    });
+
     return data as Tutorial;
   },
 
@@ -143,12 +169,29 @@ export const adminTutorialService = {
    * Delete tutorial
    */
   async deleteTutorial(id: string): Promise<void> {
+    // Get tutorial info before deletion for audit log
+    const { data: tutorial } = await supabase
+      .from('tutorials')
+      .select('title')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('tutorials')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
+
+    // Create audit log
+    await createAuditLog({
+      action: 'DELETE',
+      resource: 'tutorials',
+      resource_id: id,
+      details: {
+        title: tutorial?.title || 'Unknown',
+      }
+    });
   },
 
   /**
@@ -180,6 +223,18 @@ export const adminTutorialService = {
       .single();
 
     if (error) throw error;
+
+    // Create audit log
+    await createAuditLog({
+      action: isPublished ? 'ACTIVATE' : 'DEACTIVATE',
+      resource: 'tutorials',
+      resource_id: id,
+      details: {
+        title: data.title,
+        is_published: isPublished,
+      }
+    });
+
     return data as Tutorial;
   },
 };
