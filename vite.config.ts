@@ -6,7 +6,14 @@ import { visualizer } from 'rollup-plugin-visualizer';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      // Use automatic JSX runtime
+      jsxRuntime: 'automatic',
+      // Babel plugins for better compatibility
+      babel: {
+        plugins: [],
+      },
+    }),
     // Bundle analyzer - generates stats.html after build
     visualizer({
       filename: './dist/stats.html',
@@ -15,6 +22,10 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
+  // Ensure proper module resolution
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -22,6 +33,19 @@ export default defineConfig({
       '@/shared': path.resolve(__dirname, './src/shared'),
       '@/member-area': path.resolve(__dirname, './src/features/member-area'),
     },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@supabase/supabase-js',
+      '@tanstack/react-query',
+      'lucide-react',
+      'react-hot-toast',
+      'sonner',
+    ],
+    exclude: [],
   },
   server: {
     host: true, // Listen on all network interfaces (0.0.0.0)
@@ -50,40 +74,51 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Optimize dependencies
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         // Manual chunk splitting for better caching
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            // Keep React ecosystem together
+            if (id.includes('react') || id.includes('react-dom')) {
               return 'react-vendor';
             }
+            // Keep react-router separate to avoid circular deps
+            if (id.includes('react-router')) {
+              return 'router-vendor';
+            }
+            // Supabase
             if (id.includes('@supabase')) {
               return 'supabase-vendor';
             }
-            if (id.includes('@heroicons') || id.includes('react-hot-toast')) {
-              return 'ui-vendor';
+            // Tanstack Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
             }
-            if (id.includes('axios')) {
-              return 'axios-vendor';
+            // UI libraries
+            if (id.includes('lucide-react') || id.includes('react-hot-toast') || id.includes('sonner')) {
+              return 'ui-vendor';
             }
             // Other node_modules
             return 'vendor';
           }
-          // Admin pages chunk
-          if (id.includes('/pages/admin/')) {
-            return 'admin';
-          }
-          // Services chunk
-          if (id.includes('/services/')) {
-            return 'services';
-          }
         },
+        // Ensure proper module format
+        format: 'es',
+        // Add entry file names for better debugging
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    // Chunk size warnings
-    chunkSizeWarningLimit: 500,
   },
   // Vite automatically exposes env variables that start with VITE_
   // from .env files, no need to manually define them
