@@ -11,18 +11,13 @@ export const useActiveWelcomePopup = () => {
         .from('welcome_popups')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 on no data
 
       // Handle errors gracefully
       if (error) {
-        // PGRST116 = no rows found (expected when no active popup)
-        if (error.code === 'PGRST116') return null;
-        
-        // 406 Not Acceptable - table might not exist or RLS issue
-        // Don't throw, just return null to prevent blocking UI
-        if (error.code === '406' || error.message?.includes('406')) {
-          console.warn('Welcome popup table not accessible:', error.message);
-          return null;
+        // Log error but don't throw to prevent blocking UI
+        console.warn('Welcome popup query error:', error.message);
+        return null;
         }
         
         // For other errors, throw to trigger error boundary
