@@ -18,10 +18,6 @@ export const useActiveWelcomePopup = () => {
         // Log error but don't throw to prevent blocking UI
         console.warn('Welcome popup query error:', error.message);
         return null;
-        }
-        
-        // For other errors, throw to trigger error boundary
-        throw error;
       }
       
       return data as WelcomePopup | null;
