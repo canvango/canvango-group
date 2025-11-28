@@ -4,7 +4,7 @@
  * Provides error handling and retry logic for role polling
  */
 
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 
 /**
  * Configuration for exponential backoff retry logic

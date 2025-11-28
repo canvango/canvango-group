@@ -20,7 +20,7 @@
  * ```
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { Transaction, TransactionType, Account } from '../types/transaction';
 import type { PaginatedResponse } from './products.service';
 

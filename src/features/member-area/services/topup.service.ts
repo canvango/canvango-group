@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { PAYMENT_METHODS, MIN_TOPUP_AMOUNT } from '../utils/constants';
 import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 

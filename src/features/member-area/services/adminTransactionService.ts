@@ -2,7 +2,7 @@
  * Admin Transaction Management Service
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { createAuditLog } from './auditLogService';
 
 export interface TransactionFilters {

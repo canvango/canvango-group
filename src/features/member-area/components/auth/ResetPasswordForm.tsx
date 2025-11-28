@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { useToast } from '../../../../shared/contexts/ToastContext';
 
 export const ResetPasswordForm = () => {

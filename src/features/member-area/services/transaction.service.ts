@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import type { Transaction } from '../types/transaction';
 import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 

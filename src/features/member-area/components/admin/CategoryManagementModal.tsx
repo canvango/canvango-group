@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { supabase } from '../../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { useCategories, Category } from '../../hooks/useCategories';
 import { useQueryClient } from '@tanstack/react-query';
 

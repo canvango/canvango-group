@@ -11,13 +11,17 @@ import { AuthProvider } from './features/member-area/contexts/AuthContext';
 import { ToastProvider } from './shared/contexts/ToastContext';
 import { UIProvider } from './features/member-area/contexts/UIContext';
 
-// Create a client
+// Create a client with optimized settings for idle connections
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 3, // Increase retry attempts for network issues
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (formerly cacheTime)
+      refetchOnReconnect: true, // Auto-retry when connection restored
+      refetchOnMount: false, // Don't refetch if data is still fresh
     },
   },
 });

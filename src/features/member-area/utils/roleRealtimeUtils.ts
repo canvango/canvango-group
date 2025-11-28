@@ -6,7 +6,7 @@
  */
 
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 
 /**
  * Callback function type for role change events

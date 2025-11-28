@@ -3,7 +3,7 @@
  * Provides statistics and analytics for admin dashboard
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 
 export interface OverviewStats {
   users: {

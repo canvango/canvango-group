@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { APIKey, APIStats, APIEndpoint } from '../types/api';
 
 export const apiKeysService = {

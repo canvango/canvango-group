@@ -17,7 +17,7 @@
  * ```
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 
 /**
  * Personal Account statistics

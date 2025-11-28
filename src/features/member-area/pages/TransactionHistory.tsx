@@ -16,7 +16,7 @@ import {
   getMemberTransactions,
   ExtendedTransactionStats 
 } from '../services/transactions.service';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { ErrorFallback } from '../../../shared/components/ErrorFallback';
 import { ApplicationError, createNetworkError } from '../../../shared/utils/errors';
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner';

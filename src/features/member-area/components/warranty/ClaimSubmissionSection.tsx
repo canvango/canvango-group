@@ -6,7 +6,7 @@ import { AlertCircle, Info, Shield, Upload, X } from 'lucide-react';
 import Button from '../../../../shared/components/Button';
 import { ClaimReason } from '../../types/warranty';
 import { formatDate } from '../../utils/formatters';
-import { supabase } from '../../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { EligibleAccount } from '../../services/warranty.service';
 

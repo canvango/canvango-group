@@ -2,7 +2,7 @@
  * Admin Claim Management Service
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 
 export interface ClaimFilters {
   status?: string;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { useToast } from '../../../../shared/contexts/ToastContext';
 import { TurnstileWidget } from '../../../../shared/components';
 import { useTurnstile } from '../../../../shared/hooks';

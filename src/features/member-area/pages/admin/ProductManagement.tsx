@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon, CheckCircleIcon, XCircleIcon, TagIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { supabase } from '../../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { productsService } from '../../services/products.service';
 import ProductDetailModal from './ProductDetailModal';
 import CategoryManagementModal from '../../components/admin/CategoryManagementModal';

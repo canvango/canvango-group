@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 const REFRESH_THRESHOLD = 10 * 60; // Refresh if expiring within 10 minutes

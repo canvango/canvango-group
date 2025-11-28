@@ -10,7 +10,7 @@
  * @module auth.service
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { User, LoginCredentials } from '../types/user';
 
 /**

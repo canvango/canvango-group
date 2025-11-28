@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',

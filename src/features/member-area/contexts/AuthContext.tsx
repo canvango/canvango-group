@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, LoginCredentials } from '../types/user';
 import * as authService from '../services/auth.service';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { clearAllFilterPreferences } from '../../../shared/hooks/useLocalStorageFilters';
 import { refreshCSRFToken, clearCSRFToken } from '../../../shared/utils/csrf';
 import { useNotification } from '../../../shared/hooks/useNotification';
@@ -109,10 +109,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
           }
           
-          // Fetch fresh user data
-          const userData = await fetchUserProfile();
-          if (userData) {
-            setUser(userData);
+          // Only fetch profile if not already fetching (prevent race condition)
+          if (!isFetchingProfile) {
+            const userData = await fetchUserProfile();
+            if (userData) {
+              setUser(userData);
+            }
+          } else {
+            console.log('ℹ️ Profile fetch already in progress, skipping duplicate fetch');
           }
         }
       }

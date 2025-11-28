@@ -19,7 +19,7 @@
  * ```
  */
 
-import { supabase } from './supabase';
+import { supabase } from '@/clients/supabase';
 import { Product, ProductFilters, ProductCategory, ProductType } from '../types/product';
 
 /**

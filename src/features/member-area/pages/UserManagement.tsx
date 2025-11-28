@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Button from '../../../shared/components/Button';
 import { useToast } from '../../../shared/contexts/ToastContext';
-import { supabase } from '../services/supabase';
+import { supabase } from '@/clients/supabase';
 import { 
   UserStatsCards, 
   AdminUsersTable, 
