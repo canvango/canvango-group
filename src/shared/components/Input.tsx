@@ -78,6 +78,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       helperText,
       prefixIcon,
       suffixIcon,
+      leftAddon,
+      rightAddon,
       className = '',
       id,
       ...props
@@ -99,42 +101,59 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         
-        <div className="relative">
-          {prefixIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {prefixIcon}
-            </div>
+        <div className="relative flex items-stretch">
+          {/* Left addon (text prefix like "Rp", "$") */}
+          {leftAddon && (
+            <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-700 text-sm">
+              {leftAddon}
+            </span>
           )}
           
-          <input
-            ref={ref}
-            id={inputId}
-            className={`
-              block w-full rounded-lg border min-h-[44px]
-              ${hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}
-              ${prefixIcon ? 'pl-10' : 'pl-3'}
-              ${suffixIcon ? 'pr-10' : 'pr-3'}
-              py-2.5 text-sm text-gray-900 placeholder:text-gray-400
-              focus:outline-none focus:ring-2 focus:ring-offset-0
-              disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
-              transition-colors duration-200
-              ${className}
-            `}
-            aria-invalid={hasError}
-            aria-describedby={hasError ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
-            {...props}
-          />
+          <div className="relative flex-1">
+            {prefixIcon && (
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {prefixIcon}
+              </div>
+            )}
+            
+            <input
+              ref={ref}
+              id={inputId}
+              className={`
+                block w-full border min-h-[44px]
+                ${leftAddon ? 'rounded-l-none' : ''} ${rightAddon ? 'rounded-r-none' : ''} ${!leftAddon && !rightAddon ? 'rounded-lg' : ''}
+                ${hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}
+                ${prefixIcon ? 'pl-10' : leftAddon ? 'pl-3' : 'pl-3'}
+                ${suffixIcon ? 'pr-10' : rightAddon ? 'pr-3' : 'pr-3'}
+                py-2.5 text-sm text-gray-900 placeholder:text-gray-400
+                focus:outline-none focus:ring-2 focus:ring-offset-0
+                disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+                transition-colors duration-200
+                ${className}
+              `}
+              aria-invalid={hasError}
+              aria-describedby={hasError ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+              {...props}
+            />
+            
+            {suffixIcon && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                {suffixIcon}
+              </div>
+            )}
+            
+            {hasError && !suffixIcon && !rightAddon && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+              </div>
+            )}
+          </div>
           
-          {suffixIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              {suffixIcon}
-            </div>
-          )}
-          
-          {hasError && !suffixIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-            </div>
+          {/* Right addon (text suffix like "%", "kg") */}
+          {rightAddon && (
+            <span className="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 text-gray-700 text-sm">
+              {rightAddon}
+            </span>
           )}
         </div>
         

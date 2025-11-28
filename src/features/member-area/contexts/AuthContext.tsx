@@ -140,12 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Subscribe to user table changes for this specific user
     const channel = supabase
-      .channel(`user-changes-${user.id}`, {
-        config: {
-          broadcast: { self: false }, // Don't receive own broadcasts
-          presence: { key: user.id }, // Use user ID as presence key
-        },
-      })
+      .channel(`user-changes-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -159,20 +154,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           const newData = payload.new as any;
           
-          // Check if role changed
-          if (newData.role && newData.role !== user.role) {
-            console.log('🔔 Role changed:', user.role, '->', newData.role);
-            notification.info(`Your role has been updated to ${newData.role}`);
-          }
-          
-          // Check if balance changed
-          if (newData.balance !== undefined && newData.balance !== user.balance) {
-            console.log('💰 Balance changed:', user.balance, '->', newData.balance);
-          }
-          
-          // Update user state with new data
+          // Update user state with new data using callback to avoid stale closure
           setUser((prevUser) => {
             if (!prevUser) return prevUser;
+            
+            // Check if role changed
+            if (newData.role && newData.role !== prevUser.role) {
+              console.log('🔔 Role changed:', prevUser.role, '->', newData.role);
+              notification.info(`Your role has been updated to ${newData.role}`);
+            }
+            
+            // Check if balance changed
+            if (newData.balance !== undefined && newData.balance !== prevUser.balance) {
+              console.log('💰 Balance changed:', prevUser.balance, '->', newData.balance);
+            }
+            
             return {
               ...prevUser,
               role: newData.role || prevUser.role,
@@ -188,30 +184,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .subscribe((status) => {
         console.log('📡 Realtime subscription status:', status);
         
-        // Handle subscription errors gracefully
-        if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Realtime channel error - will retry automatically');
-        } else if (status === 'TIMED_OUT') {
-          console.error('❌ Realtime subscription timed out');
-        } else if (status === 'CLOSED') {
-          console.log('ℹ️ Realtime channel closed');
-        } else if (status === 'SUBSCRIBED') {
+        if (status === 'SUBSCRIBED') {
           console.log('✅ Realtime subscription active');
         }
       });
     
     return () => {
       console.log('🛑 Stopping Realtime subscription for user:', user.id);
-      // Unsubscribe and remove channel properly with error handling
-      channel.unsubscribe().then(() => {
-        supabase.removeChannel(channel);
-        console.log('✅ Realtime channel removed');
-      }).catch((error) => {
-        console.error('⚠️ Error removing channel:', error);
-        // Continue anyway - channel will be garbage collected
-      });
+      // Properly cleanup channel
+      supabase.removeChannel(channel);
+      console.log('✅ Realtime channel removed');
     };
-  }, [user?.id, user?.role, user?.balance, notification]); // Include role and balance to prevent stale closures
+  }, [user?.id, notification]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
   /**
    * Login user with credentials using Supabase Auth

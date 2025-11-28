@@ -15,7 +15,8 @@
         "list_migrations",
         "get_project_url",
         "get_anon_key",
-        "search_docs"
+        "search_docs",
+        "list_edge_functions"
       ]
     }
   }

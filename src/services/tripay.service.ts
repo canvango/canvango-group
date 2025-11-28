@@ -195,8 +195,14 @@ export async function createPayment(params: CreatePaymentParams): Promise<Tripay
       throw new Error('No active session');
     }
 
+    // Get Supabase URL - remove trailing slash if exists
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
+    if (!supabaseUrl) {
+      throw new Error('VITE_SUPABASE_URL is not configured');
+    }
+
     const response = await axios.post(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tripay-create-payment`,
+      `${supabaseUrl}/functions/v1/tripay-create-payment`,
       requestData,
       {
         headers: {
