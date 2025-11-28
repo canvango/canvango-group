@@ -108,24 +108,80 @@ function generateSignature(merchantRef: string, amount: number): string {
 
 /**
  * Get available payment methods from Tripay
+ * Returns hardcoded list to avoid CORS issues
+ * TODO: Create backend endpoint to fetch from Tripay API
  */
 export async function getPaymentMethods(): Promise<TripayPaymentMethod[]> {
-  try {
-    const response = await axios.get(`${BASE_URL}/merchant/payment-channel`, {
-      headers: {
-        'Authorization': `Bearer ${TRIPAY_API_KEY}`,
-      },
-    });
-
-    if (response.data.success) {
-      return response.data.data.filter((method: TripayPaymentMethod) => method.active);
-    }
-
-    throw new Error(response.data.message || 'Failed to fetch payment methods');
-  } catch (error) {
-    console.error('Error fetching payment methods:', error);
-    throw error;
-  }
+  // Return hardcoded payment methods to avoid CORS
+  // These are common Tripay payment channels
+  return [
+    {
+      code: 'BRIVA',
+      name: 'BRI Virtual Account',
+      fee_merchant: { flat: 2500, percent: 0 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 2500, percent: 0 },
+      minimum_fee: 2500,
+      maximum_fee: 2500,
+      icon_url: 'https://tripay.co.id/images/payment_icon/BRIVA.png',
+      active: true,
+    },
+    {
+      code: 'BCAVA',
+      name: 'BCA Virtual Account',
+      fee_merchant: { flat: 2500, percent: 0 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 2500, percent: 0 },
+      minimum_fee: 2500,
+      maximum_fee: 2500,
+      icon_url: 'https://tripay.co.id/images/payment_icon/BCAVA.png',
+      active: true,
+    },
+    {
+      code: 'BNIVA',
+      name: 'BNI Virtual Account',
+      fee_merchant: { flat: 2500, percent: 0 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 2500, percent: 0 },
+      minimum_fee: 2500,
+      maximum_fee: 2500,
+      icon_url: 'https://tripay.co.id/images/payment_icon/BNIVA.png',
+      active: true,
+    },
+    {
+      code: 'MANDIRIVA',
+      name: 'Mandiri Virtual Account',
+      fee_merchant: { flat: 2500, percent: 0 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 2500, percent: 0 },
+      minimum_fee: 2500,
+      maximum_fee: 2500,
+      icon_url: 'https://tripay.co.id/images/payment_icon/MANDIRIVA.png',
+      active: true,
+    },
+    {
+      code: 'QRIS',
+      name: 'QRIS (All E-Wallet)',
+      fee_merchant: { flat: 0, percent: 0.7 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 0, percent: 0.7 },
+      minimum_fee: 0,
+      maximum_fee: 0,
+      icon_url: 'https://tripay.co.id/images/payment_icon/QRIS.png',
+      active: true,
+    },
+    {
+      code: 'SHOPEEPAY',
+      name: 'ShopeePay',
+      fee_merchant: { flat: 0, percent: 2 },
+      fee_customer: { flat: 0, percent: 0 },
+      total_fee: { flat: 0, percent: 2 },
+      minimum_fee: 0,
+      maximum_fee: 0,
+      icon_url: 'https://tripay.co.id/images/payment_icon/SHOPEEPAY.png',
+      active: true,
+    },
+  ];
 }
 
 /**
