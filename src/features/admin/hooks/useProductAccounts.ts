@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
-import { supabase } from '../../member-area/services/supabase';
+import { supabase } from '@/clients/supabase';
 import { ProductAccountField, ProductAccount } from '../types/productAccount';
 
 interface ProductAccountStats {

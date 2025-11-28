@@ -1,4 +1,4 @@
-import { supabase } from '../../member-area/services/supabase';
+import { supabase } from '@/clients/supabase';
 import { ProductAccountField, ProductAccount, ProductAccountStats } from '../types/productAccount';
 
 // ===== FIELD SERVICES =====
