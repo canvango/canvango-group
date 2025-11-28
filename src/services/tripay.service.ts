@@ -10,13 +10,14 @@ import axios from 'axios';
 const TRIPAY_API_URL = 'https://tripay.co.id/api';
 const TRIPAY_SANDBOX_URL = 'https://tripay.co.id/api-sandbox';
 
-// Use sandbox for development, production for live
-const isDevelopment = import.meta.env.MODE === 'development';
-const BASE_URL = isDevelopment ? TRIPAY_SANDBOX_URL : TRIPAY_API_URL;
+// Always use sandbox until merchant is approved
+const TRIPAY_MODE = import.meta.env.VITE_TRIPAY_MODE || 'sandbox';
+const BASE_URL = TRIPAY_MODE === 'production' ? TRIPAY_API_URL : TRIPAY_SANDBOX_URL;
 
-const TRIPAY_API_KEY = import.meta.env.VITE_TRIPAY_API_KEY || 'LYIV2DddSP0DnEaxiMyAYleC3EKAFdaIYalrB2Wd';
-const TRIPAY_PRIVATE_KEY = import.meta.env.VITE_TRIPAY_PRIVATE_KEY || 'BqOm1-ItF0o-LNlRZ-YhPK8-PZjNz';
-const TRIPAY_MERCHANT_CODE = import.meta.env.VITE_TRIPAY_MERCHANT_CODE || 'T32379';
+// Tripay credentials from environment
+const TRIPAY_API_KEY = import.meta.env.VITE_TRIPAY_API_KEY;
+const TRIPAY_PRIVATE_KEY = import.meta.env.VITE_TRIPAY_PRIVATE_KEY;
+const TRIPAY_MERCHANT_CODE = import.meta.env.VITE_TRIPAY_MERCHANT_CODE;
 
 interface TripayPaymentMethod {
   code: string;
@@ -89,21 +90,6 @@ interface TripayPaymentResponse {
       steps: string[];
     }>;
   };
-}
-
-/**
- * Generate signature for Tripay API request
- */
-function generateSignature(merchantRef: string, amount: number): string {
-  const crypto = window.crypto;
-  const encoder = new TextEncoder();
-  
-  // Create signature string: merchant_code + merchant_ref + amount
-  const signatureString = `${TRIPAY_MERCHANT_CODE}${merchantRef}${amount}`;
-  
-  // For browser, we'll use a simple hash (in production, do this server-side)
-  // This is a simplified version - ideally signature should be generated server-side
-  return btoa(signatureString);
 }
 
 /**
@@ -189,99 +175,46 @@ export async function getPaymentMethods(): Promise<TripayPaymentMethod[]> {
  */
 export async function createPayment(params: CreatePaymentParams): Promise<TripayPaymentResponse> {
   try {
-    // Create transaction in our database first
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error('User not authenticated');
-    }
-
-    // Create transaction record
-    const { data: transaction, error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.user.id,
-        transaction_type: 'topup',
-        amount: params.amount,
-        status: 'pending',
-        payment_method: params.paymentMethod,
-        metadata: {
-          customer_name: params.customerName,
-          customer_email: params.customerEmail,
-          customer_phone: params.customerPhone,
-          order_items: params.orderItems,
-        },
-      })
-      .select()
-      .single();
-
-    if (transactionError || !transaction) {
-      throw new Error('Failed to create transaction record');
-    }
-
-    // Use transaction ID as merchant_ref
-    const merchantRef = transaction.id;
-
-    // Calculate signature
-    const signature = generateSignature(merchantRef, params.amount);
-
-    // Get callback URL from environment or use default
-    const callbackUrl = import.meta.env.VITE_TRIPAY_CALLBACK_URL || 
-      `${window.location.origin}/api/tripay-callback`;
-
-    // Prepare request data
+    // Prepare request data for Edge Function
     const requestData = {
-      method: params.paymentMethod,
-      merchant_ref: merchantRef,
       amount: params.amount,
-      customer_name: params.customerName,
-      customer_email: params.customerEmail,
-      customer_phone: params.customerPhone || '',
-      order_items: params.orderItems,
-      callback_url: callbackUrl,
-      return_url: params.returnUrl || `${window.location.origin}/riwayat-transaksi`,
-      expired_time: params.expiredTime || 24, // 24 hours default
-      signature: signature,
+      paymentMethod: params.paymentMethod,
+      customerName: params.customerName,
+      customerEmail: params.customerEmail,
+      customerPhone: params.customerPhone || '',
+      orderItems: params.orderItems,
+      returnUrl: params.returnUrl || `${window.location.origin}/riwayat-transaksi`,
+      expiredTime: params.expiredTime || 24, // 24 hours default
     };
 
     console.log('Creating Tripay payment:', requestData);
 
-    // Call Tripay API to create payment
+    // Call Edge Function to create payment (to avoid CORS)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
+
     const response = await axios.post(
-      `${BASE_URL}/transaction/create`,
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tripay-create-payment`,
       requestData,
       {
         headers: {
-          'Authorization': `Bearer ${TRIPAY_API_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
       }
     );
 
+    console.log('📦 Edge Function response:', response.data);
+    
     if (!response.data.success) {
-      // Delete transaction if Tripay creation failed
-      await supabase.from('transactions').delete().eq('id', transaction.id);
-      throw new Error(response.data.message || 'Failed to create payment');
+      const errorMessage = response.data.message || 'Failed to create payment';
+      console.error('❌ Payment creation failed:', errorMessage);
+      throw new Error(errorMessage);
     }
 
-    // Update transaction with Tripay data
-    const tripayData = response.data.data;
-    await supabase
-      .from('transactions')
-      .update({
-        tripay_reference: tripayData.reference,
-        tripay_merchant_ref: tripayData.merchant_ref,
-        tripay_payment_method: tripayData.payment_method,
-        tripay_payment_name: tripayData.payment_name,
-        tripay_payment_url: tripayData.pay_url,
-        tripay_qr_url: tripayData.qr_url,
-        tripay_checkout_url: tripayData.checkout_url,
-        tripay_amount: tripayData.amount,
-        tripay_fee: tripayData.fee_merchant,
-        tripay_total_amount: tripayData.amount_received,
-        tripay_status: tripayData.status,
-      })
-      .eq('id', transaction.id);
-
+    // Edge Function already handles transaction creation and update
     return response.data;
   } catch (error) {
     console.error('Error creating payment:', error);
