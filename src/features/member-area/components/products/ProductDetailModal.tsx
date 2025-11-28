@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, ShoppingCart, ArrowLeft, Settings } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faThumbsUp, faExclamationTriangle, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
 import { faMeta } from '@fortawesome/free-brands-svg-icons';
 import Button from '../../../../shared/components/Button';
 import { Product } from '../../types/product';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Props for ProductDetailModal component
@@ -31,6 +33,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onBuyNow,
 }) => {
+  const { isGuest } = useAuth();
+  const navigate = useNavigate();
+
   // Handle ESC key to close modal
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -133,9 +138,15 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {/* Harga Satuan */}
               <div className="flex items-center justify-between py-1.5 border-b border-gray-200">
                 <span className="text-xs text-gray-600">Harga Satuan</span>
-                <span className="text-primary-600 font-bold text-xs">
-                  {formatPrice(product.price)}
-                </span>
+                {isGuest ? (
+                  <span className="text-xs text-blue-600 font-bold">
+                    Login untuk melihat harga
+                  </span>
+                ) : (
+                  <span className="text-primary-600 font-bold text-xs">
+                    {formatPrice(product.price)}
+                  </span>
+                )}
               </div>
 
               {/* Dynamic Detail Fields - Integrated */}
@@ -297,7 +308,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             variant={isOutOfStock ? 'danger' : 'primary'}
             size="sm"
             className="flex-1 h-9"
-            onClick={() => !isOutOfStock && onBuyNow(product.id)}
+            onClick={() => {
+              if (isGuest) {
+                navigate('/login');
+              } else if (!isOutOfStock) {
+                onBuyNow(product.id);
+              }
+            }}
             disabled={isOutOfStock}
           >
             <ShoppingCart className="w-3.5 h-3.5 mr-1" />

@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../../../shared/components/Button';
 import Badge from '../../../../shared/components/Badge';
 import { Product } from '../../types/product';
 import MetaInfinityLogo from '../icons/MetaInfinityLogo';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Props for the ProductCard component
@@ -61,6 +63,8 @@ export interface ProductCardProps {
  * @see {@link Product} for product data structure
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product, onBuy, onViewDetails }) => {
+  const { isGuest } = useAuth();
+  const navigate = useNavigate();
   const isOutOfStock = product.stock === 0;
   
   // Debug logging for stock
@@ -145,9 +149,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuy, onViewDetails
 
         {/* Price and Stock */}
         <div className="flex items-center justify-between mb-3">
-          <p className="text-lg md:text-xl font-bold text-primary-600">
-            {formatPrice(product.price)}
-          </p>
+          {isGuest ? (
+            <p className="text-xs text-blue-600 font-bold">
+              Login untuk melihat harga
+            </p>
+          ) : (
+            <p className="text-lg md:text-xl font-bold text-primary-600">
+              {formatPrice(product.price)}
+            </p>
+          )}
           
           {/* Stock Status - Highlighted */}
           <div className={`flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-2xl ${isOutOfStock ? 'bg-red-100' : 'bg-green-100'}`}>
@@ -174,7 +184,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuy, onViewDetails
               variant="primary"
               size="sm"
               className="flex-1"
-              onClick={() => onBuy(product.id)}
+              onClick={() => {
+                if (isGuest) {
+                  navigate('/login');
+                } else {
+                  onBuy(product.id);
+                }
+              }}
             >
               Beli
             </Button>
