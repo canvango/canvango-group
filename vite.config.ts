@@ -83,25 +83,19 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Manual chunk splitting for better caching
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            // Keep React ecosystem together (including router)
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            // Supabase
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
-            }
-            // UI libraries
-            if (id.includes('lucide-react') || id.includes('react-hot-toast') || id.includes('sonner')) {
-              return 'ui-vendor';
-            }
-            // Other node_modules
-            return 'vendor';
-          }
+        // Simplified chunk splitting to avoid circular dependencies
+        manualChunks: {
+          // Keep all React-related libraries together
+          'react-vendor': [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            'react/jsx-runtime',
+          ],
+          // Supabase
+          'supabase-vendor': ['@supabase/supabase-js'],
+          // UI libraries
+          'ui-vendor': ['lucide-react', 'react-hot-toast', 'sonner'],
         },
         // Ensure proper module format
         format: 'es',
