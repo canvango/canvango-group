@@ -42,6 +42,9 @@ import MemberArea from './features/member-area/MemberArea';
 // Import welcome popup
 import { WelcomePopup } from './components/WelcomePopup';
 
+// Import Turnstile protection
+import { TurnstileProtection } from './components/TurnstileProtection';
+
 // Production-ready entry point - console logs removed for performance
 
 // Loading fallback component
@@ -86,25 +89,27 @@ if (!root) {
             <UIProvider>
               <ToastProvider>
                 <AuthProvider>
-                  <div className="min-h-screen bg-gray-50">
-                    <React.Suspense fallback={<PageLoader />}>
-                      <Routes>
-                        {/* Auth routes - accessible only to guests */}
-                        <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-                        <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-                        <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-                        
-                        {/* Password reset - accessible with valid token from email */}
-                        <Route path="/reset-password" element={<ResetPassword />} />
-                        
-                        {/* Member area routes - all other routes */}
-                        <Route path="/*" element={<MemberArea />} />
-                      </Routes>
-                    </React.Suspense>
-                  </div>
-                  <Toaster position="top-right" />
-                  <SonnerToaster position="top-right" richColors />
-                  <WelcomePopup />
+                  <TurnstileProtection>
+                    <div className="min-h-screen bg-gray-50">
+                      <React.Suspense fallback={<PageLoader />}>
+                        <Routes>
+                          {/* Auth routes - accessible only to guests */}
+                          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+                          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+                          <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+                          
+                          {/* Password reset - accessible with valid token from email */}
+                          <Route path="/reset-password" element={<ResetPassword />} />
+                          
+                          {/* Member area routes - all other routes */}
+                          <Route path="/*" element={<MemberArea />} />
+                        </Routes>
+                      </React.Suspense>
+                    </div>
+                    <Toaster position="top-right" />
+                    <SonnerToaster position="top-right" richColors />
+                    <WelcomePopup />
+                  </TurnstileProtection>
                 </AuthProvider>
               </ToastProvider>
             </UIProvider>
