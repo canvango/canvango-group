@@ -3,57 +3,25 @@ import { Link } from 'react-router-dom';
 import { History, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
 import TopUpForm, { TopUpFormData } from '../components/topup/TopUpForm';
 import { useAuth } from '../contexts/AuthContext';
-import { processTopUp } from '../services/topup.service';
+import { TripayPaymentModal } from '../components/payment/TripayPaymentModal';
 import { formatCurrency } from '../utils/formatters';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 const TopUp: React.FC = () => {
   usePageTitle('Top Up');
   
-  const { user, refreshUser } = useAuth();
-  const [loading, setLoading] = React.useState(false);
+  const { user } = useAuth();
+  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+  const [selectedAmount, setSelectedAmount] = React.useState(0);
   const [notification, setNotification] = React.useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
   const handleTopUpSubmit = async (data: TopUpFormData) => {
-    setLoading(true);
-    setNotification(null);
-
-    try {
-      // Call top-up service (direct Supabase)
-      const result = await processTopUp({
-        amount: data.amount,
-        paymentMethod: data.paymentMethod
-      });
-
-      // Show success notification
-      setNotification({
-        type: 'success',
-        message: result.message || `Top up berhasil! Saldo Anda telah ditambahkan sebesar ${formatCurrency(data.amount)}`
-      });
-
-      // Refresh user data to update balance
-      await refreshUser();
-
-      // Scroll to top to show notification
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error: any) {
-      console.error('Top up failed:', error);
-      
-      // Show error notification
-      const errorMessage = error.message || 'Gagal melakukan top up. Silakan coba lagi.';
-      setNotification({
-        type: 'error',
-        message: errorMessage
-      });
-
-      // Scroll to top to show notification
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } finally {
-      setLoading(false);
-    }
+    // Store selected amount and show Tripay payment modal
+    setSelectedAmount(data.amount);
+    setShowPaymentModal(true);
   };
 
   return (
@@ -134,7 +102,26 @@ const TopUp: React.FC = () => {
       )}
 
       {/* Top Up Form */}
-      <TopUpForm onSubmit={handleTopUpSubmit} loading={loading} />
+      <TopUpForm onSubmit={handleTopUpSubmit} loading={false} />
+
+      {/* Tripay Payment Modal */}
+      {user && (
+        <TripayPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          amount={selectedAmount}
+          customerName={user.fullName}
+          customerEmail={user.email}
+          customerPhone={user.phone}
+          orderItems={[
+            {
+              name: 'Top-Up Saldo',
+              price: selectedAmount,
+              quantity: 1,
+            }
+          ]}
+        />
+      )}
 
       {/* Information Box */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-6 shadow-sm">
@@ -153,15 +140,19 @@ const TopUp: React.FC = () => {
               </li>
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Saldo akan otomatis masuk setelah pembayaran berhasil</span>
+                <span className="flex-1">Pilih metode pembayaran: <strong>Virtual Account, QRIS, E-Wallet, atau Retail</strong></span>
               </li>
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Proses verifikasi pembayaran memakan waktu <strong>1-5 menit</strong></span>
+                <span className="flex-1">Saldo akan <strong>otomatis masuk</strong> setelah pembayaran berhasil</span>
               </li>
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Simpan bukti pembayaran untuk keperluan konfirmasi</span>
+                <span className="flex-1">Proses verifikasi pembayaran <strong>real-time</strong> (instant)</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
+                <span className="flex-1">Pembayaran aman melalui <strong>Tripay Payment Gateway</strong></span>
               </li>
             </ul>
           </div>
