@@ -87,21 +87,13 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // Keep React ecosystem together
-            if (id.includes('react') || id.includes('react-dom')) {
+            // Keep React ecosystem together (including router)
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
               return 'react-vendor';
-            }
-            // Keep react-router separate to avoid circular deps
-            if (id.includes('react-router')) {
-              return 'router-vendor';
             }
             // Supabase
             if (id.includes('@supabase')) {
               return 'supabase-vendor';
-            }
-            // Tanstack Query
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
             }
             // UI libraries
             if (id.includes('lucide-react') || id.includes('react-hot-toast') || id.includes('sonner')) {
