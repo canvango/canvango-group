@@ -78,9 +78,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       aria-labelledby="modal-title"
     >
       {/* Modal Content - Centered & Compact */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md md:max-w-lg max-h-[85vh] overflow-y-auto border border-gray-200">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-5 py-2.5 flex items-center justify-between z-10 rounded-t-3xl">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md md:max-w-lg max-h-[85vh] flex flex-col border border-gray-200 overflow-hidden">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 md:px-5 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-primary-100 rounded-xl flex items-center justify-center">
               <Settings className="w-3.5 h-3.5 text-primary-600" />
@@ -98,8 +98,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-4 md:px-5 py-3 space-y-4">
+        {/* Body - Scrollable with custom scrollbar */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin pr-1">
+          <div className="px-4 md:px-5 py-3 space-y-4">
           {/* Hero Section - Compact */}
           <div className="text-center space-y-2">
             <div className="w-12 h-12 mx-auto bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
@@ -277,10 +278,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
           )}
+          </div>
         </div>
 
-        {/* Footer Actions - Compact & Sticky */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 md:px-5 py-2 flex gap-2 rounded-b-3xl">
+        {/* Footer Actions - Fixed */}
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 md:px-5 py-2 flex gap-2">
           <Button
             variant="outline"
             size="sm"

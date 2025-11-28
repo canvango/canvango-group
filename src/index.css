@@ -338,6 +338,37 @@ body {
     display: none;  /* Chrome, Safari and Opera */
   }
 
+  /* Custom thin scrollbar for modals and containers */
+  .scrollbar-thin {
+    scrollbar-width: thin;  /* Firefox */
+    scrollbar-color: #d1d5db transparent;  /* Firefox: thumb track */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;  /* Chrome, Safari, Opera - slightly wider for better spacing */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;  /* Add margin top/bottom to avoid covering rounded corners */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;  /* gray-300 */
+    border-radius: 10px;
+    border: 2px solid transparent;  /* Add border for spacing from edge */
+    background-clip: padding-box;  /* Clip background to padding box */
+  }
+
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: #9ca3af;  /* gray-400 on hover */
+  }
+
+  /* Smooth scrolling for better UX */
+  .scrollbar-thin {
+    scroll-behavior: smooth;
+  }
+
   /* Responsive product grid - adapts to zoom and screen size */
   /* Uses auto-fit to fill available space without empty gaps on the right */
   .product-grid-responsive {
