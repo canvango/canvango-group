@@ -444,3 +444,21 @@ body {
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
+
+/* ========================================
+   WELCOME POPUP PROSE STYLES
+   ======================================== */
+
+/* Ensure inline styles work in prose content */
+.prose strong[style*="color"] {
+  color: inherit !important;
+}
+
+/* Welcome popup specific prose styling */
+.prose p {
+  margin-bottom: 0.75rem;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}

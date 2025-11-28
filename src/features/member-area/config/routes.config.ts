@@ -53,6 +53,7 @@ export const ROUTES = {
     TUTORIALS: 'admin/tutorials',
     PRODUCTS: 'admin/products',
     ANNOUNCEMENTS: 'admin/announcements',
+    WELCOME_POPUPS: 'admin/welcome-popups',
     VERIFIED_BM: 'admin/verified-bm',
     SETTINGS: 'admin/settings',
     AUDIT_LOGS: 'admin/audit-logs',
@@ -146,6 +147,11 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     path: ROUTES.ADMIN.ANNOUNCEMENTS,
     label: 'Kelola Announcement',
     description: 'Manage announcements and updates for members',
+  },
+  ADMIN_WELCOME_POPUPS: {
+    path: ROUTES.ADMIN.WELCOME_POPUPS,
+    label: 'Welcome Popups',
+    description: 'Manage welcome popups for first-time visitors',
   },
   ADMIN_VERIFIED_BM: {
     path: ROUTES.ADMIN.VERIFIED_BM,

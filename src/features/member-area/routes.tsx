@@ -24,6 +24,7 @@ const ProductManagement = lazy(() => import('./pages/admin/ProductManagement'));
 const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'));
 const AuditLog = lazy(() => import('./pages/admin/AuditLog'));
 const AnnouncementManagement = lazy(() => import('./pages/admin/AnnouncementManagement'));
+const WelcomePopupManagement = lazy(() => import('./pages/admin/WelcomePopupManagement'));
 const VerifiedBMManagement = lazy(() => import('./pages/admin/VerifiedBMManagement'));
 
 /**
@@ -189,6 +190,14 @@ const MemberRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AnnouncementManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/welcome-popups" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <WelcomePopupManagement />
             </ProtectedRoute>
           } 
         />

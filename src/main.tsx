@@ -35,6 +35,9 @@ import { GuestRoute } from './features/member-area/components/auth/GuestRoute';
 // Import main app component
 import MemberArea from './features/member-area/MemberArea';
 
+// Import welcome popup
+import { WelcomePopup } from './components/WelcomePopup';
+
 // Production-ready entry point - console logs removed for performance
 
 // Loading fallback component
@@ -97,6 +100,7 @@ if (!root) {
                   </div>
                   <Toaster position="top-right" />
                   <SonnerToaster position="top-right" richColors />
+                  <WelcomePopup />
                 </AuthProvider>
               </ToastProvider>
             </UIProvider>

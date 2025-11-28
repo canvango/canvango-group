@@ -5,7 +5,7 @@ import {
   faHouse, faClockRotateLeft, faWallet, faUser, faCircleCheck,
   faShield, faCode, faBook, faUsers, faChartLine, faCreditCard,
   faShieldHalved, faBox, faGear, faClipboardList, 
-  faChevronDown, faChevronRight, faBullhorn
+  faChevronDown, faChevronRight, faBullhorn, faBell
 } from '@fortawesome/free-solid-svg-icons';
 import { faMeta, faFacebook } from '@fortawesome/free-brands-svg-icons';
 import { ROUTES } from '../../config/routes.config';
@@ -109,6 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     { icon: faBook, label: 'Kelola Tutorial', path: ROUTES.ADMIN.TUTORIALS },
     { icon: faBox, label: 'Kelola Produk', path: ROUTES.ADMIN.PRODUCTS },
     { icon: faBullhorn, label: 'Kelola Announcement', path: ROUTES.ADMIN.ANNOUNCEMENTS },
+    { icon: faBell, label: 'Welcome Popups', path: ROUTES.ADMIN.WELCOME_POPUPS },
     { icon: faCircleCheck, label: 'Kelola Verified BM', path: ROUTES.ADMIN.VERIFIED_BM },
     { icon: faGear, label: 'Pengaturan Sistem', path: ROUTES.ADMIN.SETTINGS },
     { icon: faClipboardList, label: 'Log Aktivitas', path: ROUTES.ADMIN.AUDIT_LOGS }
