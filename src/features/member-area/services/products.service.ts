@@ -126,6 +126,12 @@ export const fetchProducts = async (
   }
 
   // Apply sorting
+  // PRIORITY 1: Always show available products first (stock_status = 'available')
+  // This ensures products with stock appear before sold out products
+  // Using ascending because 'available' < 'out_of_stock' alphabetically
+  query = query.order('stock_status', { ascending: true });
+  
+  // PRIORITY 2: Apply user-selected sorting
   let sortField = 'created_at';
   if (params.sortBy === 'price') {
     sortField = 'price';

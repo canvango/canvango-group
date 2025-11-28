@@ -139,3 +139,23 @@ export const useDeleteWelcomePopup = () => {
     },
   });
 };
+
+// Disable all popups (unpublish all)
+export const useDisableAllWelcomePopups = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('welcome_popups')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['welcome-popups'] });
+      queryClient.invalidateQueries({ queryKey: ['welcome-popup', 'active'] });
+    },
+  });
+};

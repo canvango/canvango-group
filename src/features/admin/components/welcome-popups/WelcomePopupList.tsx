@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, Power, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
-import { useWelcomePopups, useDeleteWelcomePopup, useToggleWelcomePopupActive } from '@/hooks/useWelcomePopups';
+import { Plus, Edit, Trash2, Eye, Power, AlertCircle, CheckCircle2, Sparkles, PowerOff } from 'lucide-react';
+import { useWelcomePopups, useDeleteWelcomePopup, useToggleWelcomePopupActive, useDisableAllWelcomePopups } from '@/hooks/useWelcomePopups';
 import { WelcomePopup } from '@/types/welcome-popup';
 import { WelcomePopupForm } from '@/features/admin/components/welcome-popups/WelcomePopupForm';
 import { WelcomePopupPreview } from '@/features/admin/components/welcome-popups/WelcomePopupPreview';
@@ -10,11 +10,15 @@ export const WelcomePopupList = () => {
   const { data: popups, isLoading } = useWelcomePopups();
   const deletePopup = useDeleteWelcomePopup();
   const toggleActive = useToggleWelcomePopupActive();
+  const disableAll = useDisableAllWelcomePopups();
 
   const [showForm, setShowForm] = useState(false);
   const [editingPopup, setEditingPopup] = useState<WelcomePopup | null>(null);
   const [previewPopup, setPreviewPopup] = useState<WelcomePopup | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showDisableAllConfirm, setShowDisableAllConfirm] = useState(false);
+
+  const hasActivePopup = popups?.some(p => p.is_active) || false;
 
   const handleDelete = async (id: string) => {
     try {
@@ -30,9 +34,24 @@ export const WelcomePopupList = () => {
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
       await toggleActive.mutateAsync({ id, is_active: !currentStatus });
-      toast.success(currentStatus ? 'Popup dinonaktifkan' : 'Popup diaktifkan');
+      toast.success(
+        currentStatus 
+          ? 'Popup dinonaktifkan' 
+          : 'Popup diaktifkan (popup lain otomatis dinonaktifkan)'
+      );
     } catch (error) {
       toast.error('Gagal mengubah status popup');
+      console.error(error);
+    }
+  };
+
+  const handleDisableAll = async () => {
+    try {
+      await disableAll.mutateAsync();
+      toast.success('Semua popup berhasil dinonaktifkan');
+      setShowDisableAllConfirm(false);
+    } catch (error) {
+      toast.error('Gagal menonaktifkan popup');
       console.error(error);
     }
   };
@@ -97,30 +116,61 @@ export const WelcomePopupList = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3">
         <div>
           <h2 className="text-xl md:text-2xl font-semibold text-gray-900">Welcome Popups</h2>
           <p className="text-sm text-gray-600 mt-1">
             Kelola popup untuk first-time visitors
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Buat Popup
-        </button>
+        <div className="flex items-center gap-2">
+          {hasActivePopup && (
+            <button
+              onClick={() => setShowDisableAllConfirm(true)}
+              disabled={disableAll.isPending}
+              className="btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50"
+              title="Nonaktifkan semua popup"
+            >
+              <PowerOff className="w-4 h-4" />
+              <span className="hidden md:inline">Disable All</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Buat Popup</span>
+            <span className="sm:hidden">Buat</span>
+          </button>
+        </div>
       </div>
 
       {/* Info */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-6">
+      <div className={`border rounded-2xl p-4 mb-6 ${
+        hasActivePopup 
+          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+          : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+      }`}>
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          {hasActivePopup ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          )}
           <div>
             <p className="text-sm text-gray-700 leading-relaxed">
-              Hanya <strong className="text-gray-900">1 popup yang bisa aktif</strong> dalam satu waktu. 
-              Mengaktifkan popup baru akan otomatis menonaktifkan yang lain.
+              {hasActivePopup ? (
+                <>
+                  <strong className="text-gray-900">Ada popup aktif.</strong> Hanya 1 popup yang bisa aktif dalam satu waktu. 
+                  Mengaktifkan popup lain akan otomatis menonaktifkan yang sekarang.
+                </>
+              ) : (
+                <>
+                  <strong className="text-gray-900">Tidak ada popup aktif.</strong> Aktifkan popup untuk menampilkannya ke first-time visitors. 
+                  Hanya 1 popup yang bisa aktif dalam satu waktu.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -295,6 +345,54 @@ export const WelcomePopupList = () => {
                   className="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {deletePopup.isPending ? 'Menghapus...' : 'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Disable All Confirmation Modal */}
+      {showDisableAllConfirm && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            onClick={() => setShowDisableAllConfirm(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                  <PowerOff className="w-8 h-8 text-orange-600" />
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                Nonaktifkan Semua Popup?
+              </h3>
+              
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Semua popup akan dinonaktifkan dan tidak akan ditampilkan ke visitors. 
+                Anda bisa mengaktifkannya kembali kapan saja.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDisableAllConfirm(false)}
+                  className="btn-secondary flex-1"
+                  disabled={disableAll.isPending}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDisableAll}
+                  disabled={disableAll.isPending}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50"
+                >
+                  {disableAll.isPending ? 'Menonaktifkan...' : 'Ya, Disable All'}
                 </button>
               </div>
             </div>

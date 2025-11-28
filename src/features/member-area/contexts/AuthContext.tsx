@@ -188,11 +188,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .subscribe((status) => {
         console.log('📡 Realtime subscription status:', status);
         
-        // Handle subscription errors
+        // Handle subscription errors gracefully
         if (status === 'CHANNEL_ERROR') {
           console.error('❌ Realtime channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.error('❌ Realtime subscription timed out');
+        } else if (status === 'CLOSED') {
+          console.log('ℹ️ Realtime channel closed');
         } else if (status === 'SUBSCRIBED') {
           console.log('✅ Realtime subscription active');
         }
@@ -200,13 +202,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     return () => {
       console.log('🛑 Stopping Realtime subscription for user:', user.id);
-      // Unsubscribe and remove channel properly
+      // Unsubscribe and remove channel properly with error handling
       channel.unsubscribe().then(() => {
         supabase.removeChannel(channel);
         console.log('✅ Realtime channel removed');
+      }).catch((error) => {
+        console.error('⚠️ Error removing channel:', error);
+        // Continue anyway - channel will be garbage collected
       });
     };
-  }, [user?.id, notification]); // Only re-subscribe when user ID changes
+  }, [user?.id, user?.role, user?.balance, notification]); // Include role and balance to prevent stale closures
 
   /**
    * Login user with credentials using Supabase Auth

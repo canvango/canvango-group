@@ -6,7 +6,6 @@ import SummaryCard from '../components/dashboard/SummaryCard';
 import CategoryTabs from '../components/products/CategoryTabs';
 import SearchSortBar, { SortOption } from '../components/products/SearchSortBar';
 import ProductGrid from '../components/products/ProductGrid';
-import Pagination from '../../../shared/components/Pagination';
 import { useProducts } from '../hooks/useProducts';
 import { usePurchase } from '../hooks/usePurchase';
 import { usePersonalStats } from '../hooks/usePersonalStats';
@@ -45,8 +44,8 @@ const PersonalAccounts: React.FC = () => {
   const activeType = filters.type;
   const searchQuery = filters.search;
   const sortValue = filters.sort;
-  const currentPage = filters.page;
-  const pageSize = 12;
+  const currentPage = 1; // Always page 1 (no pagination)
+  const pageSize = 1000; // Large number to get all products
 
   // Fetch categories from Supabase
   const { data: categories } = useCategories({ 
@@ -99,20 +98,15 @@ const PersonalAccounts: React.FC = () => {
 
   // Handlers
   const handleTypeChange = (typeId: string) => {
-    setFilters({ type: typeId, page: 1 });
+    setFilters({ type: typeId });
   };
 
   const handleSearchChange = (value: string) => {
-    setFilters({ search: value, page: 1 });
+    setFilters({ search: value });
   };
 
   const handleSortChange = (value: string) => {
-    setFilters({ sort: value, page: 1 });
-  };
-
-  const handlePageChange = (page: number) => {
-    setFilter('page', page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFilters({ sort: value });
   };
 
   const handleViewDetails = (productId: string) => {
@@ -241,24 +235,13 @@ const PersonalAccounts: React.FC = () => {
         resultCount={searchQuery ? productsData?.pagination.total : undefined}
       />
 
-      {/* Product Grid */}
+      {/* Product Grid - Show all products */}
       <ProductGrid
         products={productsData?.data || []}
         isLoading={isLoadingProducts}
         onBuy={handleBuy}
         onViewDetails={handleViewDetails}
       />
-
-      {/* Pagination */}
-      {productsData && productsData.pagination.totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={productsData.pagination.totalPages}
-          pageSize={productsData.pagination.pageSize}
-          totalItems={productsData.pagination.total}
-          onPageChange={handlePageChange}
-        />
-      )}
 
       {/* Purchase Modal */}
       {selectedProduct && (
