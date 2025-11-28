@@ -134,13 +134,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    */
   useEffect(() => {
     // Only run if user is logged in
-    if (!user) return;
+    if (!user?.id) return;
 
     console.log('🔄 Starting Realtime subscription for user:', user.id);
     
     // Subscribe to user table changes for this specific user
     const channel = supabase
-      .channel(`user-changes-${user.id}`)
+      .channel(`user-changes-${user.id}`, {
+        config: {
+          broadcast: { self: false }, // Don't receive own broadcasts
+          presence: { key: user.id }, // Use user ID as presence key
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -166,24 +171,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           
           // Update user state with new data
-          setUser({
-            ...user,
-            role: newData.role || user.role,
-            balance: newData.balance !== undefined ? newData.balance : user.balance,
-            username: newData.username || user.username,
-            email: newData.email || user.email,
-            fullName: newData.full_name || user.fullName,
-            updatedAt: newData.updated_at || user.updatedAt,
+          setUser((prevUser) => {
+            if (!prevUser) return prevUser;
+            return {
+              ...prevUser,
+              role: newData.role || prevUser.role,
+              balance: newData.balance !== undefined ? newData.balance : prevUser.balance,
+              username: newData.username || prevUser.username,
+              email: newData.email || prevUser.email,
+              fullName: newData.full_name || prevUser.fullName,
+              updatedAt: newData.updated_at || prevUser.updatedAt,
+            };
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Realtime subscription status:', status);
+        
+        // Handle subscription errors
+        if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime channel error - will retry automatically');
+        } else if (status === 'TIMED_OUT') {
+          console.error('❌ Realtime subscription timed out');
+        } else if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime subscription active');
+        }
+      });
     
     return () => {
-      console.log('🛑 Stopping Realtime subscription');
-      supabase.removeChannel(channel);
+      console.log('🛑 Stopping Realtime subscription for user:', user.id);
+      // Unsubscribe and remove channel properly
+      channel.unsubscribe().then(() => {
+        supabase.removeChannel(channel);
+        console.log('✅ Realtime channel removed');
+      });
     };
-  }, [user, notification]);
+  }, [user?.id, notification]); // Only re-subscribe when user ID changes
 
   /**
    * Login user with credentials using Supabase Auth

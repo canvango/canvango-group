@@ -30,4 +30,21 @@ if (!supabaseUrl.startsWith('http')) {
 
 console.log('✅ Supabase client (src/clients) initialized successfully');
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true, // Auto-refresh token before expiry
+    persistSession: true, // Persist session in localStorage
+    detectSessionInUrl: true, // Detect session from URL (for OAuth)
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10, // Limit events to prevent flooding
+    },
+    timeout: 30000, // 30 second timeout for Realtime connections
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'canvango-web-app', // Custom header for tracking
+    },
+  },
+});

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MemberAreaLayout from './components/MemberAreaLayout';
 import MemberRoutes from './routes';
 import { OfflineDetector } from '../../shared/components/OfflineDetector';
+import { useSessionRefresh } from './hooks/useSessionRefresh';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,9 @@ const queryClient = new QueryClient({
 });
 
 const MemberArea: React.FC = () => {
+  // Auto-refresh session globally to prevent token expiration after idle
+  useSessionRefresh();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <OfflineDetector />
