@@ -4,6 +4,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/tripay-callback",
+      "destination": "/api/tripay-callback"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -76,15 +76,13 @@ export const TurnstileProtection: React.FC<TurnstileProtectionProps> = ({ childr
       <div className="w-full max-w-md">
         <div className="bg-white rounded-3xl shadow-lg p-8 text-center">
           {/* Logo */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="bg-white rounded-full px-6 py-3 shadow-md flex items-center gap-3">
-              <img 
-                src="/logo.png" 
-                alt="Canvango Group" 
-                className="h-10 w-auto"
-              />
-              <h1 className="text-xl font-bold" style={{ color: '#5271ff' }}>CANVANGO GROUP</h1>
-            </div>
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <img 
+              src="/logo.png" 
+              alt="Canvango Group" 
+              className="h-10 w-auto"
+            />
+            <h1 className="text-xl font-bold" style={{ color: '#5271ff' }}>CANVANGO GROUP</h1>
           </div>
           
           {/* Description */}
