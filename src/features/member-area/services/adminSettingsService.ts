@@ -16,6 +16,13 @@ export interface SystemSettings {
   payment_methods?: any[];
   notification_email?: { enabled: boolean; admin_email: string };
   notification_system?: { enabled: boolean; show_alerts: boolean };
+  tripay_config?: {
+    merchant_code: string;
+    api_key: string;
+    private_key: string;
+    mode: string;
+    callback_url: string;
+  };
   [key: string]: any;
 }
 
@@ -87,6 +94,13 @@ export const adminSettingsService = {
         notification_email: { enabled: true, admin_email: '' },
         notification_system: { enabled: true, show_alerts: true },
         maintenance_mode: { enabled: false, message: '' },
+        tripay_config: {
+          merchant_code: '',
+          api_key: '',
+          private_key: '',
+          mode: 'production',
+          callback_url: 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback',
+        },
       };
     }
 

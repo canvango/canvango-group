@@ -36,6 +36,15 @@ const SystemSettings: React.FC = () => {
     message: '',
   });
 
+  // Tripay configuration state
+  const [tripayConfig, setTripayConfig] = useState({
+    merchant_code: '',
+    api_key: '',
+    private_key: '',
+    mode: 'production',
+    callback_url: '',
+  });
+
   // Logs pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -64,6 +73,13 @@ const SystemSettings: React.FC = () => {
       setEmailNotifications(data.notification_email || { enabled: true, admin_email: '' });
       setSystemNotifications(data.notification_system || { enabled: true, show_alerts: true });
       setMaintenanceMode(data.maintenance_mode || { enabled: false, message: '' });
+      setTripayConfig(data.tripay_config || {
+        merchant_code: '',
+        api_key: '',
+        private_key: '',
+        mode: 'production',
+        callback_url: 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback',
+      });
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to fetch settings');
     } finally {
@@ -100,6 +116,7 @@ const SystemSettings: React.FC = () => {
         notification_email: emailNotifications,
         notification_system: systemNotifications,
         maintenance_mode: maintenanceMode,
+        tripay_config: tripayConfig,
       });
 
       setSuccessMessage('Settings updated successfully');
@@ -358,6 +375,129 @@ const SystemSettings: React.FC = () => {
                   />
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Tripay Configuration */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Tripay Payment Gateway</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Configure Tripay credentials for payment processing
+                </p>
+              </div>
+              <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                Production Mode
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Merchant Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={tripayConfig.merchant_code}
+                  onChange={(e) =>
+                    setTripayConfig({
+                      ...tripayConfig,
+                      merchant_code: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="T47159"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your Tripay merchant code (e.g., T47159)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  API Key <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={tripayConfig.api_key}
+                  onChange={(e) =>
+                    setTripayConfig({
+                      ...tripayConfig,
+                      api_key: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono"
+                  placeholder="LYIV2DddSP0DnEaxiMyAYleC3EKAFdaIYalrB2Wd"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your Tripay API key from merchant dashboard
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Private Key <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={tripayConfig.private_key}
+                  onChange={(e) =>
+                    setTripayConfig({
+                      ...tripayConfig,
+                      private_key: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono"
+                  placeholder="BqOm1-ItF0o-LNlRZ-YhPK8-PZjNz"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your Tripay private key (kept secure, never shared)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Callback URL
+                </label>
+                <input
+                  type="text"
+                  value={tripayConfig.callback_url}
+                  onChange={(e) =>
+                    setTripayConfig({
+                      ...tripayConfig,
+                      callback_url: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono bg-gray-50"
+                  placeholder="https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback"
+                  readOnly
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This URL must be configured in your Tripay merchant dashboard
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Important Notes</h3>
+                    <div className="mt-2 text-xs text-blue-700">
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Credentials are stored securely in the database</li>
+                        <li>After saving, you need to update Supabase Edge Function secrets</li>
+                        <li>Make sure your merchant is approved by Tripay before going live</li>
+                        <li>Test payments in sandbox mode before production</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

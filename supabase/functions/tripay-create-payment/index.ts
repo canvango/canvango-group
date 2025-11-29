@@ -17,14 +17,6 @@ serve(async (req) => {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const tripayApiKey = Deno.env.get('TRIPAY_API_KEY')!;
-    const tripayPrivateKey = Deno.env.get('TRIPAY_PRIVATE_KEY')!;
-    const tripayMerchantCode = Deno.env.get('TRIPAY_MERCHANT_CODE')!;
-    const tripayMode = Deno.env.get('TRIPAY_MODE') || 'sandbox';
-
-    if (!tripayApiKey || !tripayPrivateKey || !tripayMerchantCode) {
-      throw new Error('Tripay credentials not configured');
-    }
 
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
@@ -41,6 +33,41 @@ serve(async (req) => {
         headers: { Authorization: authHeader },
       },
     });
+
+    // Get Tripay credentials from database first, fallback to environment
+    let tripayApiKey = '';
+    let tripayPrivateKey = '';
+    let tripayMerchantCode = '';
+    let tripayMode = 'production';
+
+    try {
+      const { data: settings, error: settingsError } = await supabase
+        .from('system_settings')
+        .select('tripay_config')
+        .limit(1)
+        .single();
+
+      if (!settingsError && settings?.tripay_config) {
+        const config = settings.tripay_config;
+        tripayApiKey = config.api_key || '';
+        tripayPrivateKey = config.private_key || '';
+        tripayMerchantCode = config.merchant_code || '';
+        tripayMode = config.mode || 'production';
+        console.log('✅ Using Tripay credentials from database');
+      } else {
+        throw new Error('No database config');
+      }
+    } catch (dbError) {
+      console.log('⚠️ Database config not found, using environment variables');
+      tripayApiKey = Deno.env.get('TRIPAY_API_KEY') || '';
+      tripayPrivateKey = Deno.env.get('TRIPAY_PRIVATE_KEY') || '';
+      tripayMerchantCode = Deno.env.get('TRIPAY_MERCHANT_CODE') || '';
+      tripayMode = Deno.env.get('TRIPAY_MODE') || 'production';
+    }
+
+    if (!tripayApiKey || !tripayPrivateKey || !tripayMerchantCode) {
+      throw new Error('Tripay credentials not configured');
+    }
 
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
