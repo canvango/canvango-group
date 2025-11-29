@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { History, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
+import { History, Wallet, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import TopUpForm, { TopUpFormData } from '../components/topup/TopUpForm';
+import { PaymentChannelSelection } from '../components/topup/PaymentChannelSelection';
 import { useAuth } from '../contexts/AuthContext';
-import { TripayPaymentModal } from '../components/payment/TripayPaymentModal';
+import { useCreatePayment } from '@/hooks/useTripay';
+import { TripayPaymentMethod, calculateTotalAmount } from '@/services/tripay.service';
 import { formatCurrency } from '../utils/formatters';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -11,17 +13,67 @@ const TopUp: React.FC = () => {
   usePageTitle('Top Up');
   
   const { user } = useAuth();
-  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+  const createPayment = useCreatePayment();
   const [selectedAmount, setSelectedAmount] = React.useState(0);
+  const [selectedMethod, setSelectedMethod] = React.useState<TripayPaymentMethod | null>(null);
+  const [showPaymentSelection, setShowPaymentSelection] = React.useState(false);
   const [notification, setNotification] = React.useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
   const handleTopUpSubmit = async (data: TopUpFormData) => {
-    // Store selected amount and show Tripay payment modal
+    // Store selected amount and show payment channel selection
     setSelectedAmount(data.amount);
-    setShowPaymentModal(true);
+    setShowPaymentSelection(true);
+    // Scroll to payment selection
+    setTimeout(() => {
+      document.getElementById('payment-selection')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
+  };
+
+  const handleSelectMethod = (method: TripayPaymentMethod) => {
+    setSelectedMethod(method);
+  };
+
+  const handlePayment = async () => {
+    if (!selectedMethod || !user) {
+      setNotification({
+        type: 'error',
+        message: 'Pilih metode pembayaran terlebih dahulu'
+      });
+      return;
+    }
+
+    try {
+      await createPayment.mutateAsync({
+        amount: selectedAmount,
+        paymentMethod: selectedMethod.code,
+        customerName: user.fullName,
+        customerEmail: user.email,
+        customerPhone: user.phone || '',
+        orderItems: [
+          {
+            name: 'Top-Up Saldo',
+            price: selectedAmount,
+            quantity: 1,
+          }
+        ],
+      });
+      
+      // Reset form
+      setShowPaymentSelection(false);
+      setSelectedAmount(0);
+      setSelectedMethod(null);
+    } catch (error: any) {
+      setNotification({
+        type: 'error',
+        message: error.message || 'Gagal membuat pembayaran'
+      });
+    }
   };
 
   return (
@@ -104,23 +156,80 @@ const TopUp: React.FC = () => {
       {/* Top Up Form */}
       <TopUpForm onSubmit={handleTopUpSubmit} loading={false} />
 
-      {/* Tripay Payment Modal */}
-      {user && (
-        <TripayPaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          amount={selectedAmount}
-          customerName={user.fullName}
-          customerEmail={user.email}
-          customerPhone={user.phone}
-          orderItems={[
-            {
-              name: 'Top-Up Saldo',
-              price: selectedAmount,
-              quantity: 1,
-            }
-          ]}
-        />
+      {/* Payment Channel Selection */}
+      {showPaymentSelection && selectedAmount > 0 && (
+        <div id="payment-selection" className="space-y-6">
+          {/* Amount Summary */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 shadow-sm border-2 border-blue-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Ringkasan Pembayaran</h3>
+              <button
+                onClick={() => {
+                  setShowPaymentSelection(false);
+                  setSelectedAmount(0);
+                  setSelectedMethod(null);
+                }}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                Ubah Jumlah
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-700">Jumlah Top-Up</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  Rp {selectedAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+              {selectedMethod && (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-700">Biaya Admin ({selectedMethod.name})</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      Rp {(calculateTotalAmount(selectedAmount, selectedMethod) - selectedAmount).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t-2 border-blue-200">
+                    <span className="text-base font-bold text-gray-900">Total Bayar</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      Rp {calculateTotalAmount(selectedAmount, selectedMethod).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Channel Selection */}
+          <PaymentChannelSelection
+            amount={selectedAmount}
+            onSelectMethod={handleSelectMethod}
+            selectedMethod={selectedMethod?.code || null}
+          />
+
+          {/* Payment Button */}
+          {selectedMethod && (
+            <div className="sticky bottom-0 bg-white border-t-2 border-gray-200 p-4 -mx-4 md:mx-0 md:relative md:border-0 md:p-0">
+              <button
+                onClick={handlePayment}
+                disabled={createPayment.isPending}
+                className="w-full px-6 py-4 text-base font-semibold text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+              >
+                {createPayment.isPending ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5" />
+                    Bayar Sekarang
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Information Box */}

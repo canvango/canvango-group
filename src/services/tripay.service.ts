@@ -17,7 +17,7 @@ const BASE_URL = TRIPAY_MODE === 'production' ? TRIPAY_API_URL : TRIPAY_SANDBOX_
 // Tripay API Key for direct API calls (if needed)
 const TRIPAY_API_KEY = import.meta.env.VITE_TRIPAY_API_KEY;
 
-interface TripayPaymentMethod {
+export interface TripayPaymentMethod {
   code: string;
   name: string;
   fee_merchant: {
