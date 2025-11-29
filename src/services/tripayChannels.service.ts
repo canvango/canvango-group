@@ -69,10 +69,10 @@ export async function fetchPaymentChannelsFromTripay(): Promise<TripayPaymentCha
         throw new Error('No active session');
       }
 
-      // @ts-ignore
-      const supabaseUrl = supabase.supabaseUrl?.replace(/\/$/, '');
+      // Get Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
-        throw new Error('Supabase URL is not available');
+        throw new Error('VITE_SUPABASE_URL is not configured');
       }
 
       const response = await fetch(
