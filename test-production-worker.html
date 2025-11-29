@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tripay Production Worker</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.loading { background: #d1ecf1; color: #0c5460; }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #007bff;
+            font-size: 18px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info strong {
+            color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Tripay Production Worker</h1>
+        <div id="status" class="status loading">Initializing...</div>
+
+        <div class="info">
+            <strong>Worker URL:</strong> https://tripay-proxy.canvango.workers.dev<br>
+            <strong>Mode:</strong> Sandbox (DEV API)<br>
+            <strong>CORS:</strong> Enabled for canvango-group.vercel.app
+        </div>
+
+        <!-- Test 1: Health Check -->
+        <div class="test-section">
+            <h2>1️⃣ Health Check</h2>
+            <button onclick="testHealth()">Test Health</button>
+            <div id="health-result"></div>
+        </div>
+
+        <!-- Test 2: Payment Channels -->
+        <div class="test-section">
+            <h2>2️⃣ Payment Channels</h2>
+            <button onclick="testPaymentChannels()">Get Payment Channels</button>
+            <div id="channels-result"></div>
+        </div>
+
+        <!-- Test 3: Create Transaction -->
+        <div class="test-section">
+            <h2>3️⃣ Create Transaction (Simulation)</h2>
+            <p style="color: #666; font-size: 14px;">This will create a real sandbox transaction</p>
+            <button onclick="testCreateTransaction()">Create Test Transaction</button>
+            <div id="transaction-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const WORKER_URL = 'https://tripay-proxy.canvango.workers.dev';
+        
+        // Update status
+        function updateStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // Test 1: Health Check
+        async function testHealth() {
+            const resultEl = document.getElementById('health-result');
+            resultEl.innerHTML = '<p style="color: #666;">Testing...</p>';
+            
+            try {
+                const response = await fetch(WORKER_URL + '/');
+                const data = await response.json();
+                
+                resultEl.innerHTML = `
+                    <p style="color: green; font-weight: 500;">✅ Success!</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                updateStatus('Worker is healthy', 'success');
+            } catch (error) {
+                resultEl.innerHTML = `
+                    <p style="color: red; font-weight: 500;">❌ Error</p>
+                    <pre>${error.message}</pre>
+                `;
+                updateStatus('Health check failed', 'error');
+            }
+        }
+
+        // Test 2: Payment Channels
+        async function testPaymentChannels() {
+            const resultEl = document.getElementById('channels-result');
+            resultEl.innerHTML = '<p style="color: #666;">Fetching payment channels...</p>';
+            
+            try {
+                const response = await fetch(WORKER_URL + '/payment-channels');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const channelCount = data.data.length;
+                    const activeChannels = data.data.filter(c => c.active).length;
+                    
+                    resultEl.innerHTML = `
+                        <p style="color: green; font-weight: 500;">✅ Success!</p>
+                        <p><strong>Total Channels:</strong> ${channelCount}</p>
+                        <p><strong>Active Channels:</strong> ${activeChannels}</p>
+                        <details>
+                            <summary style="cursor: pointer; color: #007bff; margin: 10px 0;">View Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    updateStatus('Payment channels loaded', 'success');
+                } else {
+                    throw new Error(data.message || 'Failed to fetch channels');
+                }
+            } catch (error) {
+                resultEl.innerHTML = `
+                    <p style="color: red; font-weight: 500;">❌ Error</p>
+                    <pre>${error.message}</pre>
+                `;
+                updateStatus('Failed to load channels', 'error');
+            }
+        }
+
+        // Test 3: Create Transaction
+        async function testCreateTransaction() {
+            const resultEl = document.getElementById('transaction-result');
+            resultEl.innerHTML = '<p style="color: #666;">Creating test transaction...</p>';
+            
+            const testData = {
+                method: 'QRIS',
+                merchant_ref: 'TEST-' + Date.now(),
+                amount: 10000,
+                customer_name: 'Test User',
+                customer_email: 'test@example.com',
+                customer_phone: '081234567890',
+                order_items: [
+                    {
+                        name: 'Test Top Up',
+                        price: 10000,
+                        quantity: 1
+                    }
+                ],
+                return_url: 'https://canvango-group.vercel.app/member/topup',
+                expired_time: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+            };
+            
+            try {
+                const response = await fetch(WORKER_URL + '/create-transaction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.innerHTML = `
+                        <p style="color: green; font-weight: 500;">✅ Transaction Created!</p>
+                        <p><strong>Reference:</strong> ${data.data.reference}</p>
+                        <p><strong>Merchant Ref:</strong> ${data.data.merchant_ref}</p>
+                        <p><strong>Amount:</strong> Rp ${data.data.amount.toLocaleString('id-ID')}</p>
+                        <p><strong>Fee:</strong> Rp ${data.data.total_fee.toLocaleString('id-ID')}</p>
+                        <p><strong>Status:</strong> ${data.data.status}</p>
+                        ${data.data.checkout_url ? `
+                            <p><a href="${data.data.checkout_url}" target="_blank" style="color: #007bff;">Open Payment Page →</a></p>
+                        ` : ''}
+                        <details>
+                            <summary style="cursor: pointer; color: #007bff; margin: 10px 0;">View Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    updateStatus('Transaction created successfully', 'success');
+                } else {
+                    throw new Error(data.message || 'Failed to create transaction');
+                }
+            } catch (error) {
+                resultEl.innerHTML = `
+                    <p style="color: red; font-weight: 500;">❌ Error</p>
+                    <pre>${error.message}</pre>
+                `;
+                updateStatus('Failed to create transaction', 'error');
+            }
+        }
+
+        // Auto-run health check on load
+        window.addEventListener('load', () => {
+            updateStatus('Ready to test', 'success');
+            testHealth();
+        });
+    </script>
+</body>
+</html>
