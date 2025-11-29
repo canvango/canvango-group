@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare Worker Test - Tripay Proxy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #1a202c;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #718096;
+      margin-bottom: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .result {
+      margin-top: 2rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #f7fafc;
+      border-left: 4px solid #667eea;
+    }
+    .result h3 {
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+    .result pre {
+      background: #2d3748;
+      color: #68d391;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .error {
+      border-left-color: #f56565;
+    }
+    .error pre {
+      color: #fc8181;
+    }
+    .success {
+      border-left-color: #48bb78;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Cloudflare Worker Test</h1>
+    <p class="subtitle">Test Tripay Proxy Integration</p>
+
+    <div class="form-group">
+      <label for="workerUrl">Worker URL</label>
+      <input 
+        type="text" 
+        id="workerUrl" 
+        placeholder="https://tripay-proxy.your-subdomain.workers.dev"
+        value="http://localhost:8787"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="testType">Test Type</label>
+      <select id="testType">
+        <option value="payment-channels">Get Payment Channels</option>
+        <option value="create-transaction">Create Transaction</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="useSandbox" checked>
+        Use Sandbox Mode
+      </label>
+    </div>
+
+    <button class="btn" onclick="runTest()">
+      <span id="btnText">Run Test</span>
+    </button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function runTest() {
+      const workerUrl = document.getElementById('workerUrl').value.trim();
+      const testType = document.getElementById('testType').value;
+      const useSandbox = document.getElementById('useSandbox').checked;
+      const resultDiv = document.getElementById('result');
+      const btnText = document.getElementById('btnText');
+      const btn = document.querySelector('.btn');
+
+      if (!workerUrl) {
+        alert('Please enter Worker URL');
+        return;
+      }
+
+      // Show loading
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="loading"></span>Testing...';
+      resultDiv.innerHTML = '';
+
+      try {
+        let response, data;
+
+        if (testType === 'payment-channels') {
+          // Test payment channels
+          response = await fetch(`${workerUrl}/payment-channels?sandbox=${useSandbox}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          data = await response.json();
+
+        } else if (testType === 'create-transaction') {
+          // Test create transaction
+          const payload = {
+            method: 'BRIVA',
+            merchant_ref: `TEST-${Date.now()}`,
+            amount: 50000,
+            customer_name: 'Test User',
+            customer_email: 'test@example.com',
+            customer_phone: '081234567890',
+            order_items: [
+              {
+                name: 'Top Up Balance',
+                price: 50000,
+                quantity: 1
+              }
+            ],
+            return_url: `${window.location.origin}/success`,
+            expired_time: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
+            sandbox: useSandbox
+          };
+
+          response = await fetch(`${workerUrl}/create-transaction`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+          });
+          data = await response.json();
+        }
+
+        // Show result
+        const isSuccess = response.ok && data.success;
+        resultDiv.innerHTML = `
+          <div class="result ${isSuccess ? 'success' : 'error'}">
+            <h3>${isSuccess ? '✅ Success' : '❌ Error'}</h3>
+            <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result error">
+            <h3>❌ Error</h3>
+            <pre>${error.message}</pre>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Run Test';
+      }
+    }
+  </script>
+</body>
+</html>

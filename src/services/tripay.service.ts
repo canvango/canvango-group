@@ -6,16 +6,13 @@
 import { supabase } from '@/clients/supabase';
 import axios from 'axios';
 
-// Tripay API Configuration
-const TRIPAY_API_URL = 'https://tripay.co.id/api';
-const TRIPAY_SANDBOX_URL = 'https://tripay.co.id/api-sandbox';
+// Use Cloudflare Worker if available, otherwise use Vercel API route
+const WORKER_PROXY_URL = import.meta.env.VITE_TRIPAY_PROXY_URL;
+const USE_WORKER = !!WORKER_PROXY_URL;
 
-// Always use sandbox until merchant is approved
+// Tripay mode (sandbox/production)
 const TRIPAY_MODE = import.meta.env.VITE_TRIPAY_MODE || 'sandbox';
-const BASE_URL = TRIPAY_MODE === 'production' ? TRIPAY_API_URL : TRIPAY_SANDBOX_URL;
-
-// Tripay API Key for direct API calls (if needed)
-const TRIPAY_API_KEY = import.meta.env.VITE_TRIPAY_API_KEY;
+const IS_SANDBOX = TRIPAY_MODE === 'sandbox';
 
 export interface TripayPaymentMethod {
   code: string;
@@ -130,52 +127,23 @@ export async function getPaymentMethods(): Promise<TripayPaymentMethod[]> {
 }
 
 /**
- * Create a new payment transaction via Tripay
+ * Create a new payment transaction
+ * Uses Cloudflare Worker if available, otherwise uses Vercel API route
  */
 export async function createPayment(params: CreatePaymentParams): Promise<TripayPaymentResponse> {
   try {
-    // Prepare request data for Edge Function
-    const requestData = {
-      amount: params.amount,
-      paymentMethod: params.paymentMethod,
-      customerName: params.customerName,
-      customerEmail: params.customerEmail,
-      customerPhone: params.customerPhone || '',
-      orderItems: params.orderItems,
-      returnUrl: params.returnUrl || `${window.location.origin}/riwayat-transaksi`,
-      expiredTime: params.expiredTime || 24, // 24 hours default
-    };
-
-    console.log('Creating Tripay payment:', requestData);
-
-    // Call Edge Function to create payment (to avoid CORS)
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('No active session');
     }
 
-    // Use Vercel API route as proxy (has static IP for Tripay whitelist)
-    const response = await axios.post(
-      '/api/tripay-proxy',
-      requestData,
-      {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    console.log('📦 Edge Function response:', response.data);
-    
-    if (!response.data.success) {
-      const errorMessage = response.data.message || 'Failed to create payment';
-      console.error('❌ Payment creation failed:', errorMessage);
-      throw new Error(errorMessage);
+    if (USE_WORKER) {
+      // Use Cloudflare Worker
+      return await createPaymentViaWorker(params, session);
+    } else {
+      // Use Vercel API route
+      return await createPaymentViaVercel(params, session);
     }
-
-    // Edge Function already handles transaction creation and update
-    return response.data;
   } catch (error) {
     console.error('Error creating payment:', error);
     if (axios.isAxiosError(error)) {
@@ -186,25 +154,133 @@ export async function createPayment(params: CreatePaymentParams): Promise<Tripay
 }
 
 /**
+ * Create payment via Cloudflare Worker
+ */
+async function createPaymentViaWorker(params: CreatePaymentParams, session: any): Promise<TripayPaymentResponse> {
+  const merchantRef = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const expiredHours = params.expiredTime || 24;
+  const expiredTime = Math.floor(Date.now() / 1000) + (expiredHours * 60 * 60);
+
+  const requestData = {
+    method: params.paymentMethod,
+    merchant_ref: merchantRef,
+    amount: params.amount,
+    customer_name: params.customerName,
+    customer_email: params.customerEmail,
+    customer_phone: params.customerPhone || '',
+    order_items: params.orderItems,
+    return_url: params.returnUrl || `${window.location.origin}/riwayat-transaksi`,
+    expired_time: expiredTime,
+    sandbox: IS_SANDBOX,
+  };
+
+  console.log('Creating Tripay payment via Cloudflare Worker:', requestData);
+
+  const response = await axios.post(
+    `${WORKER_PROXY_URL}/create-transaction`,
+    requestData,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to create payment');
+  }
+
+  // Save transaction to database
+  const transactionData = {
+    user_id: session.user.id,
+    transaction_type: 'topup',
+    amount: params.amount,
+    status: 'pending',
+    payment_method: params.paymentMethod,
+    tripay_reference: response.data.data.reference,
+    tripay_merchant_ref: merchantRef,
+    tripay_payment_method: response.data.data.payment_method,
+    tripay_payment_name: response.data.data.payment_name,
+    tripay_checkout_url: response.data.data.checkout_url,
+    tripay_amount: response.data.data.amount,
+    tripay_fee: response.data.data.total_fee,
+    tripay_total_amount: response.data.data.amount_received,
+    tripay_status: response.data.data.status,
+  };
+
+  await supabase.from('transactions').insert(transactionData);
+
+  return response.data;
+}
+
+/**
+ * Create payment via Vercel API route
+ */
+async function createPaymentViaVercel(params: CreatePaymentParams, session: any): Promise<TripayPaymentResponse> {
+  const requestData = {
+    amount: params.amount,
+    paymentMethod: params.paymentMethod,
+    customerName: params.customerName,
+    customerEmail: params.customerEmail,
+    customerPhone: params.customerPhone || '',
+    orderItems: params.orderItems,
+    returnUrl: params.returnUrl || `${window.location.origin}/riwayat-transaksi`,
+    expiredTime: params.expiredTime || 24,
+  };
+
+  console.log('Creating Tripay payment via Vercel API:', requestData);
+
+  const response = await axios.post(
+    '/api/tripay-proxy',
+    requestData,
+    {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  console.log('📦 Vercel API response:', response.data);
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to create payment');
+  }
+
+  // Transaction already saved by Vercel API route
+  return response.data;
+}
+
+/**
  * Check payment status from Tripay
  */
 export async function checkPaymentStatus(reference: string): Promise<any> {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/transaction/detail`,
-      {
-        params: { reference },
-        headers: {
-          'Authorization': `Bearer ${TRIPAY_API_KEY}`,
-        },
+    if (USE_WORKER) {
+      // Use Cloudflare Worker
+      const response = await axios.get(
+        `${WORKER_PROXY_URL}/transaction/${reference}`,
+        {
+          params: { sandbox: IS_SANDBOX },
+        }
+      );
+
+      if (response.data.success) {
+        return response.data.data;
       }
-    );
 
-    if (response.data.success) {
-      return response.data.data;
+      throw new Error(response.data.message || 'Failed to check payment status');
+    } else {
+      // Fetch from database (updated by callback)
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('tripay_reference', reference)
+        .single();
+
+      if (error) throw error;
+      return data;
     }
-
-    throw new Error(response.data.message || 'Failed to check payment status');
   } catch (error) {
     console.error('Error checking payment status:', error);
     throw error;

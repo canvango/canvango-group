@@ -44,6 +44,7 @@ const SystemSettings: React.FC = () => {
     private_key: '',
     mode: 'production',
     callback_url: '',
+    proxy_url: '', // Cloudflare Worker URL
   });
 
   // Logs pagination
@@ -80,6 +81,7 @@ const SystemSettings: React.FC = () => {
         private_key: '',
         mode: 'production',
         callback_url: 'https://canvango.com/api/tripay-callback',
+        proxy_url: '',
       });
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to fetch settings');
@@ -486,6 +488,28 @@ const SystemSettings: React.FC = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   This URL must be configured in your Tripay merchant dashboard
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cloudflare Worker Proxy URL
+                  <span className="ml-2 text-xs text-blue-600 font-normal">(Recommended)</span>
+                </label>
+                <input
+                  type="text"
+                  value={tripayConfig.proxy_url}
+                  onChange={(e) =>
+                    setTripayConfig({
+                      ...tripayConfig,
+                      proxy_url: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono"
+                  placeholder="https://tripay-proxy.your-subdomain.workers.dev"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Cloudflare Worker URL for secure API proxy (handles CORS & API keys)
                 </p>
               </div>
 

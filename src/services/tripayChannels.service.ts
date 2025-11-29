@@ -35,39 +35,64 @@ export interface TripayPaymentChannel {
 }
 
 /**
- * Fetch payment channels from Tripay API via Edge Function
+ * Fetch payment channels from Tripay API
+ * Uses Cloudflare Worker if available, otherwise uses Supabase Edge Function
  */
 export async function fetchPaymentChannelsFromTripay(): Promise<TripayPaymentChannel[]> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('No active session');
-    }
+    const workerUrl = import.meta.env.VITE_TRIPAY_PROXY_URL;
+    
+    if (workerUrl) {
+      // Use Cloudflare Worker
+      const isSandbox = (import.meta.env.VITE_TRIPAY_MODE || 'sandbox') === 'sandbox';
 
-    // Get Supabase URL
-    // @ts-ignore
-    const supabaseUrl = supabase.supabaseUrl?.replace(/\/$/, '');
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL is not available');
-    }
+      const response = await fetch(
+        `${workerUrl}/payment-channels?sandbox=${isSandbox}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    const response = await fetch(
-      `${supabaseUrl}/functions/v1/tripay-get-payment-channels`,
-      {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch payment channels');
       }
-    );
 
-    const result = await response.json();
+      return result.data || [];
+    } else {
+      // Use Supabase Edge Function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
 
-    if (!result.success) {
-      throw new Error(result.message || 'Failed to fetch payment channels');
+      // @ts-ignore
+      const supabaseUrl = supabase.supabaseUrl?.replace(/\/$/, '');
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not available');
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/tripay-get-payment-channels`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch payment channels');
+      }
+
+      return result.data || [];
     }
-
-    return result.data || [];
   } catch (error) {
     console.error('Error fetching payment channels from Tripay:', error);
     throw error;
