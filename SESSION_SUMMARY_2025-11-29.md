@@ -185,3 +185,32 @@ SELECT * FROM tripay_settings;
 **Commits:** 4  
 
 **Status:** ✅ Ready for testing
+
+---
+
+## 🔄 Update: Oracle Cloud Decision
+
+### Problem Identified
+- Tripay hanya kasih **1 IP whitelist gratis**
+- Cloudflare Worker punya **1.5 juta IP addresses**
+- Tidak mungkin whitelist semua IP Cloudflare
+
+### Solution Decided
+**Pakai Oracle Cloud Free Tier** untuk Tripay proxy:
+- ✅ Gratis selamanya (Always Free tier)
+- ✅ 1 static IP (cocok untuk whitelist)
+- ✅ Tidak perlu migrasi Vercel/Supabase
+- ✅ Code changes minimal (hanya 1 URL)
+
+### Documentation Created
+- **ORACLE_CLOUD_SETUP_GUIDE.md** - Complete step-by-step guide (8 phases)
+- **TRIPAY_IP_WHITELIST_GUIDE.md** - IP whitelist explanation
+- **TRIPAY_QUICK_REFERENCE.md** - Quick reference card
+
+### Next Session
+Setup Oracle Cloud akan dikerjakan di session baru secara:
+- ✅ Bertahap (8 phases)
+- ✅ Sistematis (checklist setiap step)
+- ✅ Terintegrasi (tidak break existing system)
+
+**Status:** ✅ Documentation ready, waiting for Oracle Cloud setup
