@@ -137,9 +137,18 @@ serve(async (req) => {
     // Use custom domain callback URL (proxies to Supabase Edge Function)
     const callbackUrl = 'https://canvango.com/api/tripay-callback';
     
-    // Convert expired time from hours to seconds
-    const expiredTimeInSeconds = expiredTime * 3600;
-    console.log('⏰ Expired time:', { hours: expiredTime, seconds: expiredTimeInSeconds });
+    // Calculate expired time as Unix Timestamp (current time + duration in seconds)
+    const currentTime = Math.floor(Date.now() / 1000); // Current Unix timestamp
+    const durationInSeconds = expiredTime * 3600; // Convert hours to seconds
+    const expiredTimeUnix = currentTime + durationInSeconds; // Future Unix timestamp
+    
+    console.log('⏰ Expired time:', { 
+      hours: expiredTime, 
+      currentTime, 
+      durationInSeconds, 
+      expiredTimeUnix,
+      expiredDate: new Date(expiredTimeUnix * 1000).toISOString()
+    });
     
     const tripayRequest = {
       method: paymentMethod,
@@ -151,7 +160,7 @@ serve(async (req) => {
       order_items: orderItems,
       callback_url: callbackUrl,
       return_url: returnUrl || `${req.headers.get('origin')}/riwayat-transaksi`,
-      expired_time: expiredTimeInSeconds,
+      expired_time: expiredTimeUnix, // Unix timestamp (not duration!)
       signature: signature,
     };
 
