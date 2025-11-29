@@ -14,10 +14,8 @@ const TRIPAY_SANDBOX_URL = 'https://tripay.co.id/api-sandbox';
 const TRIPAY_MODE = import.meta.env.VITE_TRIPAY_MODE || 'sandbox';
 const BASE_URL = TRIPAY_MODE === 'production' ? TRIPAY_API_URL : TRIPAY_SANDBOX_URL;
 
-// Tripay credentials from environment
+// Tripay API Key for direct API calls (if needed)
 const TRIPAY_API_KEY = import.meta.env.VITE_TRIPAY_API_KEY;
-const TRIPAY_PRIVATE_KEY = import.meta.env.VITE_TRIPAY_PRIVATE_KEY;
-const TRIPAY_MERCHANT_CODE = import.meta.env.VITE_TRIPAY_MERCHANT_CODE;
 
 interface TripayPaymentMethod {
   code: string;
@@ -93,81 +91,42 @@ interface TripayPaymentResponse {
 }
 
 /**
- * Get available payment methods from Tripay
- * Returns hardcoded list to avoid CORS issues
- * TODO: Create backend endpoint to fetch from Tripay API
+ * Get available payment methods from database
+ * Fetches enabled payment channels that were synced from Tripay API
  */
 export async function getPaymentMethods(): Promise<TripayPaymentMethod[]> {
-  // Return hardcoded payment methods to avoid CORS
-  // These are common Tripay payment channels
-  return [
-    {
-      code: 'BRIVA',
-      name: 'BRI Virtual Account',
-      fee_merchant: { flat: 2500, percent: 0 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 2500, percent: 0 },
-      minimum_fee: 2500,
-      maximum_fee: 2500,
-      icon_url: 'https://tripay.co.id/images/payment_icon/BRIVA.png',
-      active: true,
-    },
-    {
-      code: 'BCAVA',
-      name: 'BCA Virtual Account',
-      fee_merchant: { flat: 2500, percent: 0 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 2500, percent: 0 },
-      minimum_fee: 2500,
-      maximum_fee: 2500,
-      icon_url: 'https://tripay.co.id/images/payment_icon/BCAVA.png',
-      active: true,
-    },
-    {
-      code: 'BNIVA',
-      name: 'BNI Virtual Account',
-      fee_merchant: { flat: 2500, percent: 0 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 2500, percent: 0 },
-      minimum_fee: 2500,
-      maximum_fee: 2500,
-      icon_url: 'https://tripay.co.id/images/payment_icon/BNIVA.png',
-      active: true,
-    },
-    {
-      code: 'MANDIRIVA',
-      name: 'Mandiri Virtual Account',
-      fee_merchant: { flat: 2500, percent: 0 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 2500, percent: 0 },
-      minimum_fee: 2500,
-      maximum_fee: 2500,
-      icon_url: 'https://tripay.co.id/images/payment_icon/MANDIRIVA.png',
-      active: true,
-    },
-    {
-      code: 'QRIS',
-      name: 'QRIS (All E-Wallet)',
-      fee_merchant: { flat: 0, percent: 0.7 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 0, percent: 0.7 },
-      minimum_fee: 0,
-      maximum_fee: 0,
-      icon_url: 'https://tripay.co.id/images/payment_icon/QRIS.png',
-      active: true,
-    },
-    {
-      code: 'SHOPEEPAY',
-      name: 'ShopeePay',
-      fee_merchant: { flat: 0, percent: 2 },
-      fee_customer: { flat: 0, percent: 0 },
-      total_fee: { flat: 0, percent: 2 },
-      minimum_fee: 0,
-      maximum_fee: 0,
-      icon_url: 'https://tripay.co.id/images/payment_icon/SHOPEEPAY.png',
-      active: true,
-    },
-  ];
+  try {
+    // Fetch enabled payment channels from database
+    const { data, error } = await supabase
+      .from('tripay_payment_channels')
+      .select('*')
+      .eq('is_enabled', true)
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching payment channels:', error);
+      throw error;
+    }
+
+    // Transform database format to TripayPaymentMethod format
+    return (data || []).map(channel => ({
+      code: channel.code,
+      name: channel.name,
+      fee_merchant: channel.fee_merchant,
+      fee_customer: channel.fee_customer,
+      total_fee: channel.total_fee,
+      minimum_fee: channel.minimum_fee || 0,
+      maximum_fee: channel.maximum_fee || 0,
+      icon_url: channel.icon_url || '',
+      active: channel.is_active,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch payment methods:', error);
+    // Return empty array instead of throwing to prevent UI break
+    return [];
+  }
 }
 
 /**
@@ -265,11 +224,55 @@ export function calculateTotalAmount(
   amount: number,
   paymentMethod: TripayPaymentMethod
 ): number {
-  const flatFee = paymentMethod.fee_merchant.flat;
-  const percentFee = (amount * paymentMethod.fee_merchant.percent) / 100;
-  const totalFee = Math.max(flatFee + percentFee, paymentMethod.minimum_fee);
+  const flatFee = paymentMethod.fee_merchant.flat || 0;
+  const percentFee = (amount * (paymentMethod.fee_merchant.percent || 0)) / 100;
+  let totalFee = flatFee + percentFee;
+  
+  // Apply minimum fee if set
+  if (paymentMethod.minimum_fee && totalFee < paymentMethod.minimum_fee) {
+    totalFee = paymentMethod.minimum_fee;
+  }
+  
+  // Apply maximum fee if set
+  if (paymentMethod.maximum_fee && totalFee > paymentMethod.maximum_fee) {
+    totalFee = paymentMethod.maximum_fee;
+  }
   
   return amount + totalFee;
+}
+
+/**
+ * Get payment method by code
+ */
+export async function getPaymentMethodByCode(code: string): Promise<TripayPaymentMethod | null> {
+  try {
+    const { data, error } = await supabase
+      .from('tripay_payment_channels')
+      .select('*')
+      .eq('code', code)
+      .eq('is_enabled', true)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      code: data.code,
+      name: data.name,
+      fee_merchant: data.fee_merchant,
+      fee_customer: data.fee_customer,
+      total_fee: data.total_fee,
+      minimum_fee: data.minimum_fee || 0,
+      maximum_fee: data.maximum_fee || 0,
+      icon_url: data.icon_url || '',
+      active: data.is_active,
+    };
+  } catch (error) {
+    console.error('Failed to fetch payment method:', error);
+    return null;
+  }
 }
 
 /**
