@@ -22,17 +22,15 @@ const TopUp: React.FC = () => {
     message: string;
   } | null>(null);
 
-  const handleTopUpSubmit = async (data: TopUpFormData) => {
-    // Store selected amount and show payment channel selection
-    setSelectedAmount(data.amount);
-    setShowPaymentSelection(true);
-    // Scroll to payment selection
-    setTimeout(() => {
-      document.getElementById('payment-selection')?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 100);
+  // Update amount whenever form changes
+  const handleAmountChange = (amount: number) => {
+    setSelectedAmount(amount);
+    if (amount > 0) {
+      setShowPaymentSelection(true);
+    } else {
+      setShowPaymentSelection(false);
+      setSelectedMethod(null);
+    }
   };
 
   const handleSelectMethod = (method: TripayPaymentMethod) => {
@@ -154,7 +152,7 @@ const TopUp: React.FC = () => {
       )}
 
       {/* Top Up Form */}
-      <TopUpForm onSubmit={handleTopUpSubmit} loading={false} />
+      <TopUpForm onAmountChange={handleAmountChange} />
 
       {/* Payment Channel Selection */}
       {showPaymentSelection && selectedAmount > 0 && (
