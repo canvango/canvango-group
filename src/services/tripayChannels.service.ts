@@ -63,35 +63,42 @@ export async function fetchPaymentChannelsFromTripay(): Promise<TripayPaymentCha
 
       return result.data || [];
     } else {
-      // Use Supabase Edge Function
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
+      // Fallback: Fetch from database directly
+      // This is more reliable than calling Edge Function
+      console.log('Fetching payment channels from database...');
+      
+      const { data, error } = await supabase
+        .from('tripay_payment_channels')
+        .select('*')
+        .eq('is_enabled', true)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching from database:', error);
+        throw error;
       }
 
-      // Get Supabase URL from environment
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('VITE_SUPABASE_URL is not configured');
-      }
-
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/tripay-get-payment-channels`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch payment channels');
-      }
-
-      return result.data || [];
+      // Transform to expected format
+      return (data || []).map(channel => ({
+        code: channel.code,
+        name: channel.name,
+        group_name: channel.group_name,
+        type: channel.type,
+        fee_merchant: channel.fee_merchant,
+        fee_customer: channel.fee_customer,
+        total_fee: channel.total_fee,
+        minimum_fee: channel.minimum_fee,
+        maximum_fee: channel.maximum_fee,
+        minimum_amount: channel.minimum_amount,
+        maximum_amount: channel.maximum_amount,
+        icon_url: channel.icon_url,
+        is_active: channel.is_active,
+        is_enabled: channel.is_enabled,
+        display_order: channel.display_order,
+        last_synced_at: channel.last_synced_at,
+      }));
     }
   } catch (error) {
     console.error('Error fetching payment channels from Tripay:', error);
