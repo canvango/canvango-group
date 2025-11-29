@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Tripay Payment Channels</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .status.loading {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .payment-channel {
+      border: 1px solid #e5e7eb;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .payment-channel img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+    .payment-info {
+      flex: 1;
+    }
+    .payment-name {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+    .payment-code {
+      color: #6b7280;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .payment-fee {
+      color: #059669;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge.active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Tripay Payment Channels API</h1>
+    
+    <div class="input-group">
+      <label>Supabase Access Token (Admin):</label>
+      <input type="password" id="accessToken" placeholder="Paste your Supabase access token here">
+      <small style="color: #6b7280; display: block; margin-top: 4px;">
+        Get from: Browser DevTools → Application → Local Storage → supabase.auth.token
+      </small>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <button onclick="testFetch()" id="testBtn">🚀 Test Fetch Payment Channels</button>
+      <button onclick="clearResults()">🗑️ Clear Results</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const EDGE_FUNCTION_URL = 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-get-payment-channels';
+
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = `status ${type}`;
+      statusDiv.textContent = message;
+    }
+
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('status').innerHTML = '';
+    }
+
+    async function testFetch() {
+      const accessToken = document.getElementById('accessToken').value.trim();
+      
+      if (!accessToken) {
+        alert('Please enter your Supabase access token');
+        return;
+      }
+
+      const testBtn = document.getElementById('testBtn');
+      testBtn.disabled = true;
+      
+      showStatus('🔄 Fetching payment channels from Tripay...', 'loading');
+      
+      try {
+        console.log('Calling Edge Function:', EDGE_FUNCTION_URL);
+        
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP ${response.status}`);
+        }
+
+        if (data.success) {
+          showStatus(`✅ Success! Fetched ${data.data?.length || 0} payment channels`, 'success');
+          displayPaymentChannels(data.data);
+        } else {
+          throw new Error(data.message || 'Failed to fetch payment channels');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showStatus(`❌ Error: ${error.message}`, 'error');
+        
+        document.getElementById('results').innerHTML = `
+          <h3>Error Details:</h3>
+          <pre>${JSON.stringify({
+            error: error.message,
+            stack: error.stack
+          }, null, 2)}</pre>
+        `;
+      } finally {
+        testBtn.disabled = false;
+      }
+    }
+
+    function displayPaymentChannels(channels) {
+      if (!channels || channels.length === 0) {
+        document.getElementById('results').innerHTML = '<p>No payment channels found</p>';
+        return;
+      }
+
+      const resultsDiv = document.getElementById('results');
+      
+      let html = '<h3>Payment Channels:</h3>';
+      
+      channels.forEach(channel => {
+        const feeText = channel.fee_merchant.flat > 0 
+          ? `Rp ${channel.fee_merchant.flat.toLocaleString()}`
+          : `${channel.fee_merchant.percent}%`;
+        
+        html += `
+          <div class="payment-channel">
+            <img src="${channel.icon_url}" alt="${channel.name}" onerror="this.style.display='none'">
+            <div class="payment-info">
+              <div class="payment-name">${channel.name}</div>
+              <div class="payment-code">${channel.code} • ${channel.group || 'N/A'}</div>
+              <div class="payment-fee">Fee: ${feeText}</div>
+            </div>
+            <span class="badge ${channel.active ? 'active' : 'inactive'}">
+              ${channel.active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        `;
+      });
+
+      html += `
+        <h3>Raw Response:</h3>
+        <pre>${JSON.stringify(channels, null, 2)}</pre>
+      `;
+
+      resultsDiv.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

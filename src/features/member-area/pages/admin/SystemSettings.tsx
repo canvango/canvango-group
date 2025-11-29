@@ -6,6 +6,7 @@ import {
   SystemSettings as SystemSettingsType,
   AuditLog,
 } from '../../services/adminSettingsService';
+import { TripayPaymentChannelsSection } from './components/TripayPaymentChannelsSection';
 
 const SystemSettings: React.FC = () => {
   const [, setSettings] = useState<SystemSettingsType | null>(null);
@@ -14,7 +15,7 @@ const SystemSettings: React.FC = () => {
   const [logsLoading, setLogsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'settings' | 'logs'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'payment-channels' | 'logs'>('settings');
 
   // Payment methods state
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
@@ -180,6 +181,16 @@ const SystemSettings: React.FC = () => {
             }`}
           >
             Settings
+          </button>
+          <button
+            onClick={() => setActiveTab('payment-channels')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'payment-channels'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Payment Channels
           </button>
           <button
             onClick={() => setActiveTab('logs')}
@@ -511,6 +522,11 @@ const SystemSettings: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Payment Channels Tab */}
+      {activeTab === 'payment-channels' && (
+        <TripayPaymentChannelsSection />
       )}
 
       {/* Logs Tab */}
