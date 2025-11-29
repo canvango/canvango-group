@@ -8,6 +8,10 @@
       "destination": "/api/tripay-callback"
     },
     {
+      "source": "/api/tripay-proxy",
+      "destination": "/api/tripay-proxy"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

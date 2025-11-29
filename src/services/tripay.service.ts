@@ -154,15 +154,9 @@ export async function createPayment(params: CreatePaymentParams): Promise<Tripay
       throw new Error('No active session');
     }
 
-    // Get Supabase URL from the initialized client
-    // @ts-ignore - supabaseUrl is available on the client instance
-    const supabaseUrl = supabase.supabaseUrl?.replace(/\/$/, '');
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL is not available');
-    }
-
+    // Use Vercel API route as proxy (has static IP for Tripay whitelist)
     const response = await axios.post(
-      `${supabaseUrl}/functions/v1/tripay-create-payment`,
+      '/api/tripay-proxy',
       requestData,
       {
         headers: {
