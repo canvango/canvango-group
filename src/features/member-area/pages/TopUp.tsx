@@ -232,41 +232,6 @@ const TopUp: React.FC = () => {
         </div>
       )}
 
-      {/* Information Box */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="bg-blue-500 text-white rounded-xl p-2 flex-shrink-0">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-gray-900 mb-3">Informasi Penting</h3>
-            <ul className="text-sm text-gray-700 space-y-2">
-              <li className="flex items-start">
-                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Minimal top up adalah <strong>Rp 10.000</strong></span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Pilih metode pembayaran: <strong>Virtual Account, QRIS, E-Wallet, atau Retail</strong></span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Saldo akan <strong>otomatis masuk</strong> setelah pembayaran berhasil</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Proses verifikasi pembayaran <strong>real-time</strong> (instant)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-500 mr-2 mt-0.5 flex-shrink-0">•</span>
-                <span className="flex-1">Pembayaran aman melalui <strong>Tripay Payment Gateway</strong></span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
