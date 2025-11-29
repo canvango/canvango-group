@@ -134,7 +134,8 @@ serve(async (req) => {
       ? 'https://tripay.co.id/api'
       : 'https://tripay.co.id/api-sandbox';
 
-    const callbackUrl = `${supabaseUrl}/functions/v1/tripay-callback`;
+    // Use custom domain callback URL (proxies to Supabase Edge Function)
+    const callbackUrl = 'https://canvango.com/api/tripay-callback';
     
     // Convert expired time from hours to seconds
     const expiredTimeInSeconds = expiredTime * 3600;

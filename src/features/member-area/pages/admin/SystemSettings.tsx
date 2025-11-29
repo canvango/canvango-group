@@ -78,7 +78,7 @@ const SystemSettings: React.FC = () => {
         api_key: '',
         private_key: '',
         mode: 'production',
-        callback_url: 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback',
+        callback_url: 'https://canvango.com/api/tripay-callback',
       });
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to fetch settings');
@@ -470,7 +470,7 @@ const SystemSettings: React.FC = () => {
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono bg-gray-50"
-                  placeholder="https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback"
+                  placeholder="https://canvango.com/api/tripay-callback"
                   readOnly
                 />
                 <p className="text-xs text-gray-500 mt-1">

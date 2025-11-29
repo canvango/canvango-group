@@ -99,7 +99,7 @@ export const adminSettingsService = {
           api_key: '',
           private_key: '',
           mode: 'production',
-          callback_url: 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback',
+          callback_url: 'https://canvango.com/api/tripay-callback',
         },
       };
     }
