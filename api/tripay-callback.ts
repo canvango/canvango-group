@@ -1,9 +1,10 @@
 /**
  * Tripay Callback Proxy
- * Forwards Tripay callbacks to Supabase Edge Function
+ * Forwards Tripay callbacks to GCP VM then to Supabase Edge Function
  * This allows using custom domain (canvango.com) for callback URL
  * 
  * IMPORTANT: Must preserve raw body for signature verification!
+ * Updated: 2025-11-30 - Fixed 307 redirect issue
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
