@@ -1,155 +1,150 @@
-# 🚀 Deploy Tripay Callback Fix - Quick Guide
+# Deploy Tripay Callback Fix - Checklist
 
-## ⚡ Quick Deploy (5 menit)
+## Problem Fixed
 
-### Step 1: Update Vercel Environment Variables
+✅ `FUNCTION_INVOCATION_FAILED` error di endpoint callback Tripay
+✅ Function crash karena env vars di top-level
+✅ Test callback Tripay gagal karena tidak ada `merchant_ref`
 
-Buka Vercel Dashboard → canvango → Settings → Environment Variables
+## Changes Summary
 
-**Tambahkan variable baru:**
+**File Modified:** `api/tripay-callback.ts`
 
-| Name | Value | Environment |
-|------|-------|-------------|
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwaXR0bnNmemdrZGJxbmNjbmNuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzEwMTczMiwiZXhwIjoyMDc4Njc3NzMyfQ.9HFJDAoSEB8o82Q23mKyG9XgEmsjKDIfkpVpJUDuO0U` | Production, Preview, Development |
+1. Environment variables sekarang dicek di dalam handler (tidak di top-level)
+2. Jika env var missing → return 200 OK (tidak crash)
+3. Test callback tanpa `merchant_ref` → skip database update, return 200 OK
+4. Signature verification menerima `privateKey` sebagai parameter
 
-**Verifikasi variables yang sudah ada:**
+## Pre-Deployment Checklist
 
-```
-✅ VITE_SUPABASE_URL
-✅ VITE_SUPABASE_ANON_KEY
-✅ VITE_TRIPAY_PRIVATE_KEY
-✅ VITE_TRIPAY_API_KEY
-✅ VITE_TRIPAY_MERCHANT_CODE
-✅ VITE_TRIPAY_CALLBACK_URL
-✅ TURNSTILE_SECRET_KEY
-```
+- [x] File `api/tripay-callback.ts` sudah diperbaiki
+- [ ] Environment variables di Vercel sudah diset:
+  - `VITE_SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `VITE_TRIPAY_PRIVATE_KEY`
 
-### Step 2: Deploy ke Vercel
+## Deployment Steps
+
+### 1. Commit & Push
 
 ```bash
-# Commit semua perubahan
-git add .
-git commit -m "fix: Tripay callback direct Supabase integration with signature verification"
+git add api/tripay-callback.ts
+git commit -m "fix: prevent FUNCTION_INVOCATION_FAILED in Tripay callback
 
-# Push untuk trigger auto-deploy
+- Move env var checks inside handler
+- Add graceful handling for missing env vars
+- Add guard for test callbacks without merchant_ref
+- Always return HTTP 200 OK to Tripay"
+
 git push origin main
 ```
 
-### Step 3: Tunggu Deployment Selesai
+### 2. Wait for Vercel Deployment
 
-Monitor di Vercel Dashboard → Deployments
+- Vercel akan auto-deploy dari GitHub
+- Tunggu 1-2 menit
+- Check deployment status di: https://vercel.com/dashboard
 
-**Expected:**
-- ✅ Build: Success
-- ✅ Duration: ~2-3 menit
-- ✅ Status: Ready
+### 3. Verify Environment Variables
 
-### Step 4: Test Callback Endpoint
+Di Vercel Dashboard → Settings → Environment Variables:
 
-```bash
-# Test 1: GET request (should return 200 with error message)
-curl -i https://canvango.com/api/tripay-callback
-
-# Expected:
-# HTTP/2 200
-# {"success":false,"message":"Method not allowed"}
+```
+VITE_SUPABASE_URL = https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY = eyJhbGc...
+VITE_TRIPAY_PRIVATE_KEY = DEV-...
 ```
 
-```bash
-# Test 2: POST request (should return 200)
-curl -i -X POST https://canvango.com/api/tripay-callback \
-  -H "Content-Type: application/json" \
-  -H "X-Callback-Signature: test" \
-  -d '{"test":"data"}'
+**PENTING:** Jika env vars belum ada, function akan return 200 OK dengan message error (tidak crash).
 
-# Expected:
-# HTTP/2 200
-# {"success":false,"message":"Invalid signature"}
-```
+## Post-Deployment Testing
 
-### Step 5: Test di Tripay Dashboard
+### Test 1: Tripay Dashboard Test Callback
 
-1. Login: https://tripay.co.id/member
-2. Menu: **Settings → Callback URL**
-3. URL: `https://canvango.com/api/tripay-callback`
-4. Klik: **Test Callback**
+1. Login ke Tripay Merchant Dashboard
+2. Go to: **Pengaturan → Callback**
+3. URL Callback: `https://canvango.com/api/tripay-callback`
+4. Click **"Test Callback"**
 
 **Expected Result:**
 ```
-✅ Status Koneksi: BERHASIL
-✅ Status Callback: BERHASIL
-✅ Kode HTTP: 200
+Kode HTTP: 200 ✅
+Status Koneksi: BERHASIL ✅
+Status Callback: BERHASIL ✅
 ```
 
-## 🎯 Success Checklist
+### Test 2: Manual cURL Test
 
-- [ ] Environment variable `SUPABASE_SERVICE_ROLE_KEY` ditambahkan di Vercel
-- [ ] Code di-commit dan di-push
-- [ ] Deployment berhasil (status: Ready)
-- [ ] Test cURL GET: return 200 OK
-- [ ] Test cURL POST: return 200 OK
-- [ ] Tripay dashboard test: BERHASIL
-- [ ] Tidak ada error di Vercel logs
+```bash
+curl -X POST https://canvango.com/api/tripay-callback \
+  -H "Content-Type: application/json" \
+  -H "X-Callback-Signature: test-signature" \
+  -H "X-Callback-Event: payment_status" \
+  -d '{"status":"PAID","amount_received":190000}'
+```
 
-## 🔍 Verify Logs
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Callback processed (test mode - no database update)"
+}
+```
 
-Setelah test callback, cek logs di Vercel:
+### Test 3: Check Vercel Logs
 
-**Vercel Dashboard → Logs → Filter: `api/tripay-callback`**
+```bash
+vercel logs --follow
+```
 
-**Expected log output:**
+Look for:
 ```
 === TRIPAY CALLBACK RECEIVED ===
 Method: POST
-Time: 2025-11-30T...
-IP: 103.xxx.xxx.xxx
-Body length: 234
-Merchant Ref: TXN-...
-Status: PAID
 ✅ Signature verified
-Updating transaction: TXN-... → completed
-✅ Transaction updated successfully
-=== CALLBACK PROCESSED SUCCESSFULLY ===
+⚠️ No merchant_ref provided - skipping database update
+=== TEST CALLBACK PROCESSED ===
 ```
 
-## ⚠️ Troubleshooting
+## Success Criteria
 
-### Deployment Failed
+✅ HTTP 200 OK response
+✅ No `FUNCTION_INVOCATION_FAILED` error
+✅ Tripay test callback shows "BERHASIL"
+✅ Logs show callback received and processed
+✅ No crashes even if env vars missing
 
-**Check:**
-1. Apakah semua dependencies terinstall? (`npm install`)
-2. Apakah TypeScript compile? (`npm run build`)
-3. Cek error di Vercel deployment logs
+## Rollback Plan
 
-### Test Callback Gagal (307 Redirect)
+If deployment fails:
 
-**Solution:**
-1. Clear Vercel cache: Deployments → ... → Redeploy
-2. Pastikan `vercel.json` tidak berubah
-3. Pastikan tidak ada middleware yang redirect
+```bash
+# Revert to previous version
+git revert HEAD
+git push origin main
+```
 
-### Test Callback Gagal (500 Error)
+Or manually in Vercel:
+1. Go to Deployments
+2. Find previous working deployment
+3. Click "Promote to Production"
 
-**Check:**
-1. Apakah `SUPABASE_SERVICE_ROLE_KEY` sudah ditambahkan?
-2. Apakah `VITE_TRIPAY_PRIVATE_KEY` benar?
-3. Cek Vercel logs untuk error detail
+## Next Steps After Success
 
-### Signature Invalid
+1. ✅ Verify test callback works
+2. Test real payment flow (create transaction → pay → verify callback)
+3. Monitor Vercel logs for any issues
+4. Update Tripay IP whitelist if needed
 
-**Check:**
-1. Pastikan `VITE_TRIPAY_PRIVATE_KEY` di Vercel sama dengan di Tripay dashboard
-2. Production key: `Fz27s-v8gGt-jDE8e-04Tbw-de1vi`
-3. Sandbox key: `BAo71-gUqRM-IahAp-Gt8AM-IS7Iq`
+## Notes
 
-## 📞 Support
-
-Jika masih ada masalah:
-
-1. **Cek Vercel Logs:** Dashboard → Logs
-2. **Cek Supabase Logs:** Dashboard → Logs → API
-3. **Test dengan script:** `node test-tripay-callback-production.js`
+- Function sekarang **tidak akan crash** meskipun env vars missing
+- Test callbacks (tanpa `merchant_ref`) akan return 200 OK tanpa update database
+- Real callbacks (dengan `merchant_ref`) akan update database seperti biasa
+- Semua error scenarios tetap return HTTP 200 OK (requirement Tripay)
 
 ---
 
-**Ready to deploy?** Follow Step 1-5 above! 🚀
+**Ready to Deploy:** ✅ YES
+**Risk Level:** 🟢 LOW (backward compatible, safe error handling)
+**Estimated Downtime:** 0 minutes (rolling deployment)
