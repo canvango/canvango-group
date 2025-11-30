@@ -1,23 +1,24 @@
-# 🚀 START HERE - Deploy Tripay Callback Fix
+#!/bin/bash
+# ========================================
+# TRIPAY CALLBACK FIX - DEPLOYMENT COMMANDS
+# Copy-paste semua commands ini ke GCP VM terminal
+# ========================================
 
-## Step 1: Buka GCP Console
+echo "🚀 Starting Tripay Callback Deployment..."
+echo ""
 
-1. Buka browser
-2. Go to: https://console.cloud.google.com/compute/instances
-3. Login jika diminta
-4. Cari VM: **tripay-proxy2**
-5. Klik tombol **SSH** (di sebelah kanan)
-6. Tunggu terminal SSH terbuka
+# Navigate to project directory
+cd ~/tripay-proxy || { echo "❌ Directory not found"; exit 1; }
 
----
+# Backup existing server.js
+if [ -f server.js ]; then
+  BACKUP_FILE="server.js.backup.$(date +%Y%m%d_%H%M%S)"
+  cp server.js "$BACKUP_FILE"
+  echo "✅ Backup created: $BACKUP_FILE"
+fi
 
-## Step 2: Copy-Paste Commands
-
-**Setelah SSH terminal terbuka, copy-paste SEMUA commands di bawah ini:**
-
-```bash
-cd ~/tripay-proxy && \
-if [ -f server.js ]; then cp server.js server.js.backup.$(date +%Y%m%d_%H%M%S); fi && \
+# Create new server.js with callback support
+echo "📝 Creating new server.js..."
 cat > server.js << 'ENDOFFILE'
 const express = require('express');
 const cors = require('cors');
@@ -56,132 +57,62 @@ app.use((err, req, res, next) => { console.error('Unhandled error:', err); res.s
 app.listen(PORT, '0.0.0.0', () => { console.log('================================='); console.log('🚀 Tripay Proxy Server Started'); console.log('================================='); console.log('Port:', PORT); console.log('Mode:', IS_PRODUCTION ? 'PRODUCTION' : 'SANDBOX'); console.log('Tripay API:', TRIPAY_BASE_URL); console.log('Callback endpoint: POST /tripay-callback'); console.log('================================='); });
 ENDOFFILE
 
-echo "✅ server.js created" && \
-pm2 stop tripay-proxy 2>/dev/null || true && \
-pm2 delete tripay-proxy 2>/dev/null || true && \
-pm2 start server.js --name tripay-proxy && \
-pm2 save && \
-echo "" && \
-echo "=================================" && \
-echo "✅ DEPLOYMENT COMPLETE!" && \
-echo "=================================" && \
-pm2 status && \
-echo "" && \
-echo "🧪 Test callback endpoint:" && \
-curl -X POST http://localhost:3000/tripay-callback -H "Content-Type: application/json" -H "X-Callback-Signature: test" -d '{"test":"data"}' && \
-echo "" && \
-echo "" && \
-echo "=================================" && \
-echo "🎯 NEXT STEP:" && \
-echo "Update Tripay Dashboard callback URL to:" && \
-echo "  http://34.182.126.200:3000/tripay-callback" && \
+echo "✅ server.js created with callback support"
+
+# Verify .env file
+if [ ! -f .env ]; then
+  echo "❌ .env file not found!"
+  echo "Please create .env file first"
+  exit 1
+fi
+
+echo "✅ .env file found"
+
+# Install dependencies if needed
+if [ ! -d node_modules ]; then
+  echo "📦 Installing dependencies..."
+  npm install express cors axios dotenv
+else
+  echo "✅ Dependencies already installed"
+fi
+
+# Stop and delete old PM2 process
+echo "🔄 Restarting PM2 process..."
+pm2 stop tripay-proxy 2>/dev/null || true
+pm2 delete tripay-proxy 2>/dev/null || true
+
+# Start with PM2
+pm2 start server.js --name tripay-proxy
+
+# Save PM2 configuration
+pm2 save
+
+echo ""
 echo "================================="
-```
+echo "✅ DEPLOYMENT COMPLETE!"
+echo "================================="
+echo ""
 
-**Tekan Enter dan tunggu sampai selesai!**
-
----
-
-## Step 3: Verify Deployment
-
-**Anda harus melihat output seperti ini:**
-
-```
-✅ server.js created
-✅ DEPLOYMENT COMPLETE!
-
-┌─────┬──────────────┬─────────┬─────────┬──────────┐
-│ id  │ name         │ status  │ restart │ uptime   │
-├─────┼──────────────┼─────────┼─────────┼──────────┤
-│ 0   │ tripay-proxy │ online  │ 0       │ 0s       │
-└─────┴──────────────┴─────────┴─────────┴──────────┘
-
-{"success":false,"message":"Invalid signature"}
-
-🎯 NEXT STEP:
-Update Tripay Dashboard callback URL to:
-  http://34.182.126.200:3000/tripay-callback
-```
-
-**Jika melihat output di atas, deployment BERHASIL!** ✅
-
----
-
-## Step 4: Update Tripay Dashboard
-
-1. **Buka tab baru di browser**
-2. **Go to:** https://tripay.co.id/member
-3. **Login** dengan credentials Anda
-4. **Navigate to:** Settings → Callback URL (atau Developer → Callback)
-5. **Ubah callback URL dari:**
-   ```
-   https://canvango.com/api/tripay-callback
-   ```
-   **Menjadi:**
-   ```
-   http://34.182.126.200:3000/tripay-callback
-   ```
-6. **Klik Save/Simpan**
-7. **Verify IP Whitelist:**
-   - Go to: Settings → IP Whitelist
-   - Check: `34.182.126.200` ada di list dan status Active
-
----
-
-## Step 5: Test Callback
-
-**Test dengan Tripay Callback Tester:**
-
-1. Di Tripay Dashboard, go to: Developer → Callback Tester
-2. Atau: https://tripay.co.id/simulator/console/callback
-3. Select a transaction
-4. Click "Send Callback"
-
-**Expected Result:**
-```
-✅ Kode HTTP: 200 (OK)
-✅ Status Koneksi: BERHASIL
-✅ Status Callback: BERHASIL
-```
-
-**NOT:**
-```
-❌ Kode HTTP: 307 (Temporary Redirect)
-```
-
----
-
-## ✅ Success!
-
-Jika semua langkah di atas berhasil, callback Tripay sudah fixed!
-
-**Untuk monitoring:**
-```bash
-# View logs (di GCP VM terminal)
-pm2 logs tripay-proxy
-
-# Check status
+# Show status
 pm2 status
-```
 
----
-
-## 🚨 Troubleshooting
-
-**Jika ada error saat deploy:**
-```bash
-# Check logs
-pm2 logs tripay-proxy --lines 50
-
-# Restart
-pm2 restart tripay-proxy
-```
-
-**Jika callback masih 307:**
-- Double check callback URL di Tripay Dashboard
-- Pastikan IP 34.182.126.200 di-whitelist
-- Tunggu 5 menit untuk cache clear
-
----
-
-**Ready? Mulai dari Step 1!** 🚀
+echo ""
+echo "📊 Server Information:"
+echo "  URL: http://34.182.126.200:3000"
+echo "  Callback: http://34.182.126.200:3000/tripay-callback"
+echo ""
+echo "🧪 Test Commands:"
+echo "  Health check:"
+echo "    curl http://localhost:3000/"
+echo ""
+echo "  Test callback:"
+echo "    curl -X POST http://localhost:3000/tripay-callback -H 'Content-Type: application/json' -H 'X-Callback-Signature: test' -d '{\"test\":\"data\"}'"
+echo ""
+echo "📝 View Logs:"
+echo "  pm2 logs tripay-proxy"
+echo ""
+echo "================================="
+echo "🎯 NEXT STEP:"
+echo "Update callback URL in Tripay Dashboard to:"
+echo "  http://34.182.126.200:3000/tripay-callback"
+echo "================================="

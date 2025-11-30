@@ -1,19 +1,27 @@
-# 🚀 START HERE - Deploy Tripay Callback Fix
+# 🚀 DEPLOY NOW - Step by Step
 
-## Step 1: Buka GCP Console
+## 📋 Summary
 
-1. Buka browser
-2. Go to: https://console.cloud.google.com/compute/instances
-3. Login jika diminta
-4. Cari VM: **tripay-proxy2**
-5. Klik tombol **SSH** (di sebelah kanan)
-6. Tunggu terminal SSH terbuka
+**Callback URL di Tripay:** `https://canvango.com/api/tripay-callback` (TETAP INI!)
+
+**Flow:**
+```
+Tripay → canvango.com (Vercel) → GCP VM (IP whitelisted) → Supabase
+```
 
 ---
 
-## Step 2: Copy-Paste Commands
+## Step 1: Deploy GCP VM (15 menit)
 
-**Setelah SSH terminal terbuka, copy-paste SEMUA commands di bawah ini:**
+### 1.1 SSH ke GCP VM
+
+**Buka:** https://console.cloud.google.com/compute/instances
+
+**Klik SSH** pada VM `tripay-proxy2`
+
+---
+
+### 1.2 Copy-Paste Command Ini
 
 ```bash
 cd ~/tripay-proxy && \
@@ -63,81 +71,118 @@ pm2 start server.js --name tripay-proxy && \
 pm2 save && \
 echo "" && \
 echo "=================================" && \
-echo "✅ DEPLOYMENT COMPLETE!" && \
+echo "✅ GCP VM DEPLOYED!" && \
 echo "=================================" && \
 pm2 status && \
 echo "" && \
-echo "🧪 Test callback endpoint:" && \
+echo "🧪 Testing callback endpoint..." && \
 curl -X POST http://localhost:3000/tripay-callback -H "Content-Type: application/json" -H "X-Callback-Signature: test" -d '{"test":"data"}' && \
 echo "" && \
-echo "" && \
-echo "=================================" && \
-echo "🎯 NEXT STEP:" && \
-echo "Update Tripay Dashboard callback URL to:" && \
-echo "  http://34.182.126.200:3000/tripay-callback" && \
-echo "================================="
+echo ""
 ```
 
-**Tekan Enter dan tunggu sampai selesai!**
+**Tunggu sampai selesai!**
 
 ---
 
-## Step 3: Verify Deployment
+### 1.3 Verify GCP VM
 
-**Anda harus melihat output seperti ini:**
-
+**Anda harus melihat:**
 ```
 ✅ server.js created
-✅ DEPLOYMENT COMPLETE!
+✅ GCP VM DEPLOYED!
 
-┌─────┬──────────────┬─────────┬─────────┬──────────┐
-│ id  │ name         │ status  │ restart │ uptime   │
-├─────┼──────────────┼─────────┼─────────┼──────────┤
-│ 0   │ tripay-proxy │ online  │ 0       │ 0s       │
-└─────┴──────────────┴─────────┴─────────┴──────────┘
+┌─────┬──────────────┬─────────┐
+│ id  │ name         │ status  │
+├─────┼──────────────┼─────────┤
+│ 0   │ tripay-proxy │ online  │
+└─────┴──────────────┴─────────┘
 
 {"success":false,"message":"Invalid signature"}
-
-🎯 NEXT STEP:
-Update Tripay Dashboard callback URL to:
-  http://34.182.126.200:3000/tripay-callback
 ```
 
-**Jika melihat output di atas, deployment BERHASIL!** ✅
+**Jika melihat output di atas:** ✅ GCP VM BERHASIL!
 
 ---
 
-## Step 4: Update Tripay Dashboard
+## Step 2: Deploy Vercel (5 menit)
 
-1. **Buka tab baru di browser**
-2. **Go to:** https://tripay.co.id/member
-3. **Login** dengan credentials Anda
-4. **Navigate to:** Settings → Callback URL (atau Developer → Callback)
-5. **Ubah callback URL dari:**
-   ```
-   https://canvango.com/api/tripay-callback
-   ```
-   **Menjadi:**
-   ```
-   http://34.182.126.200:3000/tripay-callback
-   ```
-6. **Klik Save/Simpan**
-7. **Verify IP Whitelist:**
-   - Go to: Settings → IP Whitelist
-   - Check: `34.182.126.200` ada di list dan status Active
+### 2.1 Commit & Push
+
+**Di terminal lokal Anda (bukan GCP VM):**
+
+```bash
+# Add changes
+git add api/tripay-callback.ts
+
+# Commit
+git commit -m "fix: forward callback to GCP VM with whitelisted IP"
+
+# Push
+git push origin main
+```
 
 ---
 
-## Step 5: Test Callback
+### 2.2 Wait for Vercel Deployment
 
-**Test dengan Tripay Callback Tester:**
+**Buka:** https://vercel.com/dashboard
 
-1. Di Tripay Dashboard, go to: Developer → Callback Tester
-2. Atau: https://tripay.co.id/simulator/console/callback
-3. Select a transaction
-4. Click "Send Callback"
+**Check:** Latest deployment status
 
-**Expected Result:**
+**Tunggu sampai:** Status = "Ready" (2-3 menit)
+
+---
+
+## Step 3: Test End-to-End (5 menit)
+
+### 3.1 Test Vercel Endpoint
+
+```bash
+curl -X POST https://canvango.com/api/tripay-callback \
+  -H "Content-Type: application/json" \
+  -H "X-Callback-Signature: test" \
+  -d '{"test":"data"}'
+```
+
+**Expected:**
+```json
+{"success":false,"message":"Invalid signature"}
+```
+
+**Ini BENAR!** Artinya flow working, signature invalid karena test.
+
+---
+
+### 3.2 Check GCP VM Logs
+
+**Di GCP VM terminal:**
+```bash
+pm2 logs tripay-proxy --lines 20
+```
+
+**Harus melihat:**
+```
+=== TRIPAY CALLBACK RECEIVED ===
+Timestamp: 2025-11-30...
+IP: ...
+📤 Forwarding to Supabase...
+📥 Response: 401 {"success":false,"message":"Invalid signature"}
+=================================
+```
+
+**Jika melihat log di atas:** ✅ FLOW WORKING!
+
+---
+
+### 3.3 Test dengan Tripay Callback Tester
+
+1. **Login:** https://tripay.co.id/member
+2. **Go to:** Developer → Callback Tester
+3. **Select** a transaction
+4. **Click** "Send Callback"
+
+**Expected:**
 ```
 ✅ Kode HTTP: 200 (OK)
 ✅ Status Koneksi: BERHASIL
@@ -146,42 +191,93 @@ Update Tripay Dashboard callback URL to:
 
 **NOT:**
 ```
-❌ Kode HTTP: 307 (Temporary Redirect)
+❌ Kode HTTP: 307
 ```
 
 ---
 
-## ✅ Success!
+## ✅ Success Indicators
 
-Jika semua langkah di atas berhasil, callback Tripay sudah fixed!
+**Deployment berhasil jika:**
 
-**Untuk monitoring:**
-```bash
-# View logs (di GCP VM terminal)
-pm2 logs tripay-proxy
+1. ✅ GCP VM status: online
+2. ✅ Vercel deployment: Ready
+3. ✅ Test curl returns: 401 (signature invalid, but flow OK)
+4. ✅ GCP VM logs show: callback received
+5. ✅ Tripay Callback Tester: 200 OK
 
-# Check status
-pm2 status
+---
+
+## 🎯 Callback URL di Tripay Dashboard
+
+**TETAP PAKAI INI:**
 ```
+https://canvango.com/api/tripay-callback
+```
+
+**JANGAN DIUBAH!** Sudah benar.
+
+---
+
+## 📊 Architecture Summary
+
+```
+Tripay Server
+    ↓
+POST https://canvango.com/api/tripay-callback
+    ↓
+Vercel (api/tripay-callback.ts)
+    ↓ Forward to
+POST http://34.182.126.200:3000/tripay-callback
+    ↓
+GCP VM (IP: 34.182.126.200 - whitelisted)
+    ↓ Forward to
+POST https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback
+    ↓
+Supabase Edge Function
+    ↓
+Process callback
+```
+
+**Benefits:**
+- ✅ Tripay requirement met (domain-based callback URL)
+- ✅ IP whitelist working (GCP VM IP whitelisted)
+- ✅ No 307 redirect
+- ✅ Proper signature verification
 
 ---
 
 ## 🚨 Troubleshooting
 
-**Jika ada error saat deploy:**
+### If GCP VM deployment fails:
 ```bash
-# Check logs
 pm2 logs tripay-proxy --lines 50
-
-# Restart
-pm2 restart tripay-proxy
 ```
 
-**Jika callback masih 307:**
-- Double check callback URL di Tripay Dashboard
-- Pastikan IP 34.182.126.200 di-whitelist
-- Tunggu 5 menit untuk cache clear
+### If Vercel deployment fails:
+- Check Vercel dashboard for errors
+- Verify git push successful
+
+### If callback still returns 307:
+- Wait 5 minutes for cache
+- Check Vercel logs
+- Check GCP VM logs
 
 ---
 
-**Ready? Mulai dari Step 1!** 🚀
+## 🎉 After Success
+
+**Monitor for 24 hours:**
+```bash
+# GCP VM logs
+pm2 logs tripay-proxy
+
+# Check real payment
+# Create topup → Pay → Check callback received
+```
+
+---
+
+**Ready? Start with Step 1!** 🚀
+
+**Callback URL di Tripay:** `https://canvango.com/api/tripay-callback` (TETAP!)
