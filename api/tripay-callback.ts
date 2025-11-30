@@ -7,28 +7,25 @@
  * 2. Verify Tripay signature
  * 3. Update transaction status in Supabase
  * 4. ALWAYS return HTTP 200 OK (even on errors)
+ * 5. Handle missing environment variables gracefully
  * 
- * Updated: 2025-12-01 - Fixed 307 redirect issue
+ * Updated: 2025-12-01 - Fixed FUNCTION_INVOCATION_FAILED error
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Initialize Supabase client with service role key for admin access
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const tripayPrivateKey = process.env.VITE_TRIPAY_PRIVATE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// DO NOT initialize clients at top level - will crash if env vars missing
+// Initialize inside handler instead
 
 /**
  * Verify Tripay callback signature
  * Signature = HMAC-SHA256(privateKey, callbackBody)
  */
-function verifySignature(rawBody: string, signature: string): boolean {
+function verifySignature(rawBody: string, signature: string, privateKey: string): boolean {
   const calculatedSignature = crypto
-    .createHmac('sha256', tripayPrivateKey)
+    .createHmac('sha256', privateKey)
     .update(rawBody)
     .digest('hex');
   
@@ -72,6 +69,28 @@ export default async function handler(
   }
 
   try {
+    // ✅ CRITICAL: Check environment variables INSIDE handler
+    // This prevents FUNCTION_INVOCATION_FAILED error
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const tripayPrivateKey = process.env.VITE_TRIPAY_PRIVATE_KEY;
+    
+    // If env vars missing, return 200 OK (don't crash!)
+    if (!supabaseUrl || !supabaseServiceKey || !tripayPrivateKey) {
+      console.error('❌ Missing environment variables');
+      console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'present' : 'MISSING');
+      console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'present' : 'MISSING');
+      console.error('VITE_TRIPAY_PRIVATE_KEY:', tripayPrivateKey ? 'present' : 'MISSING');
+      
+      // Return 200 OK to Tripay (don't trigger retry)
+      return res.status(200).json({ 
+        success: false, 
+        message: 'Configuration error - environment variables missing' 
+      });
+    }
+    
+    // Initialize Supabase client safely inside handler
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     // Get raw body - Vercel automatically parses body, but we need raw for signature
     let rawBody: string;
     let callbackData: any;
@@ -115,7 +134,7 @@ export default async function handler(
     }
     
     // Verify signature
-    const isValidSignature = verifySignature(rawBody, signature);
+    const isValidSignature = verifySignature(rawBody, signature, tripayPrivateKey);
     
     if (!isValidSignature) {
       console.error('❌ Invalid signature');
@@ -143,6 +162,19 @@ export default async function handler(
       status,
       paid_at,
     } = callbackData;
+    
+    // ✅ GUARD: Skip database update if merchant_ref is missing
+    // This happens during Tripay "Test Callback" - just return 200 OK
+    if (!merchant_ref) {
+      console.log('⚠️ No merchant_ref provided - skipping database update');
+      console.log('This is normal for Tripay test callbacks');
+      console.log('=== TEST CALLBACK PROCESSED ===\n');
+      
+      return res.status(200).json({ 
+        success: true,
+        message: 'Callback processed (test mode - no database update)',
+      });
+    }
     
     // Map Tripay status to our status
     let transactionStatus: string;
