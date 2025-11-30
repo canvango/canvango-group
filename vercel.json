@@ -2,18 +2,20 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [
+  "functions": {
+    "api/tripay-callback.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "routes": [
     {
-      "source": "/api/tripay-callback",
-      "destination": "/api/tripay-callback"
+      "src": "/api/tripay-callback",
+      "dest": "/api/tripay-callback.ts"
     },
     {
-      "source": "/api/tripay-proxy",
-      "destination": "/api/tripay-proxy"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
