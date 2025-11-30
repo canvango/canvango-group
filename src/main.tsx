@@ -11,23 +11,39 @@ import { AuthProvider } from './features/member-area/contexts/AuthContext';
 import { ToastProvider } from './shared/contexts/ToastContext';
 import { UIProvider } from './features/member-area/contexts/UIContext';
 
-// Create a client with optimized settings for idle connections
+// Create a client with optimized settings for idle connections and token expiration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 3, // Increase retry attempts for network issues
+      retry: (failureCount, error: any) => {
+        // Don't retry on auth errors (401, 403) - will be handled by global error handler
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        // Retry up to 3 times for other errors
+        return failureCount < 3;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
       gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (formerly cacheTime)
       refetchOnReconnect: true, // Auto-retry when connection restored
       refetchOnMount: false, // Don't refetch if data is still fresh
+      // Add network mode for better offline handling
+      networkMode: 'online', // Only run queries when online
+    },
+    mutations: {
+      retry: false, // Don't retry mutations by default
+      networkMode: 'online',
     },
   },
 });
 
 // Import error boundary
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+
+// Import global error handler
+import { useGlobalErrorHandler } from './shared/hooks/useGlobalErrorHandler';
 
 // Import auth pages
 import Login from './features/member-area/pages/Login';
@@ -44,6 +60,12 @@ import { WelcomePopup } from './components/WelcomePopup';
 
 // Import Turnstile protection
 import { TurnstileProtection } from './components/TurnstileProtection';
+
+// Global error handler wrapper component
+const AppWithErrorHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useGlobalErrorHandler();
+  return <>{children}</>;
+};
 
 // Production-ready entry point - console logs removed for performance
 
@@ -85,35 +107,37 @@ if (!root) {
     // <React.StrictMode>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <UIProvider>
-              <ToastProvider>
-                <AuthProvider>
-                  <TurnstileProtection>
-                    <div className="min-h-screen bg-gray-50">
-                      <React.Suspense fallback={<PageLoader />}>
-                        <Routes>
-                          {/* Auth routes - accessible only to guests */}
-                          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-                          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-                          <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-                          
-                          {/* Password reset - accessible with valid token from email */}
-                          <Route path="/reset-password" element={<ResetPassword />} />
-                          
-                          {/* Member area routes - all other routes */}
-                          <Route path="/*" element={<MemberArea />} />
-                        </Routes>
-                      </React.Suspense>
-                    </div>
-                    <Toaster position="top-right" />
-                    <SonnerToaster position="top-right" richColors />
-                    <WelcomePopup />
-                  </TurnstileProtection>
-                </AuthProvider>
-              </ToastProvider>
-            </UIProvider>
-          </BrowserRouter>
+          <AppWithErrorHandler>
+            <BrowserRouter>
+              <UIProvider>
+                <ToastProvider>
+                  <AuthProvider>
+                    <TurnstileProtection>
+                      <div className="min-h-screen bg-gray-50">
+                        <React.Suspense fallback={<PageLoader />}>
+                          <Routes>
+                            {/* Auth routes - accessible only to guests */}
+                            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+                            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+                            <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+                            
+                            {/* Password reset - accessible with valid token from email */}
+                            <Route path="/reset-password" element={<ResetPassword />} />
+                            
+                            {/* Member area routes - all other routes */}
+                            <Route path="/*" element={<MemberArea />} />
+                          </Routes>
+                        </React.Suspense>
+                      </div>
+                      <Toaster position="top-right" />
+                      <SonnerToaster position="top-right" richColors />
+                      <WelcomePopup />
+                    </TurnstileProtection>
+                  </AuthProvider>
+                </ToastProvider>
+              </UIProvider>
+            </BrowserRouter>
+          </AppWithErrorHandler>
         </QueryClientProvider>
       </ErrorBoundary>
     // </React.StrictMode>

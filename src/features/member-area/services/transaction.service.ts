@@ -21,7 +21,7 @@ interface GetTransactionsResponse {
 }
 
 /**
- * Get user transactions with pagination - Direct Supabase
+ * Get user transactions with pagination - Direct Supabase with timeout
  */
 export async function getUserTransactions(
   params: GetTransactionsParams = {}
@@ -29,8 +29,12 @@ export async function getUserTransactions(
   const { page = 1, limit = 10, status } = params;
   const offset = (page - 1) * limit;
   
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
+  // Get authenticated user with timeout
+  const { data: { user } } = await handleSupabaseOperation(
+    async () => supabase.auth.getUser(),
+    'getUser'
+  );
+  
   if (!user) {
     throw new Error('Not authenticated');
   }
@@ -55,7 +59,7 @@ export async function getUserTransactions(
     queryBuilder = queryBuilder.eq('status', status);
   }
   
-  // Execute query with error handler
+  // Execute query with error handler and timeout
   const result = await handleSupabaseOperation(
     async () => {
       const { data, error, count } = await queryBuilder;
