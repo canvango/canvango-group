@@ -1,8 +1,6 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "trailingSlash": false,
-  "cleanUrls": false,
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
@@ -16,6 +14,18 @@
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, X-Callback-Signature, X-Callback-Event"
         }
       ]
     }

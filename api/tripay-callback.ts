@@ -8,19 +8,12 @@
  * 3. Update transaction status in Supabase
  * 4. ALWAYS return HTTP 200 OK (even on errors)
  * 
- * Updated: 2025-11-30 - Direct Supabase integration
+ * Updated: 2025-12-01 - Fixed 307 redirect issue
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-
-// Disable body parsing to get raw body for signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 // Initialize Supabase client with service role key for admin access
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
@@ -46,17 +39,25 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Set headers immediately to prevent redirects
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Callback-Signature, X-Callback-Event');
+  
   // Log incoming request (safe info only)
   console.log('=== TRIPAY CALLBACK RECEIVED ===');
   console.log('Method:', req.method);
+  console.log('URL:', req.url);
   console.log('Time:', new Date().toISOString());
   console.log('IP:', req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+  console.log('Headers:', JSON.stringify({
+    'content-type': req.headers['content-type'],
+    'x-callback-signature': req.headers['x-callback-signature'] ? 'present' : 'missing',
+    'x-callback-event': req.headers['x-callback-event'],
+  }));
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Callback-Signature');
     return res.status(200).end();
   }
 
@@ -71,20 +72,32 @@ export default async function handler(
   }
 
   try {
-    // Read raw body from stream (needed for signature verification)
-    let rawBody = '';
-    await new Promise<void>((resolve, reject) => {
-      req.on('data', (chunk) => {
-        rawBody += chunk.toString('utf8');
+    // Get raw body - Vercel automatically parses body, but we need raw for signature
+    let rawBody: string;
+    let callbackData: any;
+    
+    // Check if body is already parsed
+    if (typeof req.body === 'string') {
+      rawBody = req.body;
+      callbackData = JSON.parse(rawBody);
+    } else if (req.body && typeof req.body === 'object') {
+      // Body already parsed by Vercel
+      callbackData = req.body;
+      rawBody = JSON.stringify(req.body);
+    } else {
+      // Read from stream as fallback
+      rawBody = '';
+      await new Promise<void>((resolve, reject) => {
+        req.on('data', (chunk) => {
+          rawBody += chunk.toString('utf8');
+        });
+        req.on('end', () => resolve());
+        req.on('error', (err) => reject(err));
       });
-      req.on('end', () => resolve());
-      req.on('error', (err) => reject(err));
-    });
+      callbackData = JSON.parse(rawBody);
+    }
     
     console.log('Body length:', rawBody.length);
-    
-    // Parse JSON body
-    const callbackData = JSON.parse(rawBody);
     console.log('Merchant Ref:', callbackData.merchant_ref);
     console.log('Status:', callbackData.status);
     console.log('Payment Method:', callbackData.payment_method);
@@ -153,7 +166,7 @@ export default async function handler(
     console.log('Updating transaction:', merchant_ref, '→', transactionStatus);
     
     // Update transaction in Supabase
-    const { data: transaction, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('transactions')
       .update({
         status: transactionStatus,
@@ -168,9 +181,7 @@ export default async function handler(
         paid_at: paid_at ? new Date(paid_at * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       })
-      .eq('merchant_ref', merchant_ref)
-      .select()
-      .single();
+      .eq('merchant_ref', merchant_ref);
     
     if (updateError) {
       console.error('❌ Supabase update error:', updateError);
