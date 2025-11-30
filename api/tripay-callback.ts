@@ -26,11 +26,16 @@ export default async function handler(
 
   try {
     // Get raw body as string (IMPORTANT for signature verification!)
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    const rawBody = Buffer.concat(chunks).toString('utf8');
+    let rawBody = '';
+    
+    // Read body from stream
+    await new Promise<void>((resolve, reject) => {
+      req.on('data', (chunk) => {
+        rawBody += chunk.toString('utf8');
+      });
+      req.on('end', () => resolve());
+      req.on('error', (err) => reject(err));
+    });
     
     console.log('📥 Proxy received callback');
     console.log('  Signature:', req.headers['x-callback-signature']);
