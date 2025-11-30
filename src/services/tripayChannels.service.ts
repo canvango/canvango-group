@@ -36,70 +36,28 @@ export interface TripayPaymentChannel {
 
 /**
  * Fetch payment channels from Tripay API
- * Uses Cloudflare Worker if available, otherwise uses Supabase Edge Function
+ * Uses Vercel API route (HTTPS) which forwards to GCP proxy
  */
 export async function fetchPaymentChannelsFromTripay(): Promise<TripayPaymentChannel[]> {
   try {
-    const workerUrl = import.meta.env.VITE_TRIPAY_PROXY_URL;
-    
-    if (workerUrl) {
-      // Use Cloudflare Worker
-      const isSandbox = (import.meta.env.VITE_TRIPAY_MODE || 'sandbox') === 'sandbox';
+    // Use Vercel API route for HTTPS support
+    const response = await fetch('/api/tripay-channels', {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-      const response = await fetch(
-        `${workerUrl}/payment-channels?sandbox=${isSandbox}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch payment channels');
-      }
-
-      return result.data || [];
-    } else {
-      // Fallback: Fetch from database directly
-      // This is more reliable than calling Edge Function
-      console.log('Fetching payment channels from database...');
-      
-      const { data, error } = await supabase
-        .from('tripay_payment_channels')
-        .select('*')
-        .eq('is_enabled', true)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching from database:', error);
-        throw error;
-      }
-
-      // Transform to expected format
-      return (data || []).map(channel => ({
-        code: channel.code,
-        name: channel.name,
-        group_name: channel.group_name,
-        type: channel.type,
-        fee_merchant: channel.fee_merchant,
-        fee_customer: channel.fee_customer,
-        total_fee: channel.total_fee,
-        minimum_fee: channel.minimum_fee,
-        maximum_fee: channel.maximum_fee,
-        minimum_amount: channel.minimum_amount,
-        maximum_amount: channel.maximum_amount,
-        icon_url: channel.icon_url,
-        is_active: channel.is_active,
-        is_enabled: channel.is_enabled,
-        display_order: channel.display_order,
-        last_synced_at: channel.last_synced_at,
-      }));
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch payment channels');
+    }
+
+    return result.data || [];
   } catch (error) {
     console.error('Error fetching payment channels from Tripay:', error);
     throw error;
