@@ -1,25 +1,57 @@
 /**
- * Tripay Callback Proxy
- * Forwards Tripay callbacks to GCP VM then to Supabase Edge Function
- * This allows using custom domain (canvango.com) for callback URL
+ * Tripay Callback Handler
+ * Receives payment notifications from Tripay and updates Supabase
  * 
- * IMPORTANT: Must preserve raw body for signature verification!
- * Updated: 2025-11-30 - Fixed 307 redirect issue
+ * CRITICAL: This endpoint MUST:
+ * 1. Accept POST requests only
+ * 2. Verify Tripay signature
+ * 3. Update transaction status in Supabase
+ * 4. ALWAYS return HTTP 200 OK (even on errors)
+ * 
+ * Updated: 2025-11-30 - Direct Supabase integration
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
-// Disable body parsing to get raw body
+// Disable body parsing to get raw body for signature verification
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
+// Initialize Supabase client with service role key for admin access
+const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const tripayPrivateKey = process.env.VITE_TRIPAY_PRIVATE_KEY!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+/**
+ * Verify Tripay callback signature
+ * Signature = HMAC-SHA256(privateKey, callbackBody)
+ */
+function verifySignature(rawBody: string, signature: string): boolean {
+  const calculatedSignature = crypto
+    .createHmac('sha256', tripayPrivateKey)
+    .update(rawBody)
+    .digest('hex');
+  
+  return calculatedSignature === signature;
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Log incoming request (safe info only)
+  console.log('=== TRIPAY CALLBACK RECEIVED ===');
+  console.log('Method:', req.method);
+  console.log('Time:', new Date().toISOString());
+  console.log('IP:', req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,14 +62,17 @@ export default async function handler(
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+    console.log('❌ Method not allowed:', req.method);
+    // IMPORTANT: Still return 200 to avoid Tripay marking as failed
+    return res.status(200).json({ 
+      success: false, 
+      message: 'Method not allowed' 
+    });
   }
 
   try {
-    // Get raw body as string (IMPORTANT for signature verification!)
+    // Read raw body from stream (needed for signature verification)
     let rawBody = '';
-    
-    // Read body from stream
     await new Promise<void>((resolve, reject) => {
       req.on('data', (chunk) => {
         rawBody += chunk.toString('utf8');
@@ -46,51 +81,126 @@ export default async function handler(
       req.on('error', (err) => reject(err));
     });
     
-    console.log('=== CALLBACK REQUEST ===');
-    console.log('Method:', req.method);
-    console.log('URL:', req.url);
-    console.log('Signature:', req.headers['x-callback-signature']);
     console.log('Body length:', rawBody.length);
-    console.log('Raw body:', rawBody);
-    console.log('========================');
     
-    // Get callback signature from header
-    const signature = req.headers['x-callback-signature'];
+    // Parse JSON body
+    const callbackData = JSON.parse(rawBody);
+    console.log('Merchant Ref:', callbackData.merchant_ref);
+    console.log('Status:', callbackData.status);
+    console.log('Payment Method:', callbackData.payment_method);
+    
+    // Get signature from header
+    const signature = req.headers['x-callback-signature'] as string;
     
     if (!signature) {
       console.error('❌ Missing X-Callback-Signature header');
-      return res.status(401).json({ 
+      // Still return 200 to avoid retry spam
+      return res.status(200).json({ 
         success: false, 
         message: 'Missing signature' 
       });
     }
     
-    // Forward to GCP VM (which has whitelisted IP)
-    // GCP VM will then forward to Supabase Edge Function
-    const gcpProxyUrl = 'http://34.182.126.200:3000/tripay-callback';
+    // Verify signature
+    const isValidSignature = verifySignature(rawBody, signature);
     
-    console.log('📤 Forwarding to GCP VM...');
+    if (!isValidSignature) {
+      console.error('❌ Invalid signature');
+      console.log('Expected signature calculation from private key');
+      // Still return 200 to avoid retry spam
+      return res.status(200).json({ 
+        success: false, 
+        message: 'Invalid signature' 
+      });
+    }
     
-    const response = await fetch(gcpProxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Callback-Signature': signature as string,
-      },
-      body: rawBody, // Send raw body string, not re-stringified JSON!
+    console.log('✅ Signature verified');
+    
+    // Extract callback data
+    const {
+      reference,
+      merchant_ref,
+      payment_method,
+      payment_method_code,
+      total_amount,
+      fee_merchant,
+      fee_customer,
+      total_fee,
+      amount_received,
+      status,
+      paid_at,
+    } = callbackData;
+    
+    // Map Tripay status to our status
+    let transactionStatus: string;
+    switch (status) {
+      case 'PAID':
+        transactionStatus = 'completed';
+        break;
+      case 'EXPIRED':
+        transactionStatus = 'expired';
+        break;
+      case 'FAILED':
+        transactionStatus = 'failed';
+        break;
+      case 'REFUND':
+        transactionStatus = 'refunded';
+        break;
+      default:
+        transactionStatus = 'pending';
+    }
+    
+    console.log('Updating transaction:', merchant_ref, '→', transactionStatus);
+    
+    // Update transaction in Supabase
+    const { data: transaction, error: updateError } = await supabase
+      .from('transactions')
+      .update({
+        status: transactionStatus,
+        payment_reference: reference,
+        payment_method: payment_method,
+        payment_method_code: payment_method_code,
+        total_amount: total_amount,
+        fee_merchant: fee_merchant,
+        fee_customer: fee_customer,
+        total_fee: total_fee,
+        amount_received: amount_received,
+        paid_at: paid_at ? new Date(paid_at * 1000).toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('merchant_ref', merchant_ref)
+      .select()
+      .single();
+    
+    if (updateError) {
+      console.error('❌ Supabase update error:', updateError);
+      // Still return 200 to avoid retry spam
+      return res.status(200).json({ 
+        success: false, 
+        message: 'Database update failed',
+        error: updateError.message,
+      });
+    }
+    
+    console.log('✅ Transaction updated successfully');
+    console.log('Note: User balance will be updated automatically by database trigger');
+    console.log('=== CALLBACK PROCESSED SUCCESSFULLY ===\n');
+    
+    // ALWAYS return 200 OK to Tripay
+    return res.status(200).json({ 
+      success: true,
+      message: 'Callback processed successfully',
     });
-
-    const data = await response.json();
     
-    console.log('📥 Edge Function response:', response.status, data);
+  } catch (error: any) {
+    console.error('❌ Callback processing error:', error.message);
+    console.error('Stack:', error.stack);
     
-    // Return response from Edge Function
-    return res.status(response.status).json(data);
-  } catch (error) {
-    console.error('❌ Proxy error:', error);
-    return res.status(500).json({ 
+    // STILL return 200 to avoid Tripay retry spam
+    return res.status(200).json({ 
       success: false, 
-      message: 'Internal server error' 
+      message: 'Internal error',
+      error: error.message,
     });
   }
 }
