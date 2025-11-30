@@ -6,9 +6,9 @@
 import { supabase } from '@/clients/supabase';
 import axios from 'axios';
 
-// Use Cloudflare Worker if available, otherwise use Vercel API route
-const WORKER_PROXY_URL = import.meta.env.VITE_TRIPAY_PROXY_URL;
-const USE_WORKER = !!WORKER_PROXY_URL;
+// Always use Vercel API route for HTTPS support
+// GCP proxy is accessed via Vercel serverless function
+const USE_WORKER = false;
 
 // Tripay mode (sandbox/production)
 const TRIPAY_MODE = import.meta.env.VITE_TRIPAY_MODE || 'sandbox';
