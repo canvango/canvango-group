@@ -19,6 +19,14 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Callback-Signature');
+    return res.status(200).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -37,10 +45,13 @@ export default async function handler(
       req.on('error', (err) => reject(err));
     });
     
-    console.log('📥 Proxy received callback');
-    console.log('  Signature:', req.headers['x-callback-signature']);
-    console.log('  Body length:', rawBody.length);
-    console.log('  Raw body:', rawBody);
+    console.log('=== CALLBACK REQUEST ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Signature:', req.headers['x-callback-signature']);
+    console.log('Body length:', rawBody.length);
+    console.log('Raw body:', rawBody);
+    console.log('========================');
     
     // Get callback signature from header
     const signature = req.headers['x-callback-signature'];

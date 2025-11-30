@@ -1,4 +1,11 @@
 {
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/tripay-callback/:path*",
+      "destination": "/api/tripay-callback"
+    }
+  ],
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
