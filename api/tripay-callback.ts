@@ -64,12 +64,13 @@ export default async function handler(
       });
     }
     
-    // Forward to Supabase Edge Function with RAW body
-    const supabaseUrl = 'https://gpittnsfzgkdbqnccncn.supabase.co/functions/v1/tripay-callback';
+    // Forward to GCP VM (which has whitelisted IP)
+    // GCP VM will then forward to Supabase Edge Function
+    const gcpProxyUrl = 'http://34.182.126.200:3000/tripay-callback';
     
-    console.log('📤 Forwarding to Edge Function...');
+    console.log('📤 Forwarding to GCP VM...');
     
-    const response = await fetch(supabaseUrl, {
+    const response = await fetch(gcpProxyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
