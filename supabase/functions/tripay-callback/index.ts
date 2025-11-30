@@ -23,11 +23,11 @@ serve(async (req) => {
       throw new Error('TRIPAY_PRIVATE_KEY not configured');
     }
 
-    // Parse request body
-    const body = await req.json();
-    console.log('📥 Tripay callback received:', JSON.stringify(body, null, 2));
+    // Get raw body text for signature verification (IMPORTANT!)
+    const rawBody = await req.text();
+    console.log('📥 Tripay callback received (raw):', rawBody);
 
-    // Verify signature
+    // Verify signature BEFORE parsing JSON
     const callbackSignature = req.headers.get('X-Callback-Signature');
     if (!callbackSignature) {
       console.error('❌ Missing X-Callback-Signature header');
@@ -37,16 +37,17 @@ serve(async (req) => {
       );
     }
 
-    // Generate signature for verification
-    const signatureData = JSON.stringify(body);
+    // Generate signature for verification using RAW body
     const hmac = createHmac('sha256', tripayPrivateKey);
-    hmac.update(signatureData);
+    hmac.update(rawBody);
     const calculatedSignature = hmac.digest('hex');
+
+    console.log('🔐 Signature verification:');
+    console.log('  Expected:', calculatedSignature);
+    console.log('  Received:', callbackSignature);
 
     if (calculatedSignature !== callbackSignature) {
       console.error('❌ Invalid signature');
-      console.error('Expected:', calculatedSignature);
-      console.error('Received:', callbackSignature);
       return new Response(
         JSON.stringify({ success: false, message: 'Invalid signature' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -54,6 +55,10 @@ serve(async (req) => {
     }
 
     console.log('✅ Signature verified');
+
+    // Now parse the JSON body
+    const body = JSON.parse(rawBody);
+    console.log('📝 Parsed callback data:', JSON.stringify(body, null, 2));
 
     // Initialize Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
