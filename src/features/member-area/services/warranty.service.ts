@@ -1,6 +1,6 @@
 import { supabase } from '@/clients/supabase';
 import { ClaimReason } from '../types/warranty';
-import { handleSupabaseOperation, handleSupabaseMutation } from '@/utils/supabaseErrorHandler';
+import { handleSupabaseOperation } from '@/utils/supabaseErrorHandler';
 
 export interface SubmitClaimData {
   accountId: string;
@@ -205,8 +205,8 @@ export const submitWarrantyClaim = async (claimData: SubmitClaimData): Promise<W
     throw new Error('Produk ini sudah pernah di-claim sebelumnya. Setiap produk hanya dapat di-claim satu kali.');
   }
   
-  // Submit claim using mutation handler
-  return await handleSupabaseMutation(
+  // Submit claim using operation handler
+  return await handleSupabaseOperation(
     async () => {
       return await supabase
         .from('warranty_claims')
