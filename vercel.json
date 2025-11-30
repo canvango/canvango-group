@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "trailingSlash": false,
+  "cleanUrls": false,
   "functions": {
     "api/**/*.ts": {
       "runtime": "nodejs20.x",
@@ -9,6 +10,17 @@
       "maxDuration": 10
     }
   },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api).*)",
