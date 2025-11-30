@@ -1,58 +1,51 @@
 /**
- * Tripay Callback Handler
- * Receives payment notifications from Tripay and updates Supabase
+ * Tripay Callback Handler - Official Implementation
+ * Based on: https://tripay.co.id/developer?tab=callback
  * 
- * CRITICAL: This endpoint MUST:
- * 1. Accept POST requests only
- * 2. Verify Tripay signature
- * 3. Update transaction status in Supabase
- * 4. ALWAYS return HTTP 200 OK with success:true (even on errors)
- * 5. Handle missing environment variables gracefully
- * 6. NEVER return success:false (Tripay marks as GAGAL)
+ * CRITICAL REQUIREMENTS:
+ * 1. Read raw body for signature verification
+ * 2. Verify HMAC-SHA256 signature
+ * 3. Validate X-Callback-Event = "payment_status"
+ * 4. Update transaction status in Supabase
+ * 5. Update user balance on PAID status
+ * 6. ALWAYS return HTTP 200 with {"success": true/false}
  * 
- * Updated: 2025-12-01 - Always return success:true for Tripay
+ * @author Canvango Development Team
+ * @date 2025-12-01
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// DO NOT initialize clients at top level - will crash if env vars missing
-// Initialize inside handler instead
-
 /**
  * Verify Tripay callback signature
- * Signature = HMAC-SHA256(privateKey, callbackBody)
+ * Signature = HMAC-SHA256(privateKey, rawJsonBody)
  */
-function verifySignature(rawBody: string, signature: string, privateKey: string): boolean {
+function verifyTripaySignature(
+  rawBody: string,
+  receivedSignature: string,
+  privateKey: string
+): boolean {
   const calculatedSignature = crypto
     .createHmac('sha256', privateKey)
     .update(rawBody)
     .digest('hex');
   
-  return calculatedSignature === signature;
+  return calculatedSignature === receivedSignature;
 }
 
+/**
+ * Main callback handler
+ */
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Set headers immediately to prevent redirects
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Callback-Signature, X-Callback-Event');
-  
-  // Log incoming request (safe info only)
-  console.log('=== TRIPAY CALLBACK RECEIVED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
-  console.log('Time:', new Date().toISOString());
-  console.log('IP:', req.headers['x-forwarded-for'] || req.socket.remoteAddress);
-  console.log('Headers:', JSON.stringify({
-    'content-type': req.headers['content-type'],
-    'x-callback-signature': req.headers['x-callback-signature'] ? 'present' : 'missing',
-    'x-callback-event': req.headers['x-callback-event'],
-  }));
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -61,51 +54,45 @@ export default async function handler(
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    console.log('❌ Method not allowed:', req.method);
-    // IMPORTANT: Return success:true to avoid Tripay marking as GAGAL
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Method not allowed, but acknowledged' 
+    console.log('[Tripay Callback] Method not allowed:', req.method);
+    return res.status(200).json({
+      success: false,
+      message: 'Method not allowed'
     });
   }
 
+  console.log('=== TRIPAY CALLBACK RECEIVED ===');
+  console.log('Time:', new Date().toISOString());
+  console.log('IP:', req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+
   try {
-    // ✅ CRITICAL: Check environment variables INSIDE handler
-    // This prevents FUNCTION_INVOCATION_FAILED error
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    // ✅ Step 1: Get environment variables
+    const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const tripayPrivateKey = process.env.VITE_TRIPAY_PRIVATE_KEY;
-    
-    // ✅ Validate environment variables properly
-    const missing: string[] = [];
-    if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
-    if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-    if (!tripayPrivateKey) missing.push('VITE_TRIPAY_PRIVATE_KEY');
-    
-    // If env vars missing, return success:true (Tripay must see BERHASIL)
-    if (missing.length > 0) {
-      console.error('❌ Missing environment variables:', missing.join(', '));
-      console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'present' : 'MISSING');
+    const tripayPrivateKey = process.env.TRIPAY_PRIVATE_KEY;
+
+    // Validate environment variables
+    if (!supabaseUrl || !supabaseServiceKey || !tripayPrivateKey) {
+      console.error('[Tripay Callback] Missing environment variables');
+      console.error('SUPABASE_URL:', supabaseUrl ? 'present' : 'MISSING');
       console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'present' : 'MISSING');
-      console.error('VITE_TRIPAY_PRIVATE_KEY:', tripayPrivateKey ? 'present' : 'MISSING');
+      console.error('TRIPAY_PRIVATE_KEY:', tripayPrivateKey ? 'present' : 'MISSING');
       
-      // ✅ CRITICAL: Return success:true so Tripay marks as BERHASIL
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Env missing, but callback acknowledged',
-        missing: missing
+      return res.status(200).json({
+        success: false,
+        message: 'Configuration error - environment variables missing'
       });
     }
-    
-    // Initialize Supabase client safely inside handler
-    // At this point, we know all env vars are present (checked above)
-    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
-    // Get raw body - Vercel automatically parses body, but we need raw for signature
+
+    // Initialize Supabase client with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ✅ Step 2: Read raw body for signature verification
     let rawBody: string;
     let callbackData: any;
-    
-    // Check if body is already parsed
+
     if (typeof req.body === 'string') {
+      // Body is already a string
       rawBody = req.body;
       callbackData = JSON.parse(rawBody);
     } else if (req.body && typeof req.body === 'object') {
@@ -113,7 +100,7 @@ export default async function handler(
       callbackData = req.body;
       rawBody = JSON.stringify(req.body);
     } else {
-      // Read from stream as fallback
+      // Read from stream
       rawBody = '';
       await new Promise<void>((resolve, reject) => {
         req.on('data', (chunk) => {
@@ -124,41 +111,52 @@ export default async function handler(
       });
       callbackData = JSON.parse(rawBody);
     }
-    
-    console.log('Body length:', rawBody.length);
-    console.log('Merchant Ref:', callbackData.merchant_ref);
-    console.log('Status:', callbackData.status);
-    console.log('Payment Method:', callbackData.payment_method);
-    
-    // Get signature from header
-    const signature = req.headers['x-callback-signature'] as string;
-    
-    if (!signature) {
-      console.error('❌ Missing X-Callback-Signature header');
-      // ✅ Return success:true to avoid Tripay marking as GAGAL
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Missing signature, but callback acknowledged' 
+
+    console.log('[Tripay Callback] Merchant Ref:', callbackData.merchant_ref);
+    console.log('[Tripay Callback] Reference:', callbackData.reference);
+    console.log('[Tripay Callback] Status:', callbackData.status);
+    console.log('[Tripay Callback] Payment Method:', callbackData.payment_method);
+
+    // ✅ Step 3: Get and verify headers
+    const callbackSignature = req.headers['x-callback-signature'] as string;
+    const callbackEvent = req.headers['x-callback-event'] as string;
+
+    if (!callbackSignature) {
+      console.error('[Tripay Callback] Missing X-Callback-Signature header');
+      return res.status(200).json({
+        success: false,
+        message: 'Missing signature'
       });
     }
-    
-    // Verify signature (tripayPrivateKey is guaranteed to exist at this point)
-    const isValidSignature = verifySignature(rawBody, signature, tripayPrivateKey!);
-    
+
+    // ✅ Step 4: Validate callback event
+    if (callbackEvent !== 'payment_status') {
+      console.error('[Tripay Callback] Unrecognized callback event:', callbackEvent);
+      return res.status(200).json({
+        success: false,
+        message: `Unrecognized callback event: ${callbackEvent || 'none'}`
+      });
+    }
+
+    // ✅ Step 5: Verify signature
+    const isValidSignature = verifyTripaySignature(
+      rawBody,
+      callbackSignature,
+      tripayPrivateKey
+    );
+
     if (!isValidSignature) {
-      console.error('❌ Invalid signature');
-      console.log('Expected signature calculation from private key');
-      console.log('Received signature:', signature);
-      // ✅ Return success:true to avoid retry spam from Tripay
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Invalid signature, but callback acknowledged' 
+      console.error('[Tripay Callback] Invalid signature');
+      console.error('[Tripay Callback] Received:', callbackSignature);
+      return res.status(200).json({
+        success: false,
+        message: 'Invalid signature'
       });
     }
-    
-    console.log('✅ Signature verified');
-    
-    // Extract callback data
+
+    console.log('[Tripay Callback] ✅ Signature verified');
+
+    // ✅ Step 6: Extract callback data
     const {
       reference,
       merchant_ref,
@@ -169,94 +167,165 @@ export default async function handler(
       fee_customer,
       total_fee,
       amount_received,
+      is_closed_payment,
       status,
       paid_at,
+      note
     } = callbackData;
-    
-    // ✅ GUARD: Skip database update if merchant_ref is missing
-    // This happens during Tripay "Test Callback" - just return 200 OK
-    if (!merchant_ref) {
-      console.log('⚠️ No merchant_ref provided - skipping database update');
-      console.log('This is normal for Tripay test callbacks');
-      console.log('=== TEST CALLBACK PROCESSED ===\n');
-      
-      return res.status(200).json({ 
+
+    // Skip if merchant_ref is missing (test callback)
+    if (!merchant_ref || !reference) {
+      console.log('[Tripay Callback] Test callback - no merchant_ref or reference');
+      return res.status(200).json({
         success: true,
-        message: 'Callback processed (test mode - no database update)',
+        message: 'Test callback acknowledged'
       });
     }
-    
-    // Map Tripay status to our status
-    let transactionStatus: string;
+
+    // ✅ Step 7: Find transaction in database
+    const { data: transaction, error: findError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('tripay_merchant_ref', merchant_ref)
+      .eq('tripay_reference', reference)
+      .single();
+
+    if (findError || !transaction) {
+      console.error('[Tripay Callback] Transaction not found:', merchant_ref, reference);
+      console.error('[Tripay Callback] Error:', findError?.message);
+      return res.status(200).json({
+        success: false,
+        message: 'Transaction not found or already processed'
+      });
+    }
+
+    // Only process if transaction is still pending
+    if (transaction.status !== 'pending') {
+      console.log('[Tripay Callback] Transaction already processed:', transaction.status);
+      return res.status(200).json({
+        success: true,
+        message: 'Transaction already processed'
+      });
+    }
+
+    console.log('[Tripay Callback] Found transaction:', transaction.id);
+    console.log('[Tripay Callback] Current status:', transaction.status);
+    console.log('[Tripay Callback] New status:', status);
+
+    // ✅ Step 8: Map Tripay status to our status
+    let newStatus: string;
+    let shouldUpdateBalance = false;
+
     switch (status) {
       case 'PAID':
-        transactionStatus = 'completed';
+        newStatus = 'completed';
+        shouldUpdateBalance = true;
         break;
       case 'EXPIRED':
-        transactionStatus = 'expired';
+        newStatus = 'expired';
         break;
       case 'FAILED':
-        transactionStatus = 'failed';
+        newStatus = 'failed';
         break;
       case 'REFUND':
-        transactionStatus = 'refunded';
+        newStatus = 'refunded';
         break;
       default:
-        transactionStatus = 'pending';
+        console.error('[Tripay Callback] Unrecognized payment status:', status);
+        return res.status(200).json({
+          success: false,
+          message: 'Unrecognized payment status'
+        });
     }
-    
-    console.log('Updating transaction:', merchant_ref, '→', transactionStatus);
-    
-    // Update transaction in Supabase
+
+    // ✅ Step 9: Update transaction
     const { error: updateError } = await supabase
       .from('transactions')
       .update({
-        status: transactionStatus,
-        payment_reference: reference,
+        status: newStatus,
+        tripay_status: status,
+        tripay_paid_at: paid_at ? new Date(paid_at * 1000).toISOString() : null,
+        tripay_callback_data: callbackData,
         payment_method: payment_method,
-        payment_method_code: payment_method_code,
-        total_amount: total_amount,
-        fee_merchant: fee_merchant,
-        fee_customer: fee_customer,
-        total_fee: total_fee,
-        amount_received: amount_received,
-        paid_at: paid_at ? new Date(paid_at * 1000).toISOString() : null,
+        tripay_payment_method: payment_method_code,
+        tripay_payment_name: payment_method,
+        tripay_amount: total_amount - total_fee,
+        tripay_fee: total_fee,
+        tripay_total_amount: total_amount,
+        completed_at: status === 'PAID' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       })
-      .eq('merchant_ref', merchant_ref);
-    
+      .eq('id', transaction.id);
+
     if (updateError) {
-      console.error('❌ Supabase update error:', updateError);
-      console.error('Error details:', updateError.message);
-      // ✅ CRITICAL: Return success:true even on DB error
-      // Tripay must see BERHASIL to avoid retry spam
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Database update failed, but callback acknowledged',
-        error: updateError.message,
+      console.error('[Tripay Callback] Failed to update transaction:', updateError.message);
+      return res.status(200).json({
+        success: false,
+        message: 'Internal error'
       });
     }
-    
-    console.log('✅ Transaction updated successfully');
-    console.log('Note: User balance will be updated automatically by database trigger');
-    console.log('=== CALLBACK PROCESSED SUCCESSFULLY ===\n');
-    
-    // ✅ ALWAYS return success:true to Tripay
-    return res.status(200).json({ 
-      success: true,
-      message: 'Callback processed successfully',
+
+    console.log('[Tripay Callback] ✅ Transaction updated:', newStatus);
+
+    // ✅ Step 10: Update user balance if PAID
+    if (shouldUpdateBalance && amount_received > 0) {
+      console.log('[Tripay Callback] Updating user balance...');
+      console.log('[Tripay Callback] User ID:', transaction.user_id);
+      console.log('[Tripay Callback] Amount:', amount_received);
+
+      // Get current balance
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('balance')
+        .eq('id', transaction.user_id)
+        .single();
+
+      if (userError || !user) {
+        console.error('[Tripay Callback] User not found:', userError?.message);
+        return res.status(200).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Update balance
+      const newBalance = Number(user.balance) + Number(amount_received);
+      
+      const { error: balanceError } = await supabase
+        .from('users')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transaction.user_id);
+
+      if (balanceError) {
+        console.error('[Tripay Callback] Failed to update balance:', balanceError.message);
+        return res.status(200).json({
+          success: false,
+          message: 'Failed to update balance'
+        });
+      }
+
+      console.log('[Tripay Callback] ✅ Balance updated');
+      console.log('[Tripay Callback] Old balance:', user.balance);
+      console.log('[Tripay Callback] New balance:', newBalance);
+    }
+
+    console.log('=== TRIPAY CALLBACK PROCESSED SUCCESSFULLY ===\n');
+
+    // ✅ Step 11: Return success response
+    return res.status(200).json({
+      success: true
     });
-    
+
   } catch (error: any) {
-    console.error('❌ Callback processing error:', error.message);
-    console.error('Stack:', error.stack);
+    console.error('[Tripay Callback] Error:', error.message);
+    console.error('[Tripay Callback] Stack:', error.stack);
     
-    // ✅ CRITICAL: Return success:true even on internal error
-    // Tripay must see BERHASIL to avoid marking callback as GAGAL
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Internal error, but callback acknowledged',
-      error: error.message,
+    return res.status(200).json({
+      success: false,
+      message: 'Internal error'
     });
   }
 }
