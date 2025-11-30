@@ -1,0 +1,91 @@
+# Copy-Paste Environment Variables for Vercel
+
+## Instructions:
+1. Go to: https://vercel.com/dashboard
+2. Select project: canvango-group
+3. Settings → Environment Variables
+4. Click "Add New" for each variable below
+5. Copy-paste Name and Value exactly (no extra spaces)
+6. Select: Production, Preview, Development
+7. Click "Save"
+
+## Variable 1: TRIPAY_PRIVATE_KEY
+Name:
+TRIPAY_PRIVATE_KEY
+
+Value:
+Fz27s-v8gGt-jDE8e-04Tbw-de1vi
+
+Environment:
+✅ Production
+✅ Preview
+✅ Development
+
+---
+
+## Variable 2: TRIPAY_API_KEY
+Name:
+TRIPAY_API_KEY
+
+Value:
+QfvISlE5WUUu4Eyxqcj6pJ3BMsdIZgKHZyWG17ZP
+
+Environment:
+✅ Production
+✅ Preview
+✅ Development
+
+---
+
+## Variable 3: TRIPAY_MERCHANT_CODE
+Name:
+TRIPAY_MERCHANT_CODE
+
+Value:
+T47159
+
+Environment:
+✅ Production
+✅ Preview
+✅ Development
+
+---
+
+## Variable 4: SUPABASE_URL (keep existing or add)
+Name:
+SUPABASE_URL
+
+Value:
+https://gpittnsfzgkdbqnccncn.supabase.co
+
+Environment:
+✅ Production
+✅ Preview
+✅ Development
+
+---
+
+## Variable 5: SUPABASE_SERVICE_ROLE_KEY (keep existing)
+Name:
+SUPABASE_SERVICE_ROLE_KEY
+
+Value:
+(your existing service role key - don't change)
+
+Environment:
+✅ Production
+✅ Preview
+✅ Development
+
+---
+
+## After Adding All Variables:
+
+1. Wait 1-2 minutes for Vercel to redeploy
+2. Go to Deployments tab
+3. Wait for status: "Ready"
+4. Test callback in Tripay Dashboard
+
+Expected Result:
+✅ Status Callback: BERHASIL
+Response: {"success": true, "message": "Test callback acknowledged"}

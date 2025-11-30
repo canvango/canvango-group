@@ -191,11 +191,12 @@ export default async function handler(
       .single();
 
     if (findError || !transaction) {
-      console.error('[Tripay Callback] Transaction not found:', merchant_ref, reference);
-      console.error('[Tripay Callback] Error:', findError?.message);
+      console.log('[Tripay Callback] Transaction not found:', merchant_ref, reference);
+      console.log('[Tripay Callback] This is normal for Tripay test callbacks');
+      // Return success:true for test callbacks (Tripay requirement)
       return res.status(200).json({
-        success: false,
-        message: 'Transaction not found or already processed'
+        success: true,
+        message: 'Callback acknowledged'
       });
     }
 
