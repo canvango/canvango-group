@@ -107,10 +107,10 @@ if (!root) {
     // <React.StrictMode>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <AppWithErrorHandler>
-            <BrowserRouter>
-              <UIProvider>
-                <ToastProvider>
+          <BrowserRouter>
+            <UIProvider>
+              <ToastProvider>
+                <AppWithErrorHandler>
                   <AuthProvider>
                     <TurnstileProtection>
                       <div className="min-h-screen bg-gray-50">
@@ -134,10 +134,10 @@ if (!root) {
                       <WelcomePopup />
                     </TurnstileProtection>
                   </AuthProvider>
-                </ToastProvider>
-              </UIProvider>
-            </BrowserRouter>
-          </AppWithErrorHandler>
+                </AppWithErrorHandler>
+              </ToastProvider>
+            </UIProvider>
+          </BrowserRouter>
         </QueryClientProvider>
       </ErrorBoundary>
     // </React.StrictMode>
