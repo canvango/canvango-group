@@ -2,8 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 
-// GCP Proxy URL
+// GCP Proxy URL - with explicit fallback
 const GCP_PROXY_URL = process.env.GCP_PROXY_URL || 'http://34.182.126.200:3000';
+
+// Log configuration on startup
+console.log('Tripay Proxy Configuration:', {
+  gcpProxyUrl: GCP_PROXY_URL,
+  hasEnvVar: !!process.env.GCP_PROXY_URL,
+});
 
 // Supabase client
 const supabase = createClient(
@@ -60,7 +66,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expired_time: expiredTimeUnix,
     };
 
-    console.log('Forwarding to GCP proxy:', gcpRequest);
+    console.log('Forwarding to GCP proxy:', {
+      url: `${GCP_PROXY_URL}/create-transaction`,
+      request: gcpRequest,
+    });
 
     // Forward request to GCP proxy
     const response = await axios.post(
@@ -74,7 +83,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     );
 
-    console.log('GCP proxy response:', response.data);
+    console.log('GCP proxy response:', {
+      status: response.status,
+      success: response.data.success,
+      hasData: !!response.data.data,
+    });
 
     if (!response.data.success) {
       return res.status(400).json(response.data);
@@ -114,21 +127,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Return response from GCP proxy
     return res.status(200).json(response.data);
   } catch (error: any) {
-    console.error('Error forwarding to GCP proxy:', error.message);
+    console.error('Error forwarding to GCP proxy:', {
+      message: error.message,
+      code: error.code,
+      isAxiosError: axios.isAxiosError(error),
+    });
     
     if (axios.isAxiosError(error)) {
       const errorData = error.response?.data;
-      console.error('GCP proxy error:', errorData);
+      console.error('GCP proxy error response:', {
+        status: error.response?.status,
+        data: errorData,
+        headers: error.response?.headers,
+      });
+      
+      // More specific error messages
+      let errorMessage = errorData?.message || error.message;
+      
+      if (error.code === 'ECONNREFUSED') {
+        errorMessage = 'Cannot connect to payment gateway. Please try again later.';
+      } else if (error.code === 'ETIMEDOUT') {
+        errorMessage = 'Payment gateway timeout. Please try again.';
+      }
       
       return res.status(error.response?.status || 500).json({
         success: false,
-        message: errorData?.message || error.message,
+        message: errorMessage,
+        error: {
+          code: error.code,
+          details: errorData,
+        },
       });
     }
 
     return res.status(500).json({
       success: false,
       message: 'Internal server error',
+      error: {
+        message: error.message,
+      },
     });
   }
 }
