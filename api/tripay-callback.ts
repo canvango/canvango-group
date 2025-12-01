@@ -268,50 +268,11 @@ export default async function handler(
 
     console.log('[Tripay Callback] ✅ Transaction updated:', newStatus);
 
-    // ✅ Step 10: Update user balance if PAID
-    if (shouldUpdateBalance && amount_received > 0) {
-      console.log('[Tripay Callback] Updating user balance...');
-      console.log('[Tripay Callback] User ID:', transaction.user_id);
-      console.log('[Tripay Callback] Amount:', amount_received);
-
-      // Get current balance
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('balance')
-        .eq('id', transaction.user_id)
-        .single();
-
-      if (userError || !user) {
-        console.error('[Tripay Callback] User not found:', userError?.message);
-        return res.status(200).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-
-      // Update balance
-      const newBalance = Number(user.balance) + Number(amount_received);
-      
-      const { error: balanceError } = await supabase
-        .from('users')
-        .update({
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', transaction.user_id);
-
-      if (balanceError) {
-        console.error('[Tripay Callback] Failed to update balance:', balanceError.message);
-        return res.status(200).json({
-          success: false,
-          message: 'Failed to update balance'
-        });
-      }
-
-      console.log('[Tripay Callback] ✅ Balance updated');
-      console.log('[Tripay Callback] Old balance:', user.balance);
-      console.log('[Tripay Callback] New balance:', newBalance);
-    }
+    // ✅ Balance will be updated automatically by database trigger
+    // NOTE: trigger_auto_update_balance fires when transaction.status changes to 'completed'
+    // and adds transaction.amount to user.balance
+    // This prevents double balance calculation (trigger + manual update)
+    console.log('[Tripay Callback] 💵 Balance will be updated automatically by database trigger');
 
     console.log('=== TRIPAY CALLBACK PROCESSED SUCCESSFULLY ===\n');
 
