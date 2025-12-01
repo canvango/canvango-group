@@ -1,7 +1,7 @@
-# ✅ Topup Bug - RESOLVED
+# ⚠️ Topup Bug - EDGE FUNCTION RE-DEPLOYED
 
 **Date:** December 1, 2025  
-**Status:** ✅ FIXED & TESTED
+**Status:** 🔄 RE-DEPLOYED (Version 13)
 
 ---
 
@@ -164,3 +164,46 @@ END IF;
 **Fixed by:** Kiro AI  
 **Verified:** December 1, 2025  
 **Status:** Production Ready ✅
+
+
+---
+
+## 🚨 UPDATE: Edge Function Was Still Old Version!
+
+**Discovery:** User tested topup lagi dan masih bug!
+
+**Investigation:**
+- Transaction 5d42f1ef (completed at 15:22):
+  - `amount`: 10.000 ✅
+  - `tripay_amount`: **9.180** ❌ (STILL BUG!)
+  - Callback data: `total_amount`: 10.000, `fee_merchant`: 820
+  - Calculated: 10.000 - 820 = 9.180 (OLD LOGIC!)
+
+**Root Cause:**
+- Edge function code di Git sudah benar
+- Tapi yang ter-deploy di production masih **Version 12** dengan logic lama
+- Meskipun sudah verify code benar, production masih pakai versi lama
+
+**Solution:**
+```bash
+npx supabase functions deploy tripay-callback --no-verify-jwt
+```
+
+**Result:**
+- ✅ Deployed **Version 13**
+- ✅ Updated at: 2025-12-01 15:28:58
+- ✅ Balance corrected to Rp 40.000
+
+**Next Step:**
+- User perlu test topup baru untuk verify Version 13 works correctly
+- Expected: `tripay_amount` = `total_amount` (bukan `total_amount - fee`)
+
+---
+
+## 📊 Current State (After Re-Deploy)
+
+**Balance:** Rp 40.000 ✅  
+**Completed Topups:** 4 transactions × Rp 10.000 = Rp 40.000 ✅  
+**Edge Function:** Version 13 (ACTIVE) ✅
+
+**Waiting for:** User to test new topup transaction to confirm fix works.
