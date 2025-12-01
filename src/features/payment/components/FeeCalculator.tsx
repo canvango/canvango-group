@@ -11,7 +11,7 @@ interface FeeCalculatorProps {
 }
 
 export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
-  // Calculate fees
+  // Calculate fees (for display only - covered by seller)
   const flatFee = paymentMethod.fee_merchant.flat || 0;
   const percentFee = (amount * (paymentMethod.fee_merchant.percent || 0)) / 100;
   let totalFee = flatFee + percentFee;
@@ -25,8 +25,6 @@ export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
   if (paymentMethod.maximum_fee && totalFee > paymentMethod.maximum_fee) {
     totalFee = paymentMethod.maximum_fee;
   }
-
-  const finalAmount = amount + totalFee;
 
   // Check if amount meets requirements
   const isAmountTooLow = paymentMethod.minimum_amount && amount < paymentMethod.minimum_amount;
@@ -48,21 +46,54 @@ export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
         <h3 className="text-lg font-semibold text-gray-900">Rincian Pembayaran</h3>
       </div>
 
-      <div className="card-body space-y-4">
-        {/* Amount that will be added to balance */}
+      <div className="card-body space-y-3">
+        {/* Base Amount */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-700">Jumlah Top Up</span>
-          <span className="text-base font-semibold text-gray-900">
+          <span className="text-sm font-medium text-gray-900">
             {formatCurrency(amount)}
           </span>
         </div>
 
-        {/* Total Amount to Pay */}
-        <div className="border-t-2 border-gray-300 pt-4">
+        {/* Fee Breakdown - Ditanggung Seller */}
+        <div className="border-t border-gray-200 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600 uppercase">Biaya Admin</p>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+              Ditanggung Seller
+            </span>
+          </div>
+
+          {flatFee > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Biaya Tetap</span>
+              <span className="text-sm text-gray-500 line-through">{formatCurrency(flatFee)}</span>
+            </div>
+          )}
+
+          {paymentMethod.fee_merchant.percent > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Biaya Persentase ({paymentMethod.fee_merchant.percent}%)
+              </span>
+              <span className="text-sm text-gray-500 line-through">{formatCurrency(percentFee)}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+            <span className="text-sm font-medium text-gray-700">Total Biaya</span>
+            <span className="text-sm font-medium text-gray-500 line-through">
+              {formatCurrency(totalFee)}
+            </span>
+          </div>
+        </div>
+
+        {/* Total Amount - Same as Top Up Amount */}
+        <div className="border-t-2 border-gray-300 pt-3">
           <div className="flex justify-between items-center">
             <span className="text-base font-semibold text-gray-900">Total Bayar</span>
             <span className="text-xl font-bold text-blue-600">
-              {formatCurrency(finalAmount)}
+              {formatCurrency(amount)}
             </span>
           </div>
         </div>
@@ -103,22 +134,22 @@ export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
           </div>
         )}
 
-        {/* Info */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+        {/* Info - Seller Covers Fee */}
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
           <div className="flex gap-2">
             <svg
-              className="w-5 h-5 text-blue-600 flex-shrink-0"
+              className="w-5 h-5 text-green-600 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
               <path
                 fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                 clipRule="evenodd"
               />
             </svg>
-            <p className="text-xs text-blue-700">
-              Bayar sekarang <span className="font-semibold">{formatCurrency(finalAmount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(amount)}</span>. Biaya admin ditanggung oleh sistem.
+            <p className="text-xs text-green-700">
+              Bayar sekarang <span className="font-semibold">{formatCurrency(amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(totalFee)}</span> ditanggung oleh seller.
             </p>
           </div>
         </div>
