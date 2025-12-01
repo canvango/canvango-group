@@ -49,8 +49,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expiredTime,
     } = req.body;
 
-    // Generate merchant reference
-    const merchantRef = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // 🔧 FIX: Create transaction in database FIRST to get transaction ID
+    const transactionData = {
+      user_id: user.id,
+      transaction_type: 'topup',
+      amount: amount,
+      status: 'pending',
+      payment_method: paymentMethod,
+      metadata: {
+        order_items: orderItems,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+      },
+    };
+
+    console.log('Creating transaction in database first...');
+
+    const { data: insertedData, error: dbError } = await supabase
+      .from('transactions')
+      .insert(transactionData)
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Failed to create transaction:', {
+        error: dbError,
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create transaction',
+        error: dbError.message,
+      });
+    }
+
+    console.log('Transaction created:', {
+      id: insertedData.id,
+      user_id: user.id,
+      amount: amount,
+    });
+
+    // Use transaction ID as merchant_ref
+    const merchantRef = insertedData.id;
     const expiredTimeUnix = Math.floor(Date.now() / 1000) + ((expiredTime || 24) * 60 * 60);
 
     // Format request for GCP proxy (Tripay format)
@@ -68,7 +111,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('Forwarding to GCP proxy:', {
       url: `${GCP_PROXY_URL}/create-transaction`,
-      request: gcpRequest,
+      merchant_ref: merchantRef,
+      amount: amount,
     });
 
     // Forward request to GCP proxy
@@ -90,59 +134,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!response.data.success) {
+      // Update transaction status to failed
+      await supabase
+        .from('transactions')
+        .update({ 
+          status: 'failed',
+          notes: response.data.message || 'Failed to create payment',
+        })
+        .eq('id', merchantRef);
+
       return res.status(400).json(response.data);
     }
 
-    // Save transaction to database
+    // Update transaction with Tripay data
     const tripayData = response.data.data;
-    const transactionData = {
-      user_id: user.id,
-      transaction_type: 'topup',
-      amount: amount,
-      status: 'pending',
-      payment_method: paymentMethod,
+    const updateData = {
       tripay_reference: tripayData.reference,
       tripay_merchant_ref: merchantRef,
       tripay_payment_method: tripayData.payment_method,
       tripay_payment_name: tripayData.payment_name,
       tripay_checkout_url: tripayData.checkout_url,
+      tripay_qr_url: tripayData.qr_url,
+      tripay_payment_url: tripayData.pay_url,
       tripay_amount: tripayData.amount,
       tripay_fee: tripayData.total_fee,
       tripay_total_amount: tripayData.amount_received,
       tripay_status: tripayData.status,
-      metadata: {
-        order_items: orderItems,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
-      },
+      updated_at: new Date().toISOString(),
     };
 
-    console.log('Saving transaction to database:', {
-      user_id: user.id,
+    console.log('Updating transaction with Tripay data:', {
+      id: merchantRef,
       tripay_reference: tripayData.reference,
-      amount: amount,
     });
 
-    const { data: insertedData, error: dbError } = await supabase
+    const { error: updateError } = await supabase
       .from('transactions')
-      .insert(transactionData)
-      .select()
-      .single();
+      .update(updateData)
+      .eq('id', merchantRef);
 
-    if (dbError) {
-      console.error('Failed to save transaction:', {
-        error: dbError,
-        code: dbError.code,
-        message: dbError.message,
-        details: dbError.details,
+    if (updateError) {
+      console.error('Failed to update transaction:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
       });
-      // Don't fail the request, just log the error
-      // Transaction will be created by callback if payment succeeds
+      // Don't fail the request, payment was created successfully
     } else {
-      console.log('Transaction saved successfully:', {
-        id: insertedData.id,
-        reference: insertedData.tripay_reference,
+      console.log('Transaction updated successfully:', {
+        id: merchantRef,
+        reference: tripayData.reference,
       });
     }
 
