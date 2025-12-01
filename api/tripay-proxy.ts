@@ -110,18 +110,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tripay_fee: tripayData.total_fee,
       tripay_total_amount: tripayData.amount_received,
       tripay_status: tripayData.status,
+      metadata: {
+        order_items: orderItems,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+      },
     };
 
-    console.log('Saving transaction to database:', transactionData);
+    console.log('Saving transaction to database:', {
+      user_id: user.id,
+      tripay_reference: tripayData.reference,
+      amount: amount,
+    });
 
-    const { error: dbError } = await supabase
+    const { data: insertedData, error: dbError } = await supabase
       .from('transactions')
-      .insert(transactionData);
+      .insert(transactionData)
+      .select()
+      .single();
 
     if (dbError) {
-      console.error('Failed to save transaction:', dbError);
+      console.error('Failed to save transaction:', {
+        error: dbError,
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+      });
       // Don't fail the request, just log the error
       // Transaction will be created by callback if payment succeeds
+    } else {
+      console.log('Transaction saved successfully:', {
+        id: insertedData.id,
+        reference: insertedData.tripay_reference,
+      });
     }
 
     // Return response from GCP proxy
