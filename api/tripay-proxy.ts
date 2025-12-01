@@ -11,10 +11,10 @@ console.log('Tripay Proxy Configuration:', {
   hasEnvVar: !!process.env.GCP_PROXY_URL,
 });
 
-// Supabase client
+// Supabase client - use SUPABASE_URL (not VITE_) for server-side
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY!
 );
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
