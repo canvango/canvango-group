@@ -11,10 +11,16 @@ console.log('Tripay Proxy Configuration:', {
   hasEnvVar: !!process.env.GCP_PROXY_URL,
 });
 
-// Supabase client - use SUPABASE_URL (not VITE_) for server-side
-const supabase = createClient(
+// Supabase client for auth verification (anon key)
+const supabaseAuth = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY!
+);
+
+// Supabase client for database operations (service role key)
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
 );
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -31,9 +37,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const token = authHeader.substring(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
@@ -66,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('Creating transaction in database first...');
 
-    const { data: insertedData, error: dbError } = await supabase
+    const { data: insertedData, error: dbError } = await supabaseAdmin
       .from('transactions')
       .insert(transactionData)
       .select()
@@ -135,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!response.data.success) {
       // Update transaction status to failed
-      await supabase
+      await supabaseAdmin
         .from('transactions')
         .update({ 
           status: 'failed',
@@ -168,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tripay_reference: tripayData.reference,
     });
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('transactions')
       .update(updateData)
       .eq('id', merchantRef);
