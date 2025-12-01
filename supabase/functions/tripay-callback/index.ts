@@ -164,9 +164,9 @@ serve(async (req) => {
         tripay_merchant_ref: merchant_ref,
         tripay_payment_method: payment_method_code || payment_method,
         tripay_payment_name: payment_name,
-        tripay_amount: amount,
-        tripay_fee: fee_merchant,
-        tripay_total_amount: total_amount,
+        tripay_amount: total_amount, // Total amount paid by customer (including fee)
+        tripay_fee: fee_merchant || 0, // Fee charged by Tripay (for display only)
+        tripay_total_amount: total_amount, // Same as tripay_amount
         tripay_status: status,
         tripay_callback_data: body,
         updated_at: new Date().toISOString(),
@@ -178,21 +178,10 @@ serve(async (req) => {
         updateData.completed_at = paid_at || new Date().toISOString();
         updateData.tripay_paid_at = paid_at;
         console.log('💰 Payment PAID - marking as completed');
-
-        // If this is a topup transaction, update user balance
-        if (transaction.transaction_type === 'topup') {
-          console.log('💵 Processing topup for user:', transaction.user_id);
-          
-          const { error: balanceError } = await supabase.rpc('process_topup_transaction', {
-            p_transaction_id: transaction.id,
-          });
-
-          if (balanceError) {
-            console.error('❌ Failed to update balance:', balanceError);
-          } else {
-            console.log('✅ Balance updated successfully');
-          }
-        }
+        console.log('💵 Balance will be updated automatically by database trigger');
+        
+        // NOTE: Balance update is handled automatically by trigger_auto_update_balance
+        // No need to manually call process_topup_transaction to avoid double topup
       } else if (status === 'EXPIRED') {
         updateData.status = 'failed';
         console.log('⏰ Payment EXPIRED - marking as failed');
@@ -236,15 +225,15 @@ serve(async (req) => {
           .insert({
             user_id: openPayment.user_id,
             transaction_type: 'topup',
-            amount: amount_received || amount,
+            amount: total_amount, // Use total_amount (what customer paid) for balance update
             status: 'completed',
             payment_method: 'tripay',
             tripay_reference: reference,
             tripay_merchant_ref: merchant_ref,
             tripay_payment_method: payment_method_code || payment_method,
             tripay_payment_name: payment_name,
-            tripay_amount: amount,
-            tripay_fee: fee_merchant,
+            tripay_amount: total_amount, // Total amount paid by customer
+            tripay_fee: fee_merchant || 0, // Fee for display only
             tripay_total_amount: total_amount,
             tripay_status: status,
             tripay_paid_at: paid_at,
@@ -263,6 +252,7 @@ serve(async (req) => {
         }
 
         console.log('✅ Transaction created:', newTransaction.id);
+        console.log('💵 Balance updated automatically by database trigger');
 
         // Create open_payment_transaction record
         const { error: createOPTError } = await supabase
@@ -271,11 +261,11 @@ serve(async (req) => {
             open_payment_id: openPayment.id,
             transaction_id: newTransaction.id,
             reference: reference,
-            amount: amount,
+            amount: total_amount, // Total amount paid by customer
             fee_merchant: fee_merchant || 0,
             fee_customer: fee_customer || 0,
             total_fee: total_fee || 0,
-            amount_received: amount_received || amount,
+            amount_received: amount_received || amount, // Amount received after fee
             status: 'PAID',
             paid_at: paid_at || new Date().toISOString(),
           });
@@ -286,18 +276,9 @@ serve(async (req) => {
           console.log('✅ Open Payment transaction record created');
         }
 
-        // Update user balance
-        console.log('💵 Processing topup for user:', openPayment.user_id);
-        
-        const { error: balanceError } = await supabase.rpc('process_topup_transaction', {
-          p_transaction_id: newTransaction.id,
-        });
-
-        if (balanceError) {
-          console.error('❌ Failed to update balance:', balanceError);
-        } else {
-          console.log('✅ Balance updated successfully');
-        }
+        // NOTE: Balance update is handled automatically by trigger_auto_update_balance
+        // when transaction is inserted with status='completed'
+        // No need to manually call process_topup_transaction to avoid double topup
       }
 
       console.log('✅ Open Payment processed successfully');

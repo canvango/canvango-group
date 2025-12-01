@@ -17,7 +17,8 @@
         "get_anon_key",
         "search_docs",
         "list_edge_functions",
-        "get_edge_function"
+        "get_edge_function",
+        "deploy_edge_function"
       ]
     }
   }

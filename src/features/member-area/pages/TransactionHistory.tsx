@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ShoppingBag, Wallet, TrendingUp, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import TabNavigation, { Tab } from '../components/transactions/TabNavigation';
 import TransactionFilters from '../components/transactions/TransactionFilters';
@@ -65,6 +67,9 @@ const mapDbTransactionToTransaction = (dbTxn: any): Transaction => {
 const TransactionHistory: React.FC = () => {
   usePageTitle('Transaction History');
   
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
   // Persisted filters
   const { filters, setFilter, setFilters } = usePersistedFilters('transaction-history', {
     tab: 'accounts',
@@ -80,6 +85,7 @@ const TransactionHistory: React.FC = () => {
   const [isAccountDetailModalOpen, setIsAccountDetailModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApplicationError | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState<string>('Memuat data...');
   
   // Real data from database
   const [stats, setStats] = useState<ExtendedTransactionStats | null>(null);
@@ -92,39 +98,85 @@ const TransactionHistory: React.FC = () => {
   const currentPage = filters.page;
   const pageSize = filters.pageSize;
 
+  // Handle redirect from Tripay payment
+  useEffect(() => {
+    const tripayRef = searchParams.get('tripay_reference');
+    const merchantRef = searchParams.get('tripay_merchant_ref');
+    
+    if (tripayRef && merchantRef) {
+      // Show success notification
+      toast.success('Pembayaran berhasil! Transaksi Anda sedang diproses.', {
+        duration: 5000,
+        icon: '✅',
+      });
+      
+      // Clean URL after showing notification
+      setTimeout(() => {
+        navigate('/riwayat-transaksi', { replace: true });
+      }, 1000);
+    }
+  }, [searchParams, navigate]);
+
   // Load data from database
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        setLoadingProgress('Memuat data pengguna...');
 
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        // Get current user with timeout
+        const userPromise = supabase.auth.getUser();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Gagal memuat data pengguna')), 10000)
+        );
+        
+        const { data: { user } } = await Promise.race([userPromise, timeoutPromise]) as any;
+        
         if (!user) {
-          setError('User not authenticated');
-          return;
+          throw new Error('User not authenticated');
         }
 
         // Load stats
-        const statsData = await fetchExtendedTransactionStats();
+        setLoadingProgress('Memuat statistik transaksi...');
+        const statsPromise = fetchExtendedTransactionStats();
+        const statsTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Gagal memuat statistik')), 10000)
+        );
+        
+        const statsData = await Promise.race([statsPromise, statsTimeoutPromise]) as ExtendedTransactionStats;
         setStats(statsData);
 
-        // Load all transactions (we'll filter client-side for better UX)
-        const dbTransactions = await getMemberTransactions({
+        // Load transactions with reduced limit for better performance
+        setLoadingProgress('Memuat riwayat transaksi...');
+        const transactionsPromise = getMemberTransactions({
           userId: user.id,
-          limit: 1000, // Get all transactions
+          limit: 100, // Reduced from 1000 to 100 for better performance
           offset: 0
         });
+        const transactionsTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Gagal memuat transaksi')), 15000)
+        );
+
+        const dbTransactions = await Promise.race([transactionsPromise, transactionsTimeoutPromise]) as any[];
 
         // Map database transactions to Transaction type
+        setLoadingProgress('Memproses data...');
         const mappedTransactions = dbTransactions.map(mapDbTransactionToTransaction);
         setAllTransactions(mappedTransactions);
 
       } catch (err) {
         console.error('Error loading transactions:', err);
-        const appError = err instanceof ApplicationError ? err : createNetworkError('Gagal memuat data transaksi');
+        
+        // Show user-friendly error message
+        const errorMessage = err instanceof Error ? err.message : 'Gagal memuat data transaksi';
+        toast.error(errorMessage, { duration: 5000 });
+        
+        const appError = err instanceof ApplicationError 
+          ? err 
+          : createNetworkError(errorMessage);
         setError(appError);
+        
         // Set empty data on error
         setStats({
           totalAccountsPurchased: 0,
@@ -139,6 +191,7 @@ const TransactionHistory: React.FC = () => {
         setAllTransactions([]);
       } finally {
         setIsLoading(false);
+        setLoadingProgress('Memuat data...');
       }
     };
 
@@ -260,7 +313,7 @@ const TransactionHistory: React.FC = () => {
       {/* Loading State */}
       {isLoading && !error && (
         <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" text="Memuat riwayat transaksi..." />
+          <LoadingSpinner size="lg" text={loadingProgress} />
         </div>
       )}
 
