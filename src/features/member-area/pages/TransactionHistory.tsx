@@ -225,13 +225,13 @@ const TransactionHistory: React.FC = () => {
       id: 'accounts',
       label: 'Transaksi Akun',
       icon: <ShoppingBag className="w-4 h-4" />,
-      count: allTransactions.filter(t => t.type === TransactionType.PURCHASE && t.status === TransactionStatus.SUCCESS).length
+      count: allTransactions.filter(t => t.type === TransactionType.PURCHASE).length
     },
     {
       id: 'topup',
       label: 'Top Up',
       icon: <Wallet className="w-4 h-4" />,
-      count: allTransactions.filter(t => t.type === TransactionType.TOPUP && t.status === TransactionStatus.SUCCESS).length
+      count: allTransactions.filter(t => t.type === TransactionType.TOPUP).length
     }
   ];
 
