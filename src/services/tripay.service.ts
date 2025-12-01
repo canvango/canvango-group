@@ -31,6 +31,8 @@ export interface TripayPaymentMethod {
   };
   minimum_fee: number;
   maximum_fee: number;
+  minimum_amount?: number;
+  maximum_amount?: number;
   icon_url: string;
   active: boolean;
 }

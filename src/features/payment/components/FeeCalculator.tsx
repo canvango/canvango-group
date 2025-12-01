@@ -48,48 +48,20 @@ export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
         <h3 className="text-lg font-semibold text-gray-900">Rincian Pembayaran</h3>
       </div>
 
-      <div className="card-body space-y-3">
-        {/* Base Amount */}
+      <div className="card-body space-y-4">
+        {/* Amount that will be added to balance */}
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700">Jumlah</span>
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm text-gray-700">Jumlah Top Up</span>
+          <span className="text-base font-semibold text-gray-900">
             {formatCurrency(amount)}
           </span>
         </div>
 
-        {/* Fee Breakdown */}
-        <div className="border-t border-gray-200 pt-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600 uppercase">Biaya Admin</p>
-
-          {flatFee > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Biaya Tetap</span>
-              <span className="text-sm text-gray-700">{formatCurrency(flatFee)}</span>
-            </div>
-          )}
-
-          {paymentMethod.fee_merchant.percent > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Biaya Persentase ({paymentMethod.fee_merchant.percent}%)
-              </span>
-              <span className="text-sm text-gray-700">{formatCurrency(percentFee)}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-            <span className="text-sm font-medium text-gray-700">Total Biaya</span>
-            <span className="text-sm font-medium text-gray-900">
-              {formatCurrency(totalFee)}
-            </span>
-          </div>
-        </div>
-
-        {/* Total Amount */}
-        <div className="border-t-2 border-gray-300 pt-3">
+        {/* Total Amount to Pay */}
+        <div className="border-t-2 border-gray-300 pt-4">
           <div className="flex justify-between items-center">
             <span className="text-base font-semibold text-gray-900">Total Bayar</span>
-            <span className="text-lg font-bold text-blue-600">
+            <span className="text-xl font-bold text-blue-600">
               {formatCurrency(finalAmount)}
             </span>
           </div>
@@ -146,9 +118,7 @@ export function FeeCalculator({ amount, paymentMethod }: FeeCalculatorProps) {
               />
             </svg>
             <p className="text-xs text-blue-700">
-              Biaya admin sudah termasuk dalam total pembayaran. Anda akan membayar{' '}
-              <span className="font-medium">{formatCurrency(finalAmount)}</span> untuk transaksi
-              ini.
+              Bayar sekarang <span className="font-semibold">{formatCurrency(finalAmount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(amount)}</span>. Biaya admin ditanggung oleh sistem.
             </p>
           </div>
         </div>
