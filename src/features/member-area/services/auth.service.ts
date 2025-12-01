@@ -182,8 +182,10 @@ export const logout = async (): Promise<void> => {
  * 
  * This function ALWAYS queries the user's role from the database,
  * ensuring the role is up-to-date. No caching is performed.
+ * Includes timeout and better error handling for expired sessions.
  * 
  * @returns Promise with User object or null if not authenticated
+ * @throws Error if session is expired or invalid (for proper error handling upstream)
  * 
  * @example
  * ```typescript
@@ -195,11 +197,33 @@ export const logout = async (): Promise<void> => {
  */
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
-    // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Get current session with timeout
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Session check timeout')), 3000)
+    );
+    
+    const { data: { session }, error: sessionError } = await Promise.race([
+      sessionPromise,
+      timeoutPromise
+    ]) as any;
     
     if (sessionError) {
       console.error('Session error:', sessionError);
+      
+      // Check if it's an auth error that should clear tokens
+      const isAuthError = 
+        sessionError.status === 401 || 
+        sessionError.status === 403 ||
+        sessionError.message?.includes('JWT') ||
+        sessionError.message?.includes('expired') ||
+        sessionError.message?.includes('invalid');
+      
+      if (isAuthError) {
+        // Throw error so upstream can handle token cleanup
+        throw new Error('Session expired or invalid');
+      }
+      
       return null;
     }
     
@@ -207,16 +231,40 @@ export const getCurrentUser = async (): Promise<User | null> => {
       return null;
     }
     
-    // Fetch user profile with fresh role from database
-    const { data: profileData, error: profileError } = await supabase
+    // Check if session is expired
+    const now = Math.floor(Date.now() / 1000);
+    if (session.expires_at && session.expires_at < now) {
+      console.warn('⚠️ Session expired');
+      throw new Error('Session expired');
+    }
+    
+    // Fetch user profile with fresh role from database with timeout
+    const profilePromise = supabase
       .from('users')
       .select('*')
       .eq('id', session.user.id)
       .single();
     
+    const profileTimeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+    );
+    
+    const { data: profileData, error: profileError } = await Promise.race([
+      profilePromise,
+      profileTimeoutPromise
+    ]) as any;
+    
     if (profileError) {
       console.error('Failed to fetch user profile:', profileError);
-      // Graceful fallback: return basic user with 'member' role
+      
+      // Check if it's a critical error
+      if (profileError.code === 'PGRST116') {
+        // User not found in database
+        console.error('User profile not found in database');
+        throw new Error('User profile not found');
+      }
+      
+      // For other errors, return graceful fallback
       return {
         id: session.user.id,
         username: session.user.email?.split('@')[0] || 'user',
@@ -247,8 +295,19 @@ export const getCurrentUser = async (): Promise<User | null> => {
     };
     
     return user;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get current user error:', error);
+    
+    // Re-throw auth errors for proper handling upstream
+    if (
+      error?.message?.includes('expired') ||
+      error?.message?.includes('invalid') ||
+      error?.message?.includes('timeout') ||
+      error?.message?.includes('not found')
+    ) {
+      throw error;
+    }
+    
     return null;
   }
 };

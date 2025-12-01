@@ -49,28 +49,70 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Query fresh role from database when user or requiredRole changes
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const checkRole = async () => {
       // Reset to checking state
       setRoleCheck('checking');
       
-      // If no user or still loading auth, wait
+      // Set timeout to prevent infinite loading (5 seconds max)
+      timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn('⚠️ Role check timeout - allowing access with fallback');
+          // On timeout, allow access if no role requirement
+          if (!requiredRole) {
+            setRoleCheck('allowed');
+          } else if (user?.role === requiredRole) {
+            // Use cached role as fallback
+            setRoleCheck('allowed');
+          } else {
+            setRoleCheck('denied');
+          }
+        }
+      }, 5000);
+      
+      // If no user or still loading auth, wait but don't get stuck
       if (!user || isLoading) {
-        return;
+        // If auth is loading, wait for it to complete
+        if (isLoading) {
+          return;
+        }
+        
+        // If no user and not loading, deny access
+        if (!user) {
+          clearTimeout(timeoutId);
+          setRoleCheck('denied');
+          return;
+        }
       }
 
-      // If no role requirement, allow access
+      // If no role requirement, allow access immediately
       if (!requiredRole) {
+        clearTimeout(timeoutId);
         setRoleCheck('allowed');
         return;
       }
 
       try {
-        // Query fresh role from database
-        const { data, error } = await supabase
+        // Query fresh role from database with timeout
+        const roleQueryPromise = supabase
           .from('users')
           .select('role')
           .eq('id', user.id)
           .single();
+
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Role query timeout')), 3000)
+        );
+
+        const { data, error } = await Promise.race([
+          roleQueryPromise,
+          timeoutPromise
+        ]) as any;
+
+        if (!isMounted) return;
+        clearTimeout(timeoutId);
 
         if (error) {
           console.error('Failed to verify role:', error);
@@ -96,6 +138,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           setRoleCheck('denied');
         }
       } catch (error) {
+        if (!isMounted) return;
+        clearTimeout(timeoutId);
+        
         console.error('Role verification exception:', error);
         // On exception, fall back to user state role
         const currentRole = user.role;
@@ -110,6 +155,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
 
     checkRole();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [user, requiredRole, isLoading]);
 
   // Show loading screen while checking authentication or role

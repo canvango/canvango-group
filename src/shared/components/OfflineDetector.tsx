@@ -19,8 +19,16 @@ export const OfflineDetector: React.FC = () => {
 
       // When back online, check session and refetch queries
       try {
-        // Check if session is still valid
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Check if session is still valid with timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
         
         if (error) {
           console.error('❌ Session check failed after reconnect:', error);
@@ -40,19 +48,31 @@ export const OfflineDetector: React.FC = () => {
         // If token expired or expiring soon (< 5 minutes), refresh it
         if (timeUntilExpiry < 5 * 60) {
           console.log('🔄 Refreshing session after reconnect...');
-          await supabase.auth.refreshSession();
+          
+          const refreshPromise = supabase.auth.refreshSession();
+          const refreshTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+          );
+          
+          await Promise.race([refreshPromise, refreshTimeoutPromise]);
         }
 
-        // Refetch all active queries
+        // Refetch all active queries with timeout
         console.log('🔄 Refetching queries after reconnect...');
-        await queryClient.refetchQueries({
+        const refetchPromise = queryClient.refetchQueries({
           type: 'active',
           stale: true,
         });
+        const refetchTimeoutPromise = new Promise((resolve) => 
+          setTimeout(resolve, 10000)
+        );
+        
+        await Promise.race([refetchPromise, refetchTimeoutPromise]);
         
         console.log('✅ Queries refetched successfully');
       } catch (err) {
         console.error('❌ Error handling reconnect:', err);
+        // Don't throw - let app continue working
       }
     };
 

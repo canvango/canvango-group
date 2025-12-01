@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   /**
    * Fetch user profile from Supabase with race condition prevention
    * Note: User data (including role) is NOT cached in localStorage
+   * Includes timeout and token cleanup on persistent errors
    */
   const fetchUserProfile = useCallback(async (): Promise<User | null> => {
     // Prevent multiple simultaneous fetches
@@ -49,10 +50,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isFetchingProfile = true;
     
     try {
-      const userData = await authService.getCurrentUser();
+      // Add timeout to prevent hanging
+      const userDataPromise = authService.getCurrentUser();
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+      
+      const userData = await Promise.race([userDataPromise, timeoutPromise]);
+      
+      if (!userData) {
+        // If no user data returned, check if token is still valid
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token) {
+          console.warn('⚠️ Token exists but no user data - clearing invalid token');
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
+        }
+      }
+      
       return userData;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user profile:', error);
+      
+      // Check if it's an auth error (401, 403, expired token)
+      const isAuthError = 
+        error?.status === 401 || 
+        error?.status === 403 ||
+        error?.message?.includes('JWT') ||
+        error?.message?.includes('expired') ||
+        error?.message?.includes('invalid') ||
+        error?.message?.includes('timeout');
+      
+      if (isAuthError) {
+        console.warn('⚠️ Auth error detected - clearing tokens');
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+      }
+      
       return null;
     } finally {
       isFetchingProfile = false;
@@ -63,28 +97,56 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    * Initialize auth state on mount
    * Check for stored token and validate by fetching user data
    * Also listen for Supabase auth state changes
+   * Includes timeout to prevent infinite loading
    */
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeAuth = async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
-      
-      if (token) {
-        // Fetch fresh user data from database (no caching)
-        const userData = await fetchUserProfile();
-        if (userData) {
-          setUser(userData);
-        } else {
-          // Clear tokens if fetch failed
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
+      try {
+        const token = localStorage.getItem(TOKEN_KEY);
+        
+        if (token) {
+          // Fetch fresh user data from database (no caching)
+          const userData = await fetchUserProfile();
+          
+          if (!isMounted) return;
+          
+          if (userData) {
+            setUser(userData);
+          } else {
+            // Clear tokens if fetch failed
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        // Clear tokens on error
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        if (isMounted) {
           setUser(null);
         }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-      
-      setIsLoading(false);
     };
 
-    initializeAuth();
+    // Set timeout to prevent infinite loading (10 seconds max)
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('⚠️ Auth initialization timeout - setting loading to false');
+        setIsLoading(false);
+      }
+    }, 10000);
+
+    initializeAuth().finally(() => {
+      clearTimeout(timeoutId);
+    });
 
     // Listen for Supabase auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -100,7 +162,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Auth state listener: Just ensure state is cleared
         // The logout() function already handles cleanup, so we only need to ensure consistency
         console.log('ℹ️ SIGNED_OUT event received, ensuring clean state');
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Update tokens and fetch user data
         if (session?.access_token) {
@@ -110,19 +174,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           
           // Only fetch profile if not already fetching (prevent race condition)
-          if (!isFetchingProfile) {
+          if (!isFetchingProfile && isMounted) {
             const userData = await fetchUserProfile();
-            if (userData) {
+            if (userData && isMounted) {
               setUser(userData);
             }
           } else {
-            console.log('ℹ️ Profile fetch already in progress, skipping duplicate fetch');
+            console.log('ℹ️ Profile fetch already in progress or component unmounted, skipping duplicate fetch');
           }
         }
       }
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
       authListener.subscription.unsubscribe();
     };
   }, [fetchUserProfile]);

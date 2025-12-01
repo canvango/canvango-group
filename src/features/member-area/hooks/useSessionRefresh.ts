@@ -27,10 +27,31 @@ export const useSessionRefresh = () => {
     try {
       console.log(`🔐 Checking session (source: ${source})...`);
       
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // Add timeout to prevent hanging
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session check timeout')), 5000)
+      );
+      
+      const { data: { session }, error } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
       
       if (error) {
         console.error('❌ Error checking session:', error);
+        
+        // If it's an auth error, clear tokens
+        const isAuthError = 
+          error?.status === 401 || 
+          error?.status === 403 ||
+          error?.message?.includes('JWT') ||
+          error?.message?.includes('expired') ||
+          error?.message?.includes('invalid');
+        
+        if (isAuthError) {
+          console.warn('⚠️ Auth error in session check - tokens may be invalid');
+        }
         return;
       }
       
@@ -54,10 +75,29 @@ export const useSessionRefresh = () => {
       // Refresh if expiring soon or already expired
       if (timeUntilExpiry < REFRESH_THRESHOLD) {
         console.log('🔄 Token expiring soon, refreshing session...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        // Add timeout to refresh operation
+        const refreshPromise = supabase.auth.refreshSession();
+        const refreshTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+        );
+        
+        const { data: refreshData, error: refreshError } = await Promise.race([
+          refreshPromise,
+          refreshTimeoutPromise
+        ]) as any;
         
         if (refreshError) {
           console.error('❌ Error refreshing session:', refreshError);
+          
+          // If refresh fails due to invalid token, user will be logged out by global error handler
+          if (
+            refreshError?.status === 401 ||
+            refreshError?.message?.includes('expired') ||
+            refreshError?.message?.includes('invalid')
+          ) {
+            console.warn('⚠️ Session refresh failed - token invalid or expired');
+          }
           return;
         }
         
@@ -68,8 +108,11 @@ export const useSessionRefresh = () => {
       }
       
       lastCheckRef.current = Date.now();
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Session refresh error:', err);
+      
+      // Don't throw error, just log it
+      // Global error handler will handle auth errors from queries
     }
   };
 

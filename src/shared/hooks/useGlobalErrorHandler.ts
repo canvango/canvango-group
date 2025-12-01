@@ -25,6 +25,8 @@ export const useGlobalErrorHandler = () => {
   const MAX_REFRESH_ATTEMPTS = 2;
 
   useEffect(() => {
+    let logoutTimeoutId: NodeJS.Timeout;
+
     // Global error handler for React Query
     const handleQueryError = async (error: any) => {
       // Check if it's an auth error
@@ -33,6 +35,7 @@ export const useGlobalErrorHandler = () => {
         error?.status === 403 ||
         error?.message?.includes('JWT') ||
         error?.message?.includes('session') ||
+        error?.message?.includes('expired') ||
         error?.message?.includes('unauthorized');
 
       if (!isAuthError) {
@@ -50,8 +53,13 @@ export const useGlobalErrorHandler = () => {
         console.error('❌ Max token refresh attempts reached, logging out...');
         notification.error('Sesi Anda telah berakhir. Silakan login kembali.');
         
-        // Force logout
-        await supabase.auth.signOut();
+        // Force logout with timeout to prevent hanging
+        const logoutPromise = supabase.auth.signOut();
+        const timeoutPromise = new Promise((resolve) => 
+          setTimeout(resolve, 2000)
+        );
+        
+        await Promise.race([logoutPromise, timeoutPromise]);
         localStorage.clear();
         window.location.href = '/login';
         return;
@@ -62,8 +70,16 @@ export const useGlobalErrorHandler = () => {
       refreshAttemptRef.current += 1;
 
       try {
-        // Try to refresh the session
-        const { data, error: refreshError } = await supabase.auth.refreshSession();
+        // Try to refresh the session with timeout
+        const refreshPromise = supabase.auth.refreshSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+        );
+
+        const { data, error: refreshError } = await Promise.race([
+          refreshPromise,
+          timeoutPromise
+        ]) as any;
 
         if (refreshError || !data.session) {
           throw new Error('Token refresh failed');
@@ -81,11 +97,21 @@ export const useGlobalErrorHandler = () => {
       } catch (err) {
         console.error('❌ Token refresh failed:', err);
         
-        // If refresh fails, logout user
+        // If refresh fails, logout user with timeout
         notification.error('Sesi Anda telah berakhir. Silakan login kembali.');
-        await supabase.auth.signOut();
+        
+        const logoutPromise = supabase.auth.signOut();
+        const timeoutPromise = new Promise((resolve) => 
+          setTimeout(resolve, 2000)
+        );
+        
+        await Promise.race([logoutPromise, timeoutPromise]);
         localStorage.clear();
-        window.location.href = '/login';
+        
+        // Delay redirect slightly to show notification
+        logoutTimeoutId = setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
       } finally {
         isRefreshingRef.current = false;
       }
@@ -100,6 +126,9 @@ export const useGlobalErrorHandler = () => {
 
     return () => {
       unsubscribe();
+      if (logoutTimeoutId) {
+        clearTimeout(logoutTimeoutId);
+      }
     };
   }, [queryClient, notification]);
 };

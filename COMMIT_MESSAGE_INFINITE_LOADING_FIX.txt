@@ -1,0 +1,80 @@
+fix: infinite loading after idle session with comprehensive timeout & error handling
+
+## Problem
+- Aplikasi stuck di loading setelah idle ±3 menit
+- User harus manual refresh browser
+- Token expired tidak di-cleanup
+- Poor user experience
+
+## Root Cause
+1. ProtectedRoute stuck di 'checking' state tanpa timeout
+2. AuthContext tidak cleanup token saat error
+3. auth.service tidak throw error untuk upstream handling
+4. Tidak ada timeout di semua async operations
+
+## Solution
+Implementasi comprehensive timeout & error handling di 6 files:
+
+### 1. ProtectedRoute.tsx
+- Added 5-second timeout untuk role check
+- Fixed early return yang menyebabkan stuck state
+- Added 3-second timeout untuk database query
+- Added cleanup function dengan isMounted flag
+
+### 2. AuthContext.tsx
+- Added 5-second timeout untuk fetchUserProfile
+- Token cleanup otomatis saat auth error
+- Added 10-second timeout untuk auth initialization
+- Better error detection dan handling
+
+### 3. auth.service.ts
+- Added 3-second timeout untuk getSession
+- Check session expiration sebelum use
+- Added 3-second timeout untuk profile fetch
+- Re-throw auth errors untuk proper upstream handling
+
+### 4. useGlobalErrorHandler.ts
+- Added 5-second timeout untuk token refresh
+- Added 2-second timeout untuk logout
+- Delay redirect untuk show notification
+- Better error handling dengan timeout
+
+### 5. useSessionRefresh.ts
+- Added 5-second timeout untuk session check
+- Added 5-second timeout untuk refresh operation
+- Better auth error detection
+- Improved idle handling
+
+### 6. OfflineDetector.tsx
+- Added 5-second timeout untuk session check after reconnect
+- Added 5-second timeout untuk refresh after reconnect
+- Added 10-second timeout untuk query refetch
+- Better network reconnect handling
+
+## Impact
+- ✅ Max 5-10 detik loading time (vs infinite before)
+- ✅ Auto-redirect ke login dengan notification
+- ✅ Token cleanup otomatis
+- ✅ Tidak perlu manual refresh browser
+- ✅ Better user experience
+
+## Testing
+- ✅ Build successful tanpa error
+- ✅ No TypeScript errors
+- ✅ No breaking changes
+- ✅ Backward compatible
+
+## Files Modified
+- src/features/member-area/components/ProtectedRoute.tsx
+- src/features/member-area/contexts/AuthContext.tsx
+- src/features/member-area/services/auth.service.ts
+- src/shared/hooks/useGlobalErrorHandler.ts
+- src/features/member-area/hooks/useSessionRefresh.ts
+- src/shared/components/OfflineDetector.tsx
+
+## Documentation
+- INFINITE_LOADING_FIX_COMPLETE.md (full details)
+- QUICK_TEST_INFINITE_LOADING_FIX.md (testing guide)
+- START_HERE_INFINITE_LOADING_FIX.md (quick start)
+
+Fixes #[issue-number] (if applicable)
