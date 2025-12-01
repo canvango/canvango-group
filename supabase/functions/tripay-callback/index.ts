@@ -72,9 +72,19 @@ serve(async (req) => {
       payment_name,
       amount,
       fee_merchant,
+      fee_customer,
+      total_fee,
+      amount_received,
       total_amount,
       status,
       paid_at,
+      is_closed_payment,
+      callback_virtual_account_id,
+      external_id,
+      account_number,
+      customer_name,
+      customer_email,
+      customer_phone,
     } = body;
 
     console.log('📝 Processing payment:', {
@@ -82,87 +92,238 @@ serve(async (req) => {
       merchant_ref,
       status,
       amount: total_amount,
+      is_closed_payment,
     });
 
-    // Find transaction by merchant_ref (our transaction ID)
-    const { data: transaction, error: findError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('id', merchant_ref)
+    // Check idempotency - has this callback been processed before?
+    const { data: existingCallback } = await supabase
+      .from('audit_logs')
+      .select('id')
+      .eq('action', 'tripay_callback')
+      .eq('details->>reference', reference)
       .single();
 
-    if (findError || !transaction) {
-      console.error('❌ Transaction not found:', merchant_ref);
+    if (existingCallback) {
+      console.log('⚠️ Callback already processed for reference:', reference);
       return new Response(
-        JSON.stringify({ success: false, message: 'Transaction not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, message: 'Already processed' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ Transaction found:', transaction.id);
+    // Determine if this is Closed Payment (1) or Open Payment (0)
+    const isClosedPayment = is_closed_payment === 1;
 
-    // Update transaction with Tripay data
-    const updateData: any = {
-      tripay_reference: reference,
-      tripay_merchant_ref: merchant_ref,
-      tripay_payment_method: payment_method_code || payment_method,
-      tripay_payment_name: payment_name,
-      tripay_amount: amount,
-      tripay_fee: fee_merchant,
-      tripay_total_amount: total_amount,
-      tripay_status: status,
-      tripay_callback_data: body,
-      updated_at: new Date().toISOString(),
-    };
+    if (isClosedPayment) {
+      // Handle Closed Payment - find transaction by merchant_ref (our transaction ID)
+      const { data: transaction, error: findError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', merchant_ref)
+        .single();
 
-    // Handle payment status
-    if (status === 'PAID') {
-      updateData.status = 'completed';
-      updateData.completed_at = paid_at || new Date().toISOString();
-      updateData.tripay_paid_at = paid_at;
-      console.log('💰 Payment PAID - marking as completed');
+      if (findError || !transaction) {
+        console.error('❌ Transaction not found:', merchant_ref);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Transaction not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-      // If this is a topup transaction, update user balance
-      if (transaction.transaction_type === 'topup') {
-        console.log('💵 Processing topup for user:', transaction.user_id);
+      console.log('✅ Closed Payment transaction found:', transaction.id);
+    } else {
+      // Handle Open Payment - find open_payment by merchant_ref
+      const { data: openPayment, error: findError } = await supabase
+        .from('open_payments')
+        .select('*')
+        .eq('merchant_ref', merchant_ref)
+        .single();
+
+      if (findError || !openPayment) {
+        console.error('❌ Open Payment not found:', merchant_ref);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Open Payment not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('✅ Open Payment found:', openPayment.id);
+    }
+
+    if (isClosedPayment) {
+      // Process Closed Payment
+      const { data: transaction } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', merchant_ref)
+        .single();
+
+      // Update transaction with Tripay data
+      const updateData: any = {
+        tripay_reference: reference,
+        tripay_merchant_ref: merchant_ref,
+        tripay_payment_method: payment_method_code || payment_method,
+        tripay_payment_name: payment_name,
+        tripay_amount: amount,
+        tripay_fee: fee_merchant,
+        tripay_total_amount: total_amount,
+        tripay_status: status,
+        tripay_callback_data: body,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Handle payment status
+      if (status === 'PAID') {
+        updateData.status = 'completed';
+        updateData.completed_at = paid_at || new Date().toISOString();
+        updateData.tripay_paid_at = paid_at;
+        console.log('💰 Payment PAID - marking as completed');
+
+        // If this is a topup transaction, update user balance
+        if (transaction.transaction_type === 'topup') {
+          console.log('💵 Processing topup for user:', transaction.user_id);
+          
+          const { error: balanceError } = await supabase.rpc('process_topup_transaction', {
+            p_transaction_id: transaction.id,
+          });
+
+          if (balanceError) {
+            console.error('❌ Failed to update balance:', balanceError);
+          } else {
+            console.log('✅ Balance updated successfully');
+          }
+        }
+      } else if (status === 'EXPIRED') {
+        updateData.status = 'failed';
+        console.log('⏰ Payment EXPIRED - marking as failed');
+      } else if (status === 'FAILED') {
+        updateData.status = 'failed';
+        console.log('❌ Payment FAILED');
+      } else if (status === 'UNPAID') {
+        updateData.status = 'pending';
+        console.log('⏳ Payment still UNPAID');
+      }
+
+      // Update transaction
+      const { error: updateError } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', transaction.id);
+
+      if (updateError) {
+        console.error('❌ Failed to update transaction:', updateError);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Failed to update transaction' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('✅ Closed Payment transaction updated successfully');
+    } else {
+      // Process Open Payment
+      const { data: openPayment } = await supabase
+        .from('open_payments')
+        .select('*')
+        .eq('merchant_ref', merchant_ref)
+        .single();
+
+      if (status === 'PAID') {
+        console.log('💰 Open Payment received - creating transaction record');
+
+        // Create transaction record for this Open Payment
+        const { data: newTransaction, error: createTxError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: openPayment.user_id,
+            transaction_type: 'topup',
+            amount: amount_received || amount,
+            status: 'completed',
+            payment_method: 'tripay',
+            tripay_reference: reference,
+            tripay_merchant_ref: merchant_ref,
+            tripay_payment_method: payment_method_code || payment_method,
+            tripay_payment_name: payment_name,
+            tripay_amount: amount,
+            tripay_fee: fee_merchant,
+            tripay_total_amount: total_amount,
+            tripay_status: status,
+            tripay_paid_at: paid_at,
+            tripay_callback_data: body,
+            completed_at: paid_at || new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (createTxError) {
+          console.error('❌ Failed to create transaction:', createTxError);
+          return new Response(
+            JSON.stringify({ success: false, message: 'Failed to create transaction' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('✅ Transaction created:', newTransaction.id);
+
+        // Create open_payment_transaction record
+        const { error: createOPTError } = await supabase
+          .from('open_payment_transactions')
+          .insert({
+            open_payment_id: openPayment.id,
+            transaction_id: newTransaction.id,
+            reference: reference,
+            amount: amount,
+            fee_merchant: fee_merchant || 0,
+            fee_customer: fee_customer || 0,
+            total_fee: total_fee || 0,
+            amount_received: amount_received || amount,
+            status: 'PAID',
+            paid_at: paid_at || new Date().toISOString(),
+          });
+
+        if (createOPTError) {
+          console.error('❌ Failed to create open_payment_transaction:', createOPTError);
+        } else {
+          console.log('✅ Open Payment transaction record created');
+        }
+
+        // Update user balance
+        console.log('💵 Processing topup for user:', openPayment.user_id);
         
         const { error: balanceError } = await supabase.rpc('process_topup_transaction', {
-          p_transaction_id: transaction.id,
+          p_transaction_id: newTransaction.id,
         });
 
         if (balanceError) {
           console.error('❌ Failed to update balance:', balanceError);
-          // Don't fail the callback, just log the error
         } else {
           console.log('✅ Balance updated successfully');
         }
       }
-    } else if (status === 'EXPIRED') {
-      updateData.status = 'failed';
-      console.log('⏰ Payment EXPIRED - marking as failed');
-    } else if (status === 'FAILED') {
-      updateData.status = 'failed';
-      console.log('❌ Payment FAILED');
-    } else if (status === 'UNPAID') {
-      updateData.status = 'pending';
-      console.log('⏳ Payment still UNPAID');
+
+      console.log('✅ Open Payment processed successfully');
     }
 
-    // Update transaction
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update(updateData)
-      .eq('id', transaction.id);
+    // Log callback event to audit_logs
+    await supabase
+      .from('audit_logs')
+      .insert({
+        user_id: null, // System action
+        action: 'tripay_callback',
+        table_name: isClosedPayment ? 'transactions' : 'open_payments',
+        record_id: merchant_ref,
+        details: {
+          reference,
+          merchant_ref,
+          status,
+          amount: total_amount,
+          is_closed_payment: isClosedPayment,
+          callback_virtual_account_id,
+          external_id,
+          account_number,
+        },
+      });
 
-    if (updateError) {
-      console.error('❌ Failed to update transaction:', updateError);
-      return new Response(
-        JSON.stringify({ success: false, message: 'Failed to update transaction' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('✅ Transaction updated successfully');
+    console.log('✅ Callback logged to audit_logs');
 
     // Return success response
     return new Response(

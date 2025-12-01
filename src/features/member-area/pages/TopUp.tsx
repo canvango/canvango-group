@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { History, Wallet, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import TopUpForm, { TopUpFormData } from '../components/topup/TopUpForm';
 import { PaymentChannelSelection } from '../components/topup/PaymentChannelSelection';
+import { PaymentMethodSelector } from '@/features/payment/components/PaymentMethodSelector';
+import { FeeCalculator } from '@/features/payment/components/FeeCalculator';
+import { PaymentInstructions } from '@/features/payment/components/PaymentInstructions';
 import { useAuth } from '../contexts/AuthContext';
-import { useCreatePayment } from '@/hooks/useTripay';
+import { useCreatePayment, usePaymentMethods } from '@/hooks/useTripay';
 import { TripayPaymentMethod, calculateTotalAmount } from '@/services/tripay.service';
 import { formatCurrency } from '../utils/formatters';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -14,13 +17,21 @@ const TopUp: React.FC = () => {
   
   const { user } = useAuth();
   const createPayment = useCreatePayment();
+  const { data: paymentMethods } = usePaymentMethods();
   const [selectedAmount, setSelectedAmount] = React.useState(0);
-  const [selectedMethod, setSelectedMethod] = React.useState<TripayPaymentMethod | null>(null);
+  const [selectedMethodCode, setSelectedMethodCode] = React.useState<string | null>(null);
   const [showPaymentSelection, setShowPaymentSelection] = React.useState(false);
+  const [paymentResponse, setPaymentResponse] = React.useState<any>(null);
   const [notification, setNotification] = React.useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  // Get selected method object
+  const selectedMethod = React.useMemo(() => {
+    if (!selectedMethodCode || !paymentMethods) return null;
+    return paymentMethods.find(m => m.code === selectedMethodCode) || null;
+  }, [selectedMethodCode, paymentMethods]);
 
   // Update amount whenever form changes
   const handleAmountChange = (amount: number) => {
@@ -29,12 +40,13 @@ const TopUp: React.FC = () => {
       setShowPaymentSelection(true);
     } else {
       setShowPaymentSelection(false);
-      setSelectedMethod(null);
+      setSelectedMethodCode(null);
+      setPaymentResponse(null);
     }
   };
 
-  const handleSelectMethod = (method: TripayPaymentMethod) => {
-    setSelectedMethod(method);
+  const handleSelectMethod = (methodCode: string) => {
+    setSelectedMethodCode(methodCode);
   };
 
   const handlePayment = async () => {
@@ -47,7 +59,7 @@ const TopUp: React.FC = () => {
     }
 
     try {
-      await createPayment.mutateAsync({
+      const response = await createPayment.mutateAsync({
         amount: selectedAmount,
         paymentMethod: selectedMethod.code,
         customerName: user.fullName,
@@ -62,10 +74,13 @@ const TopUp: React.FC = () => {
         ],
       });
       
-      // Reset form
-      setShowPaymentSelection(false);
-      setSelectedAmount(0);
-      setSelectedMethod(null);
+      // Show payment instructions
+      setPaymentResponse(response);
+      
+      setNotification({
+        type: 'success',
+        message: 'Pembayaran berhasil dibuat! Silakan selesaikan pembayaran.'
+      });
     } catch (error: any) {
       setNotification({
         type: 'error',
@@ -154,56 +169,23 @@ const TopUp: React.FC = () => {
       {/* Top Up Form */}
       <TopUpForm onAmountChange={handleAmountChange} />
 
-      {/* Payment Channel Selection */}
-      {showPaymentSelection && selectedAmount > 0 && (
+      {/* Payment Flow */}
+      {showPaymentSelection && selectedAmount > 0 && !paymentResponse && (
         <div id="payment-selection" className="space-y-6">
-          {/* Amount Summary */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 shadow-sm border-2 border-blue-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Ringkasan Pembayaran</h3>
-              <button
-                onClick={() => {
-                  setShowPaymentSelection(false);
-                  setSelectedAmount(0);
-                  setSelectedMethod(null);
-                }}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                Ubah Jumlah
-              </button>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">Jumlah Top-Up</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  Rp {selectedAmount.toLocaleString('id-ID')}
-                </span>
-              </div>
-              {selectedMethod && (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">Biaya Admin ({selectedMethod.name})</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      Rp {(calculateTotalAmount(selectedAmount, selectedMethod) - selectedAmount).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t-2 border-blue-200">
-                    <span className="text-base font-bold text-gray-900">Total Bayar</span>
-                    <span className="text-xl font-bold text-blue-600">
-                      Rp {calculateTotalAmount(selectedAmount, selectedMethod).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Payment Channel Selection */}
-          <PaymentChannelSelection
+          {/* Payment Method Selector */}
+          <PaymentMethodSelector
             amount={selectedAmount}
-            onSelectMethod={handleSelectMethod}
-            selectedMethod={selectedMethod?.code || null}
+            selectedMethod={selectedMethodCode}
+            onSelect={handleSelectMethod}
           />
+
+          {/* Fee Calculator */}
+          {selectedMethod && (
+            <FeeCalculator
+              amount={selectedAmount}
+              paymentMethod={selectedMethod}
+            />
+          )}
 
           {/* Payment Button */}
           {selectedMethod && (
@@ -227,6 +209,45 @@ const TopUp: React.FC = () => {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Payment Instructions */}
+      {paymentResponse && (
+        <div className="space-y-6">
+          <div className="card bg-green-50 border border-green-200">
+            <div className="card-body">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-green-900">Pembayaran Dibuat!</h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    Silakan selesaikan pembayaran sesuai instruksi di bawah
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <PaymentInstructions
+            instructions={paymentResponse.data.instructions}
+            payCode={paymentResponse.data.pay_code}
+            qrUrl={paymentResponse.data.qr_url}
+            checkoutUrl={paymentResponse.data.checkout_url}
+            expiredTime={paymentResponse.data.expired_time}
+          />
+
+          <button
+            onClick={() => {
+              setPaymentResponse(null);
+              setShowPaymentSelection(false);
+              setSelectedAmount(0);
+              setSelectedMethodCode(null);
+            }}
+            className="btn-secondary w-full"
+          >
+            Buat Pembayaran Baru
+          </button>
         </div>
       )}
 
