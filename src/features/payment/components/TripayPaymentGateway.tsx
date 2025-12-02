@@ -385,17 +385,17 @@ export function TripayPaymentGateway({
                       <>
                         <div className="flex justify-between text-xs text-gray-500 ml-3">
                           <span>Biaya Tetap</span>
-                          <span>{formatCurrency(paymentData.fee_merchant)}</span>
+                          <span className="line-through">{formatCurrency(paymentData.fee_merchant)}</span>
                         </div>
                         {paymentData.total_fee > paymentData.fee_merchant && (
                           <div className="flex justify-between text-xs text-gray-500 ml-3">
                             <span>Biaya Persentase</span>
-                            <span>{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
+                            <span className="line-through">{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
                           </div>
                         )}
                         <div className="flex justify-between text-xs text-gray-500 ml-3 mt-1">
                           <span>Total Biaya</span>
-                          <span>{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
+                          <span className="line-through">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
                         </div>
                       </>
                     )}

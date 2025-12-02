@@ -80,6 +80,7 @@ const correctedPaymentData = {
 - ✅ Menampilkan Rp 10.000 (benar)
 - ✅ Saldo bertambah Rp 10.000 (sudah benar sebelumnya)
 - ✅ Fee Rp 820 ditanggung seller (sudah benar sebelumnya)
+- ✅ Biaya admin ditampilkan dengan strikethrough (~~Rp 820~~) untuk transparansi
 
 ### Bug #2 - Status Update
 - ✅ Status "Pembayaran Berhasil" dengan icon hijau
