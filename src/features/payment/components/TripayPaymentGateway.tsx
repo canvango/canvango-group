@@ -45,6 +45,17 @@ export function TripayPaymentGateway({
   const [copiedReference, setCopiedReference] = useState(false);
   const [copiedPayCode, setCopiedPayCode] = useState(false);
 
+  // Debug: Log payment data
+  console.log('TripayPaymentGateway - Payment Data:', {
+    amount: paymentData.amount,
+    fee_merchant: paymentData.fee_merchant,
+    total_fee: paymentData.total_fee,
+    amount_received: paymentData.amount_received,
+    calculation: `${paymentData.amount} + ${paymentData.total_fee} = ${paymentData.amount + paymentData.total_fee}`,
+    expected_total: paymentData.amount + paymentData.total_fee,
+    actual_total: paymentData.amount_received,
+  });
+
   // Calculate time left
   useEffect(() => {
     if (!paymentData.expired_time) return;
@@ -207,10 +218,15 @@ export function TripayPaymentGateway({
 
               {/* Amount */}
               <div className="mb-6">
-                <p className="text-xs text-gray-500">Jumlah Bayar</p>
+                <p className="text-xs text-gray-500">Total Pembayaran</p>
                 <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {formatCurrency(paymentData.amount_received)}
+                  {formatCurrency(paymentData.amount)}
                 </p>
+                {paymentData.fee_merchant > 0 && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Biaya admin ditanggung oleh kami
+                  </p>
+                )}
               </div>
 
               {/* Cara Pembayaran Button */}
@@ -229,7 +245,7 @@ export function TripayPaymentGateway({
               {/* Header: Merchant + Timer */}
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-base md:text-lg font-bold text-gray-900">RERE MEDIA GROUP</h3>
+                  <h3 className="text-base md:text-lg font-bold text-gray-900">CANVANGO GROUP</h3>
                   <p className="text-xs text-gray-500 mt-1">ADVERTISING ACCOUNT PROVIDER</p>
                 </div>
                 <div className="text-right">
@@ -245,7 +261,7 @@ export function TripayPaymentGateway({
               <div className="space-y-3 text-sm border-b border-gray-200 pb-6 mb-6">
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-600">Merchant</span>
-                  <span className="text-gray-900 font-medium text-right">RERE MEDIA GROUP</span>
+                  <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-600">Nama Pemesan</span>
@@ -294,14 +310,20 @@ export function TripayPaymentGateway({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Biaya Admin</span>
-                    <span className="text-gray-900 font-medium">
-                      {paymentData.total_fee > 0 ? formatCurrency(paymentData.total_fee) : 'Gratis'}
+                    <span className="text-green-600 font-medium">
+                      Gratis
                     </span>
                   </div>
+                  {paymentData.fee_merchant > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Biaya admin ditanggung oleh kami</span>
+                      <span className="text-xs text-gray-500 line-through">{formatCurrency(paymentData.fee_merchant)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                     <span className="text-base font-semibold text-gray-900">Total</span>
                     <span className="text-lg md:text-xl font-bold text-blue-600">
-                      {formatCurrency(paymentData.amount_received)}
+                      {formatCurrency(paymentData.amount)}
                     </span>
                   </div>
                 </div>
@@ -375,7 +397,7 @@ export function TripayPaymentGateway({
 
           {/* Footer */}
           <div className="text-center mt-8 text-xs md:text-sm text-gray-600">
-            © {new Date().getFullYear()} Rere Media Group
+            © {new Date().getFullYear()} Canvango Group
           </div>
         </div>
       </div>

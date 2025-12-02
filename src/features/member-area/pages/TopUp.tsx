@@ -108,6 +108,12 @@ const TopUp: React.FC = () => {
       // Show payment instructions
       setPaymentResponse(response);
       
+      // Debug: Log payment response
+      console.log('Payment Response:', response.data);
+      console.log('Selected Amount:', selectedAmount);
+      console.log('Response Amount:', response.data.amount);
+      console.log('Response Total:', response.data.amount_received);
+      
       // Start auto-polling status
       setPollingReference(response.data.reference);
       
