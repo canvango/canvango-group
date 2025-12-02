@@ -88,6 +88,8 @@ const TransactionHistory: React.FC = () => {
   const { filters, setFilter, setFilters } = usePersistedFilters('transaction-history', {
     tab: 'accounts',
     warranty: 'all',
+    paymentMethod: 'all',
+    tripayStatus: 'all',
     dateStart: '',
     dateEnd: '',
     page: 1,
@@ -109,6 +111,8 @@ const TransactionHistory: React.FC = () => {
   // Extract filter values
   const activeTab = filters.tab;
   const warrantyFilter = filters.warranty;
+  const paymentMethodFilter = filters.paymentMethod;
+  const tripayStatusFilter = filters.tripayStatus;
   const dateRange = { start: filters.dateStart, end: filters.dateEnd };
   const currentPage = filters.page;
   const pageSize = filters.pageSize;
@@ -227,12 +231,22 @@ const TransactionHistory: React.FC = () => {
   // Apply filters
   const filteredTransactions = useMemo(() => {
     return filteredByTab.filter(transaction => {
-      // Warranty filter
-      if (warrantyFilter !== 'all' && transaction.type === TransactionType.PURCHASE) {
+      // Warranty filter (only for purchase transactions)
+      if (activeTab === 'accounts' && warrantyFilter !== 'all' && transaction.type === TransactionType.PURCHASE) {
         if (warrantyFilter === 'no-warranty' && transaction.warranty) return false;
         if (warrantyFilter === 'active' && (!transaction.warranty || transaction.warranty.claimed || new Date(transaction.warranty.expiresAt) < new Date())) return false;
         if (warrantyFilter === 'expired' && (!transaction.warranty || new Date(transaction.warranty.expiresAt) >= new Date())) return false;
         if (warrantyFilter === 'claimed' && (!transaction.warranty || !transaction.warranty.claimed)) return false;
+      }
+
+      // Payment method filter (only for topup transactions)
+      if (activeTab === 'topup' && paymentMethodFilter !== 'all') {
+        if (transaction.paymentMethod !== paymentMethodFilter) return false;
+      }
+
+      // TriPay status filter (only for topup transactions)
+      if (activeTab === 'topup' && tripayStatusFilter !== 'all') {
+        if (!transaction.tripayStatus || transaction.tripayStatus !== tripayStatusFilter) return false;
       }
 
       // Date range filter
@@ -248,7 +262,7 @@ const TransactionHistory: React.FC = () => {
 
       return true;
     });
-  }, [filteredByTab, warrantyFilter, dateRange]);
+  }, [filteredByTab, activeTab, warrantyFilter, paymentMethodFilter, tripayStatusFilter, dateRange]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTransactions.length / pageSize);
@@ -283,11 +297,25 @@ const TransactionHistory: React.FC = () => {
   };
 
   const handleTabChange = (tabId: string) => {
-    setFilters({ tab: tabId, page: 1, warranty: 'all' });
+    setFilters({ 
+      tab: tabId, 
+      page: 1, 
+      warranty: 'all',
+      paymentMethod: 'all',
+      tripayStatus: 'all'
+    });
   };
 
   const handleWarrantyFilterChange = (value: string) => {
     setFilters({ warranty: value, page: 1 });
+  };
+
+  const handlePaymentMethodFilterChange = (value: string) => {
+    setFilters({ paymentMethod: value, page: 1 });
+  };
+
+  const handleTripayStatusFilterChange = (value: string) => {
+    setFilters({ tripayStatus: value, page: 1 });
   };
 
   const handleDateRangeChange = (range: { start: string; end: string }) => {
@@ -338,27 +366,50 @@ const TransactionHistory: React.FC = () => {
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
-        <SummaryCard
-          icon={ShoppingBag}
-          value={stats?.totalAccountsPurchased || 0}
-          label="Total Akun Dibeli"
-          bgColor="bg-blue-50"
-        />
-        <SummaryCard
-          icon={TrendingUp}
-          value={formatCurrency(stats?.totalSpending || 0)}
-          label="Total Pengeluaran"
-          bgColor="bg-green-50"
-        />
-        <SummaryCard
-          icon={Wallet}
-          value={formatCurrency(stats?.totalTopup || 0)}
-          label="Total Top Up"
-          bgColor="bg-primary-50"
-        />
-      </div>
+      {/* Summary Cards - Different per tab */}
+      {activeTab === 'accounts' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+          <SummaryCard
+            icon={ShoppingBag}
+            value={stats?.totalAccountsPurchased || 0}
+            label="Total Akun Dibeli"
+            bgColor="bg-blue-50"
+          />
+          <SummaryCard
+            icon={TrendingUp}
+            value={formatCurrency(stats?.totalSpending || 0)}
+            label="Total Pengeluaran"
+            bgColor="bg-green-50"
+          />
+          <SummaryCard
+            icon={CheckCircle}
+            value={stats?.completedTransactions || 0}
+            label="Transaksi Selesai"
+            bgColor="bg-green-50"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+          <SummaryCard
+            icon={Wallet}
+            value={formatCurrency(stats?.totalTopup || 0)}
+            label="Total Top Up"
+            bgColor="bg-primary-50"
+          />
+          <SummaryCard
+            icon={Clock}
+            value={allTransactions.filter(t => t.type === TransactionType.TOPUP && t.status === TransactionStatus.PENDING).length}
+            label="Pending"
+            bgColor="bg-orange-50"
+          />
+          <SummaryCard
+            icon={CheckCircle}
+            value={allTransactions.filter(t => t.type === TransactionType.TOPUP && t.status === TransactionStatus.SUCCESS).length}
+            label="Berhasil"
+            bgColor="bg-green-50"
+          />
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <TabNavigation
@@ -367,40 +418,81 @@ const TransactionHistory: React.FC = () => {
         onTabChange={handleTabChange}
       />
 
-      {/* Filters (only show for account transactions) */}
-      {activeTab === 'accounts' && (
+      {/* Filters - Different per tab */}
+      {activeTab === 'accounts' ? (
         <TransactionFilters
           warrantyFilter={warrantyFilter}
           dateRange={dateRange}
           onWarrantyFilterChange={handleWarrantyFilterChange}
           onDateRangeChange={handleDateRangeChange}
         />
-      )}
+      ) : (
+        <div className="bg-white rounded-3xl border border-gray-200 p-4 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Payment Method Filter */}
+            <div>
+              <label htmlFor="payment-method-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                Metode Pembayaran
+              </label>
+              <select
+                id="payment-method-filter"
+                value={paymentMethodFilter}
+                onChange={(e) => handlePaymentMethodFilterChange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm text-gray-700"
+              >
+                <option value="all">Semua Metode</option>
+                <option value="QRIS2">QRIS</option>
+                <option value="BRIVA">BRI Virtual Account</option>
+                <option value="BNIVA">BNI Virtual Account</option>
+                <option value="MANDIRIVA">Mandiri Virtual Account</option>
+                <option value="PERMATAVA">Permata Virtual Account</option>
+              </select>
+            </div>
 
-      {/* Date filter for top-up */}
-      {activeTab === 'topup' && (
-        <div className="flex-1">
-          <label htmlFor="date-start-topup" className="block text-sm font-medium text-gray-700 mb-2">
-            Rentang Tanggal
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="date-start-topup"
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => handleDateRangeChange({ ...dateRange, start: e.target.value })}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-              aria-label="Tanggal mulai"
-            />
-            <span className="flex items-center text-gray-500">-</span>
-            <input
-              id="date-end-topup"
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => handleDateRangeChange({ ...dateRange, end: e.target.value })}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-              aria-label="Tanggal akhir"
-            />
+            {/* TriPay Status Filter */}
+            <div>
+              <label htmlFor="tripay-status-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                Status Pembayaran
+              </label>
+              <select
+                id="tripay-status-filter"
+                value={tripayStatusFilter}
+                onChange={(e) => handleTripayStatusFilterChange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm text-gray-700"
+              >
+                <option value="all">Semua Status</option>
+                <option value="UNPAID">Belum Dibayar</option>
+                <option value="PAID">Sudah Dibayar</option>
+                <option value="EXPIRED">Kadaluarsa</option>
+                <option value="FAILED">Gagal</option>
+              </select>
+            </div>
+
+            {/* Date Range Filter */}
+            <div>
+              <label htmlFor="date-start-topup" className="block text-sm font-medium text-gray-700 mb-2">
+                Rentang Tanggal
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="date-start-topup"
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange({ ...dateRange, start: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm text-gray-700"
+                  aria-label="Tanggal mulai"
+                />
+                <span className="flex items-center text-gray-500 text-sm">-</span>
+                <input
+                  id="date-end-topup"
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange({ ...dateRange, end: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-sm text-gray-700"
+                  aria-label="Tanggal akhir"
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -410,8 +502,8 @@ const TransactionHistory: React.FC = () => {
         <TransactionTable
           transactions={paginatedTransactions}
           onViewDetails={handleViewDetails}
-          onViewAccountDetails={handleViewAccountDetails}
           isLoading={isLoading}
+          transactionType={activeTab === 'accounts' ? 'purchase' : 'topup'}
         />
       </div>
 
@@ -444,25 +536,34 @@ const TransactionHistory: React.FC = () => {
               </span>
             </div>
 
-            {/* Produk */}
-            <div className="flex justify-between items-start py-2.5">
-              <span className="text-xs text-gray-500">Produk</span>
-              <span className="text-xs font-medium text-gray-700 text-right max-w-[60%]">
-                {transaction.product?.title || 'Top Up Saldo'}
-              </span>
-            </div>
-
-            {/* Jumlah */}
-            <div className="flex justify-between items-start py-2.5">
-              <span className="text-xs text-gray-500">Jumlah</span>
-              <span className="text-xs font-medium text-gray-700 text-right">
-                {transaction.quantity || 1} {transaction.type === TransactionType.PURCHASE ? 'Akun' : 'Transaksi'}
-              </span>
-            </div>
+            {/* Produk / Metode Pembayaran */}
+            {activeTab === 'accounts' ? (
+              <>
+                <div className="flex justify-between items-start py-2.5">
+                  <span className="text-xs text-gray-500">Produk</span>
+                  <span className="text-xs font-medium text-gray-700 text-right max-w-[60%]">
+                    {transaction.product?.title || '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start py-2.5">
+                  <span className="text-xs text-gray-500">Jumlah</span>
+                  <span className="text-xs font-medium text-gray-700 text-right">
+                    {transaction.quantity || 1} Akun
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Metode Pembayaran</span>
+                <span className="text-xs font-medium text-gray-700 text-right">
+                  {transaction.tripayPaymentName || transaction.paymentMethod || '-'}
+                </span>
+              </div>
+            )}
 
             {/* Total */}
             <div className="flex justify-between items-start py-2.5">
-              <span className="text-xs text-gray-500">Total</span>
+              <span className="text-xs text-gray-500">{activeTab === 'topup' ? 'Nominal' : 'Total'}</span>
               <span className="text-xs font-medium text-gray-700 text-right">
                 Rp {transaction.amount.toLocaleString('id-ID')}
               </span>
@@ -500,7 +601,7 @@ const TransactionHistory: React.FC = () => {
             </div>
 
             {/* Garansi - Only for purchase transactions */}
-            {transaction.type === TransactionType.PURCHASE && transaction.warranty && (
+            {activeTab === 'accounts' && transaction.warranty && (
               <div className="flex justify-between items-start py-2.5">
                 <span className="text-xs text-gray-500">Garansi</span>
                 <span 
@@ -521,18 +622,41 @@ const TransactionHistory: React.FC = () => {
               </div>
             )}
 
+            {/* Status TriPay - Only for topup transactions */}
+            {activeTab === 'topup' && transaction.tripayStatus && (
+              <div className="flex justify-between items-start py-2.5">
+                <span className="text-xs text-gray-500">Status TriPay</span>
+                <span 
+                  className={`px-3 py-1 text-xs font-medium rounded-2xl border ${
+                    transaction.tripayStatus === 'PAID'
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : transaction.tripayStatus === 'UNPAID'
+                      ? 'bg-orange-100 text-orange-800 border-orange-200'
+                      : transaction.tripayStatus === 'EXPIRED'
+                      ? 'bg-gray-100 text-gray-800 border-gray-200'
+                      : 'bg-red-100 text-red-800 border-red-200'
+                  }`}
+                >
+                  {transaction.tripayStatus === 'PAID' ? 'Dibayar' : 
+                   transaction.tripayStatus === 'UNPAID' ? 'Belum Dibayar' :
+                   transaction.tripayStatus === 'EXPIRED' ? 'Kadaluarsa' :
+                   transaction.tripayStatus}
+                </span>
+              </div>
+            )}
+
             {/* Aksi */}
             <div className="flex gap-2 pt-3 last:pb-0">
               <button
                 onClick={() => handleViewDetails(transaction)}
-                className="flex-1 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors"
               >
                 Detail
               </button>
-              {transaction.type === TransactionType.PURCHASE && transaction.accountDetails && (
+              {activeTab === 'accounts' && transaction.accountDetails && (
                 <button
                   onClick={() => handleViewAccountDetails(transaction)}
-                  className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-xl hover:bg-green-700 transition-colors"
                 >
                   Lihat Akun
                 </button>
