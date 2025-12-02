@@ -56,11 +56,14 @@ const FinTechPaymentDemo: React.FC = () => {
   // Right Column Content
   const rightColumn = (
     <div className="space-y-6">
-      {/* Header with Timer */}
+      {/* Header with Logo + Timer */}
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-slate-900">CANVANGO GROUP</h3>
-          <p className="text-xs text-slate-500 mt-1">ADVERTISING ACCOUNT PROVIDER</p>
+          <img 
+            src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
+            alt="Canvango Group" 
+            className="h-14 w-auto object-contain"
+          />
         </div>
         <TimerDisplay label="Waktu Tersisa" timeString="00:31:17" sublabel="Jam:Menit:Detik" />
       </div>

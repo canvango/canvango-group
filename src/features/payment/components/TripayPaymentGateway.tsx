@@ -246,11 +246,14 @@ export function TripayPaymentGateway({
 
             {/* RIGHT PANEL: Transaction Details */}
             <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
-              {/* Header: Merchant + Timer */}
+              {/* Header: Logo + Timer */}
               <div className="flex justify-between items-start mb-4 sm:mb-6">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 truncate">CANVANGO GROUP</h3>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">ADVERTISING ACCOUNT PROVIDER</p>
+                  <img 
+                    src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
+                    alt="Canvango Group" 
+                    className="h-12 sm:h-14 md:h-16 w-auto object-contain"
+                  />
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
