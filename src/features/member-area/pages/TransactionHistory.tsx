@@ -8,6 +8,7 @@ import TransactionFilters from '../components/transactions/TransactionFilters';
 import TransactionTable from '../components/transactions/TransactionTable';
 import TransactionDetailModal from '../components/transactions/TransactionDetailModal';
 import AccountDetailModal from '../components/transactions/AccountDetailModal';
+import TripayTransactionDetailModal from '@/features/payment/components/TripayTransactionDetailModal';
 import Pagination from '../../../shared/components/Pagination';
 import { Transaction, TransactionType, TransactionStatus } from '../types/transaction';
 import { formatCurrency } from '../utils/formatters';
@@ -61,6 +62,19 @@ const mapDbTransactionToTransaction = (dbTxn: any): Transaction => {
     // Store purchase_id and account_details for AccountDetailModal
     purchaseId: dbTxn.purchase_id,
     accountDetails: dbTxn.account_details,
+    
+    // TriPay payment gateway fields
+    tripayReference: dbTxn.tripay_reference,
+    tripayMerchantRef: dbTxn.tripay_merchant_ref,
+    tripayPaymentMethod: dbTxn.tripay_payment_method,
+    tripayPaymentName: dbTxn.tripay_payment_name,
+    tripayStatus: dbTxn.tripay_status,
+    tripayQrUrl: dbTxn.tripay_qr_url,
+    tripayPaymentUrl: dbTxn.tripay_payment_url,
+    tripayAmount: dbTxn.tripay_amount ? Number(dbTxn.tripay_amount) : undefined,
+    tripayFee: dbTxn.tripay_fee ? Number(dbTxn.tripay_fee) : undefined,
+    tripayTotalAmount: dbTxn.tripay_total_amount ? Number(dbTxn.tripay_total_amount) : undefined,
+    tripayCallbackData: dbTxn.tripay_callback_data,
   };
 };
 
@@ -83,6 +97,7 @@ const TransactionHistory: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAccountDetailModalOpen, setIsAccountDetailModalOpen] = useState(false);
+  const [isTripayDetailModalOpen, setIsTripayDetailModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApplicationError | null>(null);
   const [loadingProgress, setLoadingProgress] = useState<string>('Memuat data...');
@@ -244,7 +259,13 @@ const TransactionHistory: React.FC = () => {
 
   const handleViewDetails = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    setIsDetailModalOpen(true);
+    
+    // Check if it's a TriPay transaction (TOPUP with tripay_reference)
+    if (transaction.type === TransactionType.TOPUP && transaction.tripayReference) {
+      setIsTripayDetailModalOpen(true);
+    } else {
+      setIsDetailModalOpen(true);
+    }
   };
 
   const handleViewAccountDetails = (transaction: Transaction) => {
@@ -571,6 +592,20 @@ const TransactionHistory: React.FC = () => {
         onClose={() => {
           setIsAccountDetailModalOpen(false);
           setSelectedTransaction(null);
+        }}
+      />
+
+      {/* TriPay Transaction Detail Modal */}
+      <TripayTransactionDetailModal
+        transaction={selectedTransaction}
+        isOpen={isTripayDetailModalOpen}
+        onClose={() => {
+          setIsTripayDetailModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onRefreshStatus={() => {
+          // Reload transactions after status refresh
+          window.location.reload();
         }}
       />
     </div>

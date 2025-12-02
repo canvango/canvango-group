@@ -31,14 +31,16 @@ interface TripayPaymentGatewayProps {
     expired_time: number;
     instructions: PaymentInstruction[];
   };
-  onBack: () => void;
+  onBack?: () => void;
   onRefreshStatus?: () => void;
+  isModal?: boolean; // NEW: Flag to indicate if used in modal
 }
 
 export function TripayPaymentGateway({
   paymentData,
   onBack,
   onRefreshStatus,
+  isModal = false,
 }: TripayPaymentGatewayProps) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -129,21 +131,23 @@ export function TripayPaymentGateway({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
-      {/* Back Button */}
-      <div className="px-4 md:px-6 pt-6 pb-4">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Pembayaran</span>
-        </button>
-      </div>
+    <div className={isModal ? "" : "min-h-screen bg-gray-50 pb-8"}>
+      {/* Back Button - Only show if not modal */}
+      {!isModal && onBack && (
+        <div className="px-4 md:px-6 pt-6 pb-4">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Pembayaran</span>
+          </button>
+        </div>
+      )}
 
       {/* Payment Gateway Container */}
-      <div className="px-2 sm:px-4 md:px-6 max-w-[1400px] mx-auto">
-        <div className="bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className={isModal ? "" : "px-2 sm:px-4 md:px-6 max-w-[1400px] mx-auto"}>
+        <div className={`bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 ${isModal ? "rounded-2xl p-3 sm:p-4" : "rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 lg:p-8"}`}>
           
           {/* 2-Column Layout (Desktop) / Stack (Mobile) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">

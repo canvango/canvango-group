@@ -40,6 +40,32 @@ export interface Transaction {
   // Additional fields for warranty and account details
   purchaseId?: string;
   accountDetails?: Record<string, any>;
+  
+  // TriPay payment gateway fields
+  tripayReference?: string;
+  tripayMerchantRef?: string;
+  tripayPaymentMethod?: string;
+  tripayPaymentName?: string;
+  tripayStatus?: string;
+  tripayQrUrl?: string;
+  tripayPaymentUrl?: string;
+  tripayAmount?: number;
+  tripayFee?: number;
+  tripayTotalAmount?: number;
+  tripayCallbackData?: {
+    instructions?: Array<{
+      title: string;
+      steps: string[];
+    }>;
+    expired_time?: number;
+    pay_code?: string;
+    qr_string?: string;
+    customer_name?: string;
+    customer_email?: string;
+    customer_phone?: string;
+    fee_merchant?: number;
+    amount_received?: number;
+  };
 }
 
 export interface Account {
