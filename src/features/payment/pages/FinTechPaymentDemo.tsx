@@ -7,7 +7,6 @@
 import React from 'react';
 import { FinTechPaymentLayout } from '../components/FinTechPaymentLayout';
 import {
-  SectionHeader,
   InfoRow,
   AlertBox,
   Divider,
@@ -56,8 +55,8 @@ const FinTechPaymentDemo: React.FC = () => {
   // Right Column Content
   const rightColumn = (
     <div className="space-y-6">
-      {/* Header with Logo + Timer */}
-      <div className="flex justify-between items-start gap-4 pb-6">
+      {/* Header Section: Logo + Timer */}
+      <div className="flex justify-between items-start gap-4 mb-6">
         <div className="flex-1">
           <img 
             src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
@@ -68,14 +67,10 @@ const FinTechPaymentDemo: React.FC = () => {
         <TimerDisplay label="Waktu Tersisa" timeString="00:31:17" sublabel="Jam:Menit:Detik" />
       </div>
 
-      {/* Divider after header */}
-      <div className="border-t-2 border-red-500 mb-6" />
-
       <Divider />
 
-      {/* Transaction Info */}
+      {/* Transaction Info Section */}
       <div>
-        <SectionHeader title="Informasi Transaksi" />
         <div className="space-y-0">
           <InfoRow label="Merchant" value="CANVANGO GROUP" />
           <InfoRow label="Nama Pemesan" value="member1" />
@@ -93,9 +88,9 @@ const FinTechPaymentDemo: React.FC = () => {
 
       <Divider />
 
-      {/* Payment Breakdown */}
+      {/* Payment Breakdown Section */}
       <div>
-        <SectionHeader title="Rincian Pembayaran" />
+        <h3 className="text-base font-bold text-slate-900 mb-4">Rincian Pembayaran</h3>
         <div className="space-y-3">
           <InfoRow label="Jumlah Top Up" value="Rp 10.000" />
 

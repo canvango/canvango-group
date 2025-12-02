@@ -246,8 +246,8 @@ export function TripayPaymentGateway({
 
             {/* RIGHT PANEL: Transaction Details */}
             <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
-              {/* Header: Logo + Timer */}
-              <div className="flex justify-between items-start pb-4 sm:pb-6">
+              {/* Header Section: Logo + Timer */}
+              <div className="flex justify-between items-start mb-4 sm:mb-6">
                 <div className="flex-1 min-w-0">
                   <img 
                     src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
@@ -264,11 +264,11 @@ export function TripayPaymentGateway({
                 </div>
               </div>
 
-              {/* Divider after header */}
-              <div className="border-t-2 border-red-500 mb-4 sm:mb-6" />
+              {/* Divider */}
+              <div className="border-t border-gray-200 mb-4 sm:mb-6" />
 
-              {/* Transaction Info */}
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm border-b border-gray-200 pb-4 sm:pb-6 mb-4 sm:mb-6">
+              {/* Transaction Info Section */}
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
                 <div className="flex justify-between gap-2 sm:gap-4">
                   <span className="text-gray-600 flex-shrink-0">Merchant</span>
                   <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
@@ -310,9 +310,9 @@ export function TripayPaymentGateway({
                 </div>
               </div>
 
-              {/* Payment Breakdown */}
+              {/* Payment Breakdown Section */}
               <div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Rincian Pembayaran</h3>
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Rincian Pembayaran</h3>
                 <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Jumlah Top Up</span>
