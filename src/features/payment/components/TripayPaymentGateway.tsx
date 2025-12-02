@@ -248,7 +248,7 @@ export function TripayPaymentGateway({
             <div className="space-y-3 sm:space-y-4">
               {/* Card 1: Header - Logo + Timer */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
-                <div className="flex justify-between items-start gap-2 sm:gap-4">
+                <div className="flex justify-between items-center gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <img 
                       src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
