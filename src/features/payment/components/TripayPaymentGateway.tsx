@@ -305,27 +305,55 @@ export function TripayPaymentGateway({
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Rincian Pembayaran</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Top Up Saldo</span>
+                    <span className="text-gray-600">Jumlah Top Up</span>
                     <span className="text-gray-900 font-medium">{formatCurrency(paymentData.amount)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Biaya Admin</span>
-                    <span className="text-green-600 font-medium">
-                      Gratis
-                    </span>
-                  </div>
-                  {paymentData.fee_merchant > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-500">Biaya admin ditanggung oleh kami</span>
-                      <span className="text-xs text-gray-500 line-through">{formatCurrency(paymentData.fee_merchant)}</span>
+                  
+                  {/* Biaya Admin Section */}
+                  <div className="border-t border-gray-100 pt-2 mt-2">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-600 font-medium">BIAYA ADMIN</span>
+                      <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-0.5 rounded">
+                        Ditanggung Seller
+                      </span>
                     </div>
-                  )}
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">Total</span>
+                    
+                    {paymentData.fee_merchant > 0 && (
+                      <>
+                        <div className="flex justify-between text-xs text-gray-500 ml-3">
+                          <span>Biaya Tetap</span>
+                          <span>{formatCurrency(paymentData.fee_merchant)}</span>
+                        </div>
+                        {paymentData.total_fee > paymentData.fee_merchant && (
+                          <div className="flex justify-between text-xs text-gray-500 ml-3">
+                            <span>Biaya Persentase</span>
+                            <span>{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs text-gray-500 ml-3 mt-1">
+                          <span>Total Biaya</span>
+                          <span>{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Total Bayar */}
+                  <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                    <span className="text-base font-semibold text-gray-900">Total Bayar</span>
                     <span className="text-lg md:text-xl font-bold text-blue-600">
                       {formatCurrency(paymentData.amount)}
                     </span>
                   </div>
+                  
+                  {/* Info Message */}
+                  {paymentData.fee_merchant > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 mt-3">
+                      <p className="text-xs text-green-800 leading-relaxed">
+                        ✓ Bayar sebanyak <span className="font-semibold">{formatCurrency(paymentData.amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(paymentData.amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span> ditanggung oleh seller.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
