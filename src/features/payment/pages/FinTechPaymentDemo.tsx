@@ -52,91 +52,96 @@ const FinTechPaymentDemo: React.FC = () => {
     </div>
   );
 
-  // Right Column Content
+  // Right Column Content - 2 Separate Cards
   const rightColumn = (
-    <div className="space-y-6">
-      {/* Header Section: Logo + Timer */}
-      <div className="flex justify-between items-start gap-4 mb-6">
-        <div className="flex-1">
-          <img 
-            src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
-            alt="Canvango Group" 
-            className="h-14 w-auto object-contain"
-          />
-        </div>
-        <TimerDisplay label="Waktu Tersisa" timeString="00:31:17" sublabel="Jam:Menit:Detik" />
-      </div>
-
-      <Divider />
-
-      {/* Transaction Info Section */}
-      <div>
-        <div className="space-y-0">
-          <InfoRow label="Merchant" value="CANVANGO GROUP" />
-          <InfoRow label="Nama Pemesan" value="member1" />
-          <InfoRow
-            label="Nomor Invoice"
-            value={<span className="font-mono text-xs">5d83f4ab-c43-4963-b658-1f65505a4db7</span>}
-          />
-          <InfoRow
-            label="Nomor Referensi"
-            value={<span className="font-mono text-xs">T4715928829318KAWB</span>}
-          />
-          <InfoRow label="Email" value="member1@gmail.com" />
+    <div className="space-y-4">
+      {/* Card 1: Header - Logo + Timer */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1">
+            <img
+              src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png"
+              alt="Canvango Group"
+              className="h-14 w-auto object-contain"
+            />
+          </div>
+          <TimerDisplay label="Waktu Tersisa" timeString="00:31:17" sublabel="Jam:Menit:Detik" />
         </div>
       </div>
 
-      <Divider />
-
-      {/* Payment Breakdown Section */}
-      <div>
-        <h3 className="text-base font-bold text-slate-900 mb-4">Rincian Pembayaran</h3>
-        <div className="space-y-3">
-          <InfoRow label="Jumlah Top Up" value="Rp 10.000" />
-
-          {/* Admin Fee Section */}
-          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-green-800">BIAYA ADMIN</span>
-              <span className="text-xs font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full">
-                Ditanggung Seller
-              </span>
-            </div>
-            <div className="space-y-1 text-xs text-green-700 ml-2">
-              <div className="flex justify-between">
-                <span>Biaya Tetap</span>
-                <span>Rp 820</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Biaya</span>
-                <span>Rp 820</span>
-              </div>
+      {/* Card 2: Transaction Info + Payment Breakdown */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
+        <div className="space-y-6">
+          {/* Transaction Info Section */}
+          <div>
+            <div className="space-y-0">
+              <InfoRow label="Merchant" value="CANVANGO GROUP" />
+              <InfoRow label="Nama Pemesan" value="member1" />
+              <InfoRow
+                label="Nomor Invoice"
+                value={<span className="font-mono text-xs">5d83f4ab-c43-4963-b658-1f65505a4db7</span>}
+              />
+              <InfoRow
+                label="Nomor Referensi"
+                value={<span className="font-mono text-xs">T4715928829318KAWB</span>}
+              />
+              <InfoRow label="Email" value="member1@gmail.com" />
             </div>
           </div>
 
-          {/* Total */}
-          <div className="pt-4 border-t-2 border-slate-200">
-            <div className="flex justify-between items-center">
-              <span className="text-base font-bold text-slate-900">Total Bayar</span>
-              <span className="text-2xl font-bold text-blue-600">Rp 10.000</span>
+          <Divider />
+
+          {/* Payment Breakdown Section */}
+          <div>
+            <h3 className="text-base font-bold text-slate-900 mb-4">Rincian Pembayaran</h3>
+            <div className="space-y-3">
+              <InfoRow label="Jumlah Top Up" value="Rp 10.000" />
+
+              {/* Admin Fee Section */}
+              <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-green-800">BIAYA ADMIN</span>
+                  <span className="text-xs font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full">
+                    Ditanggung Seller
+                  </span>
+                </div>
+                <div className="space-y-1 text-xs text-green-700 ml-2">
+                  <div className="flex justify-between">
+                    <span>Biaya Tetap</span>
+                    <span>Rp 820</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Biaya</span>
+                    <span>Rp 820</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="pt-4 border-t-2 border-slate-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-bold text-slate-900">Total Bayar</span>
+                  <span className="text-2xl font-bold text-blue-600">Rp 10.000</span>
+                </div>
+              </div>
+
+              {/* Info Message */}
+              <AlertBox type="success">
+                <p>
+                  ✓ Bayar sebanyak <span className="font-semibold">Rp 10.000</span> dan saldo Anda
+                  akan bertambah <span className="font-semibold">Rp 10.000</span>. Biaya admin{' '}
+                  <span className="font-semibold">Rp 820</span> ditanggung oleh seller.
+                </p>
+              </AlertBox>
             </div>
           </div>
 
-          {/* Info Message */}
-          <AlertBox type="success">
-            <p>
-              ✓ Bayar sebanyak <span className="font-semibold">Rp 10.000</span> dan saldo Anda
-              akan bertambah <span className="font-semibold">Rp 10.000</span>. Biaya admin{' '}
-              <span className="font-semibold">Rp 820</span> ditanggung oleh seller.
-            </p>
-          </AlertBox>
+          {/* Refresh Button */}
+          <Button variant="outline" fullWidth>
+            🔄 Refresh Status Pembayaran
+          </Button>
         </div>
       </div>
-
-      {/* Refresh Button */}
-      <Button variant="outline" fullWidth>
-        🔄 Refresh Status Pembayaran
-      </Button>
     </div>
   );
 

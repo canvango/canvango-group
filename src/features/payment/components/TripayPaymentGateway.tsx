@@ -244,31 +244,32 @@ export function TripayPaymentGateway({
               )}
             </div>
 
-            {/* RIGHT PANEL: Transaction Details */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
-              {/* Header Section: Logo + Timer */}
-              <div className="flex justify-between items-start mb-4 sm:mb-6">
-                <div className="flex-1 min-w-0">
-                  <img 
-                    src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
-                    alt="Canvango Group" 
-                    className="h-12 sm:h-14 md:h-16 w-auto object-contain"
-                  />
-                </div>
-                <div className="text-right flex-shrink-0 ml-2">
-                  <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-500">
-                    {formatTimeLeft(timeLeft)}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
+            {/* RIGHT PANEL: 2 Separate Cards */}
+            <div className="space-y-3 sm:space-y-4">
+              {/* Card 1: Header - Logo + Timer */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
+                <div className="flex justify-between items-start gap-2 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <img 
+                      src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
+                      alt="Canvango Group" 
+                      className="h-10 sm:h-12 md:h-14 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-500">
+                      {formatTimeLeft(timeLeft)}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-200 mb-4 sm:mb-6" />
-
-              {/* Transaction Info Section */}
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
+              {/* Card 2: Transaction Info + Payment Breakdown */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
+                {/* Transaction Info Section */}
+                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
                 <div className="flex justify-between gap-2 sm:gap-4">
                   <span className="text-gray-600 flex-shrink-0">Merchant</span>
                   <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
@@ -367,15 +368,16 @@ export function TripayPaymentGateway({
                 </div>
               </div>
 
-              {/* Refresh Status Button */}
-              {onRefreshStatus && (
-                <button
-                  onClick={onRefreshStatus}
-                  className="btn-secondary w-full mt-4 sm:mt-6 text-xs sm:text-sm"
-                >
-                  🔄 Refresh Status Pembayaran
-                </button>
-              )}
+                {/* Refresh Status Button */}
+                {onRefreshStatus && (
+                  <button
+                    onClick={onRefreshStatus}
+                    className="btn-secondary w-full mt-4 sm:mt-6 text-xs sm:text-sm"
+                  >
+                    🔄 Refresh Status Pembayaran
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
