@@ -15,7 +15,6 @@ interface PaymentInstructionsProps {
   instructions: PaymentInstruction[];
   payCode?: string;
   qrUrl?: string;
-  checkoutUrl?: string;
   expiredTime?: number; // Unix timestamp
   onRefreshStatus?: () => void;
 }
@@ -24,7 +23,6 @@ export function PaymentInstructions({
   instructions,
   payCode,
   qrUrl,
-  checkoutUrl,
   expiredTime,
   onRefreshStatus,
 }: PaymentInstructionsProps) {
@@ -86,6 +84,23 @@ export function PaymentInstructions({
 
   return (
     <div className="space-y-4">
+      {/* Status Badge - Menunggu Pembayaran */}
+      <div className="card bg-yellow-50 border-2 border-yellow-300">
+        <div className="card-body">
+          <div className="flex items-center gap-3">
+            <div className="animate-pulse">
+              <svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-yellow-900">Menunggu Pembayaran</p>
+              <p className="text-xs text-yellow-700">Selesaikan pembayaran untuk melanjutkan</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Countdown Timer */}
       {timeLeft !== null && (
         <div className="card bg-blue-50 border border-blue-200">
@@ -106,20 +121,20 @@ export function PaymentInstructions({
         </div>
       )}
 
-      {/* Pay Code */}
+      {/* Pay Code - Enhanced Visual */}
       {payCode && (
-        <div className="card">
+        <div className="card border-2 border-blue-300">
           <div className="card-body">
-            <p className="text-sm font-medium text-gray-700 mb-2">Kode Pembayaran</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">Kode Pembayaran / Virtual Account</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 p-3 bg-gray-100 rounded-xl">
-                <p className="text-lg font-mono font-bold text-gray-900 text-center">
+              <div className="flex-1 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                <p className="text-2xl font-mono font-bold text-blue-900 text-center tracking-wider">
                   {payCode}
                 </p>
               </div>
               <button
                 onClick={handleCopyPayCode}
-                className="btn-secondary px-4 py-3"
+                className="btn-primary px-4 py-4"
                 title="Salin kode"
               >
                 {copied ? (
@@ -142,47 +157,28 @@ export function PaymentInstructions({
                 )}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* QR Code */}
-      {qrUrl && (
-        <div className="card">
-          <div className="card-body text-center">
-            <p className="text-sm font-medium text-gray-700 mb-3">Scan QR Code</p>
-            <img
-              src={qrUrl}
-              alt="QR Code"
-              className="w-48 h-48 mx-auto border-2 border-gray-200 rounded-xl"
-            />
-            <p className="text-xs text-gray-500 mt-3">
-              Scan QR code ini menggunakan aplikasi mobile banking atau e-wallet Anda
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Gunakan kode ini untuk transfer melalui ATM, Mobile Banking, atau Internet Banking
             </p>
           </div>
         </div>
       )}
 
-      {/* Checkout URL */}
-      {checkoutUrl && (
-        <div className="card bg-green-50 border border-green-200">
-          <div className="card-body">
-            <a
-              href={checkoutUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              <span>Lanjutkan ke Halaman Pembayaran</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            </a>
+      {/* QR Code - Enhanced Size */}
+      {qrUrl && (
+        <div className="card">
+          <div className="card-body text-center">
+            <p className="text-sm font-medium text-gray-700 mb-3">Scan QR Code</p>
+            <div className="bg-white p-4 rounded-2xl inline-block border-2 border-gray-200">
+              <img
+                src={qrUrl}
+                alt="QR Code"
+                className="w-64 h-64 md:w-80 md:h-80"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Scan QR code ini menggunakan aplikasi mobile banking atau e-wallet Anda
+            </p>
           </div>
         </div>
       )}

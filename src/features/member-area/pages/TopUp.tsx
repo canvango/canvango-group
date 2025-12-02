@@ -1,14 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { History, Wallet, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
-import TopUpForm, { TopUpFormData } from '../components/topup/TopUpForm';
-import { PaymentChannelSelection } from '../components/topup/PaymentChannelSelection';
+import TopUpForm from '../components/topup/TopUpForm';
 import { PaymentMethodSelector } from '@/features/payment/components/PaymentMethodSelector';
 import { FeeCalculator } from '@/features/payment/components/FeeCalculator';
 import { PaymentInstructions } from '@/features/payment/components/PaymentInstructions';
 import { useAuth } from '../contexts/AuthContext';
-import { useCreatePayment, usePaymentMethods } from '@/hooks/useTripay';
-import { TripayPaymentMethod, calculateTotalAmount } from '@/services/tripay.service';
+import { useCreatePayment, usePaymentMethods, usePaymentStatus } from '@/hooks/useTripay';
+import { checkPaymentStatus } from '@/services/tripay.service';
 import { formatCurrency } from '../utils/formatters';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -22,16 +21,48 @@ const TopUp: React.FC = () => {
   const [selectedMethodCode, setSelectedMethodCode] = React.useState<string | null>(null);
   const [showPaymentSelection, setShowPaymentSelection] = React.useState(false);
   const [paymentResponse, setPaymentResponse] = React.useState<any>(null);
+  const [pollingReference, setPollingReference] = React.useState<string | null>(null);
   const [notification, setNotification] = React.useState<{
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+
+  // Auto-poll payment status every 5 seconds
+  const { data: paymentStatus } = usePaymentStatus(pollingReference);
 
   // Get selected method object
   const selectedMethod = React.useMemo(() => {
     if (!selectedMethodCode || !paymentMethods) return null;
     return paymentMethods.find(m => m.code === selectedMethodCode) || null;
   }, [selectedMethodCode, paymentMethods]);
+
+  // Check if payment is completed (auto-polling)
+  React.useEffect(() => {
+    if (paymentStatus?.tripay_status === 'PAID') {
+      setNotification({
+        type: 'success',
+        message: '🎉 Pembayaran berhasil! Saldo Anda telah ditambahkan.'
+      });
+      // Stop polling and reset form
+      setPollingReference(null);
+      setPaymentResponse(null);
+      setShowPaymentSelection(false);
+      setSelectedAmount(0);
+      setSelectedMethodCode(null);
+    } else if (paymentStatus?.tripay_status === 'EXPIRED') {
+      setNotification({
+        type: 'error',
+        message: 'Pembayaran telah kadaluarsa. Silakan buat pembayaran baru.'
+      });
+      setPollingReference(null);
+    } else if (paymentStatus?.tripay_status === 'FAILED') {
+      setNotification({
+        type: 'error',
+        message: 'Pembayaran gagal. Silakan coba lagi.'
+      });
+      setPollingReference(null);
+    }
+  }, [paymentStatus]);
 
   // Update amount whenever form changes
   const handleAmountChange = (amount: number) => {
@@ -50,7 +81,7 @@ const TopUp: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    if (!selectedMethod || !user) {
+    if (!selectedMethod || !user || !user.email) {
       setNotification({
         type: 'error',
         message: 'Pilih metode pembayaran terlebih dahulu'
@@ -62,7 +93,7 @@ const TopUp: React.FC = () => {
       const response = await createPayment.mutateAsync({
         amount: selectedAmount,
         paymentMethod: selectedMethod.code,
-        customerName: user.fullName,
+        customerName: user.fullName || user.email,
         customerEmail: user.email,
         customerPhone: user.phone || '',
         orderItems: [
@@ -77,6 +108,9 @@ const TopUp: React.FC = () => {
       // Show payment instructions
       setPaymentResponse(response);
       
+      // Start auto-polling status
+      setPollingReference(response.data.reference);
+      
       setNotification({
         type: 'success',
         message: 'Pembayaran berhasil dibuat! Silakan selesaikan pembayaran.'
@@ -85,6 +119,49 @@ const TopUp: React.FC = () => {
       setNotification({
         type: 'error',
         message: error.message || 'Gagal membuat pembayaran'
+      });
+    }
+  };
+
+  // Manual refresh status handler
+  const handleRefreshStatus = async () => {
+    if (!paymentResponse?.data?.reference) return;
+    
+    try {
+      const status = await checkPaymentStatus(paymentResponse.data.reference as string);
+      
+      if (status.tripay_status === 'PAID') {
+        setNotification({
+          type: 'success',
+          message: '🎉 Pembayaran berhasil! Saldo Anda telah ditambahkan.'
+        });
+        setPollingReference(null);
+        setPaymentResponse(null);
+        setShowPaymentSelection(false);
+        setSelectedAmount(0);
+        setSelectedMethodCode(null);
+      } else if (status.tripay_status === 'EXPIRED') {
+        setNotification({
+          type: 'error',
+          message: 'Pembayaran telah kadaluarsa. Silakan buat pembayaran baru.'
+        });
+        setPollingReference(null);
+      } else if (status.tripay_status === 'FAILED') {
+        setNotification({
+          type: 'error',
+          message: 'Pembayaran gagal. Silakan coba lagi.'
+        });
+        setPollingReference(null);
+      } else {
+        setNotification({
+          type: 'info',
+          message: `Status: ${status.tripay_status || 'Menunggu pembayaran'}`
+        });
+      }
+    } catch (error: any) {
+      setNotification({
+        type: 'error',
+        message: 'Gagal memeriksa status pembayaran'
       });
     }
   };
@@ -233,8 +310,8 @@ const TopUp: React.FC = () => {
             instructions={paymentResponse.data.instructions}
             payCode={paymentResponse.data.pay_code}
             qrUrl={paymentResponse.data.qr_url}
-            checkoutUrl={paymentResponse.data.checkout_url}
             expiredTime={paymentResponse.data.expired_time}
+            onRefreshStatus={handleRefreshStatus}
           />
 
           <button

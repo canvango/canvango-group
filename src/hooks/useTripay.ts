@@ -20,27 +20,19 @@ export function usePaymentMethods() {
 
 /**
  * Hook to create a new payment
+ * Note: Auto-redirect removed - payment instructions shown in-app
  */
 export function useCreatePayment() {
   const queryClient = useQueryClient();
-  const notification = useNotification();
 
   return useMutation({
     mutationFn: tripayService.createPayment,
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate transactions to refresh the list
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      
-      notification.success('Payment created successfully');
-      
-      // Open checkout URL in new tab
-      if (data.data.checkout_url) {
-        window.open(data.data.checkout_url, '_blank');
-      }
+      queryClient.invalidateQueries({ queryKey: ['user'] });
     },
-    onError: (error: Error) => {
-      notification.error(error.message || 'Failed to create payment');
-    },
+    // Error handling moved to component level for better UX control
   });
 }
 
