@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Clock, Copy, Check, RefreshCw } from 'lucide-react';
 
 interface PaymentInstruction {
   title: string;
@@ -150,10 +150,10 @@ export function TripayPaymentGateway({
         <div className={`bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 ${isModal ? "rounded-2xl p-3 sm:p-4" : "rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 lg:p-8"}`}>
           
           {/* 2-Column Layout (Desktop) / Stack (Mobile) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 lg:items-start">
             
             {/* LEFT PANEL: New Design */}
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-4 sm:space-y-6 flex flex-col h-full">
               {/* Alert Section - Outside Card */}
               <div className="text-center">
                 <div className="inline-flex flex-col items-center gap-3">
@@ -172,7 +172,7 @@ export function TripayPaymentGateway({
               </div>
 
               {/* Payment Card */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4 sm:space-y-6">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4 sm:space-y-6 flex-1 flex flex-col">
                 {/* Header: Payment Method + Logo */}
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900">{paymentData.payment_name}</h2>
@@ -261,7 +261,7 @@ export function TripayPaymentGateway({
             </div>
 
             {/* RIGHT PANEL: 2 Separate Cards */}
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
               {/* Card 1: Header - Logo + Timer */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
                 <div className="flex justify-between items-center gap-2 sm:gap-4">
@@ -283,7 +283,7 @@ export function TripayPaymentGateway({
               </div>
 
               {/* Card 2: Transaction Info + Payment Breakdown */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm flex-1 flex flex-col">
                 {/* Transaction Info Section */}
                 <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
                 <div className="flex justify-between gap-2 sm:gap-4">
@@ -388,9 +388,10 @@ export function TripayPaymentGateway({
                 {onRefreshStatus && (
                   <button
                     onClick={onRefreshStatus}
-                    className="btn-secondary w-full mt-4 sm:mt-6 text-xs sm:text-sm"
+                    className="w-full px-6 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors mt-4 sm:mt-6 flex items-center justify-center gap-2"
                   >
-                    🔄 Refresh Status Pembayaran
+                    <RefreshCw className="w-4 h-4" />
+                    Refresh Status Pembayaran
                   </button>
                 )}
               </div>
