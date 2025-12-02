@@ -4,7 +4,7 @@ import { History, Wallet, CheckCircle, AlertCircle, CreditCard } from 'lucide-re
 import TopUpForm from '../components/topup/TopUpForm';
 import { PaymentMethodSelector } from '@/features/payment/components/PaymentMethodSelector';
 import { FeeCalculator } from '@/features/payment/components/FeeCalculator';
-import { PaymentInstructions } from '@/features/payment/components/PaymentInstructions';
+import { TripayPaymentGateway } from '@/features/payment/components/TripayPaymentGateway';
 import { useAuth } from '../contexts/AuthContext';
 import { useCreatePayment, usePaymentMethods, usePaymentStatus } from '@/hooks/useTripay';
 import { checkPaymentStatus } from '@/services/tripay.service';
@@ -166,6 +166,24 @@ const TopUp: React.FC = () => {
     }
   };
 
+  // If payment response exists, show full-page payment gateway
+  if (paymentResponse) {
+    return (
+      <TripayPaymentGateway
+        paymentData={paymentResponse.data}
+        onBack={() => {
+          setPaymentResponse(null);
+          setPollingReference(null);
+          setShowPaymentSelection(false);
+          setSelectedAmount(0);
+          setSelectedMethodCode(null);
+        }}
+        onRefreshStatus={handleRefreshStatus}
+      />
+    );
+  }
+
+  // Otherwise, show top-up form
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -220,7 +238,7 @@ const TopUp: React.FC = () => {
         <div
           className={`
             rounded-3xl p-4 flex items-start gap-3 shadow-md
-            ${notification.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}
+            ${notification.type === 'success' ? 'bg-green-50 border border-green-200' : notification.type === 'error' ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}
           `}
           role="alert"
         >
@@ -230,13 +248,13 @@ const TopUp: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           )}
           <div className="flex-1">
-            <p className={`text-sm font-medium ${notification.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+            <p className={`text-sm font-medium ${notification.type === 'success' ? 'text-green-800' : notification.type === 'error' ? 'text-red-800' : 'text-blue-800'}`}>
               {notification.message}
             </p>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className={`text-sm font-medium ${notification.type === 'success' ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
+            className={`text-sm font-medium ${notification.type === 'success' ? 'text-green-600 hover:text-green-700' : notification.type === 'error' ? 'text-red-600 hover:text-red-700' : 'text-blue-600 hover:text-blue-700'}`}
           >
             Tutup
           </button>
@@ -247,7 +265,7 @@ const TopUp: React.FC = () => {
       <TopUpForm onAmountChange={handleAmountChange} />
 
       {/* Payment Flow */}
-      {showPaymentSelection && selectedAmount > 0 && !paymentResponse && (
+      {showPaymentSelection && selectedAmount > 0 && (
         <div id="payment-selection" className="space-y-6">
           {/* Payment Method Selector */}
           <PaymentMethodSelector
@@ -288,46 +306,6 @@ const TopUp: React.FC = () => {
           )}
         </div>
       )}
-
-      {/* Payment Instructions */}
-      {paymentResponse && (
-        <div className="space-y-6">
-          <div className="card bg-green-50 border border-green-200">
-            <div className="card-body">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <div>
-                  <h3 className="text-lg font-semibold text-green-900">Pembayaran Dibuat!</h3>
-                  <p className="text-sm text-green-700 mt-1">
-                    Silakan selesaikan pembayaran sesuai instruksi di bawah
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <PaymentInstructions
-            instructions={paymentResponse.data.instructions}
-            payCode={paymentResponse.data.pay_code}
-            qrUrl={paymentResponse.data.qr_url}
-            expiredTime={paymentResponse.data.expired_time}
-            onRefreshStatus={handleRefreshStatus}
-          />
-
-          <button
-            onClick={() => {
-              setPaymentResponse(null);
-              setShowPaymentSelection(false);
-              setSelectedAmount(0);
-              setSelectedMethodCode(null);
-            }}
-            className="btn-secondary w-full"
-          >
-            Buat Pembayaran Baru
-          </button>
-        </div>
-      )}
-
     </div>
   );
 };
