@@ -422,11 +422,6 @@ export function TripayPaymentGateway({
               </div>
             </div>
           )}
-
-          {/* Footer */}
-          <div className="text-center mt-6 sm:mt-8 text-[10px] sm:text-xs md:text-sm text-gray-600">
-            © {new Date().getFullYear()} Canvango Group
-          </div>
         </div>
       </div>
     </div>
