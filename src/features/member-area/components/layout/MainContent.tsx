@@ -1,4 +1,5 @@
 import React from 'react';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 
 interface MainContentProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ const MainContent: React.FC<MainContentProps> = ({ children }) => {
       tabIndex={-1}
     >
       <div className="w-full mx-auto px-2 md:px-4 lg:px-6">
+        <EmailVerificationBanner />
         {children}
       </div>
     </main>
