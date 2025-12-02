@@ -142,45 +142,45 @@ export function TripayPaymentGateway({
       </div>
 
       {/* Payment Gateway Container */}
-      <div className="px-4 md:px-6">
-        <div className="bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 rounded-3xl p-4 md:p-8 min-h-[calc(100vh-140px)]">
+      <div className="px-2 sm:px-4 md:px-6 max-w-[1400px] mx-auto">
+        <div className="bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6 lg:p-8">
           
-          {/* Status Header - Centered */}
-          <div className="text-center mb-6 md:mb-8">
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 md:px-6 py-3 rounded-2xl shadow-sm">
-              <Clock className="w-5 h-5 md:w-6 md:h-6 text-orange-500 animate-pulse flex-shrink-0" />
-              <div className="text-left">
-                <p className="text-sm font-semibold text-gray-900">Menunggu Pembayaran</p>
-                <p className="text-xs text-gray-600 hidden md:block">
-                  Selesaikan pembayaran sebelum {formatExpiredDate(paymentData.expired_time)}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* 2-Column Layout (Desktop) / Stack (Mobile) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
             
             {/* LEFT PANEL: QR Code / Pay Code */}
-            <div className="bg-white rounded-3xl p-6 md:p-8 text-center shadow-sm">
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 text-center shadow-sm">
+              {/* Status Header - Inside QR Box */}
+              <div className="mb-4 sm:mb-6">
+                <div className="inline-flex items-center gap-2 sm:gap-3 bg-orange-50 border border-orange-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 animate-pulse flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-xs sm:text-sm font-semibold text-orange-900">Menunggu Pembayaran</p>
+                    <p className="text-[10px] sm:text-xs text-orange-700">
+                      Selesaikan sebelum {formatExpiredDate(paymentData.expired_time)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Payment Method Name */}
-              <div className="mb-4 md:mb-6">
-                <h2 className="text-lg md:text-xl font-bold text-gray-900">
+              <div className="mb-3 sm:mb-4 md:mb-6">
+                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
                   {paymentData.payment_name}
                 </h2>
               </div>
 
               {/* QR Code (if available) */}
               {paymentData.qr_url && (
-                <div className="mb-6">
-                  <div className="bg-white p-3 md:p-4 rounded-2xl inline-block border-2 border-gray-200">
+                <div className="mb-4 sm:mb-6">
+                  <div className="bg-white p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl inline-block border-2 border-gray-200">
                     <img
                       src={paymentData.qr_url}
                       alt="QR Code"
-                      className="w-64 h-64 md:w-80 md:h-80"
+                      className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 max-w-full"
                     />
                   </div>
-                  <p className="text-xs md:text-sm text-gray-600 mt-4">
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-600 mt-3 sm:mt-4">
                     Scan dengan aplikasi pembayaran {paymentData.payment_name}
                   </p>
                 </div>
@@ -188,42 +188,42 @@ export function TripayPaymentGateway({
 
               {/* Pay Code / Virtual Account (if available) */}
               {paymentData.pay_code && (
-                <div className="mb-6">
-                  <p className="text-xs text-gray-600 mb-2">
+                <div className="mb-4 sm:mb-6">
+                  <p className="text-[10px] sm:text-xs text-gray-600 mb-2">
                     {paymentData.payment_method.includes('VA') ? 'Nomor Virtual Account' : 'Kode Pembayaran'}
                   </p>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 p-3 md:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-                      <p className="text-xl md:text-2xl font-mono font-bold text-blue-900 tracking-wider break-all">
+                    <div className="flex-1 p-2 sm:p-3 md:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl border-2 border-blue-200">
+                      <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-mono font-bold text-blue-900 tracking-wider break-all">
                         {paymentData.pay_code}
                       </p>
                     </div>
                     <button
                       onClick={() => handleCopy(paymentData.pay_code!, 'paycode')}
-                      className="btn-primary px-3 md:px-4 py-3 md:py-4 flex-shrink-0"
+                      className="btn-primary px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 flex-shrink-0"
                       title="Salin kode"
                     >
                       {copiedPayCode ? (
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                       ) : (
-                        <Copy className="w-5 h-5" />
+                        <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
                     Gunakan kode ini untuk transfer melalui ATM, Mobile Banking, atau Internet Banking
                   </p>
                 </div>
               )}
 
               {/* Amount */}
-              <div className="mb-6">
-                <p className="text-xs text-gray-500">Total Pembayaran</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">
+              <div className="mb-4 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-gray-500">Total Pembayaran</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                   {formatCurrency(paymentData.amount)}
                 </p>
                 {paymentData.fee_merchant > 0 && (
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-[10px] sm:text-xs text-green-600 mt-1">
                     Biaya admin ditanggung oleh kami
                   </p>
                 )}
@@ -233,7 +233,7 @@ export function TripayPaymentGateway({
               {paymentData.instructions && paymentData.instructions.length > 0 && (
                 <button
                   onClick={() => setShowInstructions(!showInstructions)}
-                  className="btn-secondary w-full"
+                  className="btn-secondary w-full text-xs sm:text-sm"
                 >
                   {showInstructions ? 'Sembunyikan' : 'Cara Pembayaran'}
                 </button>
@@ -241,69 +241,69 @@ export function TripayPaymentGateway({
             </div>
 
             {/* RIGHT PANEL: Transaction Details */}
-            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm">
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
               {/* Header: Merchant + Timer */}
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-base md:text-lg font-bold text-gray-900">CANVANGO GROUP</h3>
-                  <p className="text-xs text-gray-500 mt-1">ADVERTISING ACCOUNT PROVIDER</p>
+              <div className="flex justify-between items-start mb-4 sm:mb-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 truncate">CANVANGO GROUP</h3>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">ADVERTISING ACCOUNT PROVIDER</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-600">Waktu Tersisa</p>
-                  <p className="text-xl md:text-2xl font-bold text-red-500">
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-500">
                     {formatTimeLeft(timeLeft)}
                   </p>
-                  <p className="text-xs text-gray-500">Jam:Menit:Detik</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
                 </div>
               </div>
 
               {/* Transaction Info */}
-              <div className="space-y-3 text-sm border-b border-gray-200 pb-6 mb-6">
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Merchant</span>
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm border-b border-gray-200 pb-4 sm:pb-6 mb-4 sm:mb-6">
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <span className="text-gray-600 flex-shrink-0">Merchant</span>
                   <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Nama Pemesan</span>
-                  <span className="text-gray-900 font-medium text-right">{paymentData.customer_name}</span>
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <span className="text-gray-600 flex-shrink-0">Nama Pemesan</span>
+                  <span className="text-gray-900 font-medium text-right break-words">{paymentData.customer_name}</span>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Nomor Invoice</span>
-                  <span className="text-gray-900 font-medium text-right break-all">{paymentData.merchant_ref}</span>
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <span className="text-gray-600 flex-shrink-0">Nomor Invoice</span>
+                  <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.merchant_ref}</span>
                 </div>
                 {paymentData.customer_phone && (
-                  <div className="flex justify-between gap-4">
-                    <span className="text-gray-600">Nomor HP</span>
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Nomor HP</span>
                     <span className="text-gray-900 font-medium text-right">{paymentData.customer_phone}</span>
                   </div>
                 )}
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Nomor Referensi</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-900 font-medium text-right break-all">{paymentData.reference}</span>
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <span className="text-gray-600 flex-shrink-0">Nomor Referensi</span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.reference}</span>
                     <button
                       onClick={() => handleCopy(paymentData.reference, 'reference')}
                       className="text-blue-600 hover:text-blue-700 flex-shrink-0"
                       title="Salin referensi"
                     >
                       {copiedReference ? (
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                       ) : (
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                       )}
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Email</span>
-                  <span className="text-gray-900 font-medium text-right break-all">{paymentData.customer_email}</span>
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <span className="text-gray-600 flex-shrink-0">Email</span>
+                  <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.customer_email}</span>
                 </div>
               </div>
 
               {/* Payment Breakdown */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Rincian Pembayaran</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Rincian Pembayaran</h3>
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Jumlah Top Up</span>
                     <span className="text-gray-900 font-medium">{formatCurrency(paymentData.amount)}</span>
@@ -339,17 +339,17 @@ export function TripayPaymentGateway({
                   </div>
                   
                   {/* Total Bayar */}
-                  <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">Total Bayar</span>
-                    <span className="text-lg md:text-xl font-bold text-blue-600">
+                  <div className="flex justify-between items-center pt-2 sm:pt-3 border-t-2 border-gray-200">
+                    <span className="text-sm sm:text-base font-semibold text-gray-900">Total Bayar</span>
+                    <span className="text-base sm:text-lg md:text-xl font-bold text-blue-600">
                       {formatCurrency(paymentData.amount)}
                     </span>
                   </div>
                   
                   {/* Info Message */}
                   {paymentData.fee_merchant > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 mt-3">
-                      <p className="text-xs text-green-800 leading-relaxed">
+                    <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-2 sm:p-3 mt-2 sm:mt-3">
+                      <p className="text-[10px] sm:text-xs text-green-800 leading-relaxed">
                         ✓ Bayar sebanyak <span className="font-semibold">{formatCurrency(paymentData.amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(paymentData.amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span> ditanggung oleh seller.
                       </p>
                     </div>
@@ -361,7 +361,7 @@ export function TripayPaymentGateway({
               {onRefreshStatus && (
                 <button
                   onClick={onRefreshStatus}
-                  className="btn-secondary w-full mt-6"
+                  className="btn-secondary w-full mt-4 sm:mt-6 text-xs sm:text-sm"
                 >
                   🔄 Refresh Status Pembayaran
                 </button>
@@ -424,7 +424,7 @@ export function TripayPaymentGateway({
           )}
 
           {/* Footer */}
-          <div className="text-center mt-8 text-xs md:text-sm text-gray-600">
+          <div className="text-center mt-6 sm:mt-8 text-[10px] sm:text-xs md:text-sm text-gray-600">
             © {new Date().getFullYear()} Canvango Group
           </div>
         </div>
