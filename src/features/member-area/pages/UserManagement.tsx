@@ -23,6 +23,7 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const { showToast } = useToast();
 
   // Filter users by role using useMemo for performance
@@ -121,6 +122,52 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  // Delete user with validation
+  const deleteUser = async (userId: string) => {
+    setDeleting(userId);
+    try {
+      // Find user to delete
+      const userToDelete = users.find(u => u.id === userId);
+      if (!userToDelete) {
+        throw new Error('User tidak ditemukan');
+      }
+
+      // Prevent deleting admin
+      if (userToDelete.role === 'admin') {
+        throw new Error('Tidak dapat menghapus user dengan role admin. Ubah role terlebih dahulu.');
+      }
+
+      // Get current user to prevent self-deletion
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser && currentUser.id === userId) {
+        throw new Error('Tidak dapat menghapus akun Anda sendiri');
+      }
+
+      // Delete from database
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(users.filter(user => user.id !== userId));
+
+      showToast({ 
+        type: 'success', 
+        message: 'User berhasil dihapus' 
+      });
+    } catch (error: any) {
+      showToast({ 
+        type: 'error', 
+        message: error.message || 'Gagal menghapus user' 
+      });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   // Load users on mount
   React.useEffect(() => {
     fetchUsers();
@@ -192,7 +239,9 @@ const UserManagement: React.FC = () => {
           <MemberUsersTable
             users={memberUsers}
             onRoleChange={updateUserRole}
+            onDelete={deleteUser}
             updating={updating}
+            deleting={deleting}
           />
         )}
       </section>

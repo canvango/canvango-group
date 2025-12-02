@@ -353,7 +353,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
             ref={dropdownRef}
             role="listbox"
             aria-labelledby={selectId}
-            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-2xl shadow-lg max-h-60 overflow-auto"
+            className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-2xl shadow-lg max-h-60 overflow-auto"
           >
             {/* Search Input */}
             {searchable && (

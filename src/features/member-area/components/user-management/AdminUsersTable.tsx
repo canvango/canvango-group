@@ -76,12 +76,18 @@ const AdminUsersTable: React.FC<AdminUsersTableProps> = ({
               >
                 Registered
               </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider w-24"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Tidak ada data administrator
                 </td>
               </tr>
@@ -92,6 +98,7 @@ const AdminUsersTable: React.FC<AdminUsersTableProps> = ({
                   user={user}
                   onRoleChange={onRoleChange}
                   updating={updating}
+                  deleting={null}
                   variant="admin"
                 />
               ))

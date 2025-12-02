@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import SelectDropdown, { SelectOption } from '../../../../shared/components/SelectDropdown';
 
 interface User {
@@ -15,7 +16,9 @@ interface User {
 interface UserTableRowProps {
   user: User;
   onRoleChange: (userId: string, newRole: string) => Promise<void>;
+  onDelete?: (userId: string) => Promise<void>;
   updating: string | null;
+  deleting: string | null;
   variant: 'admin' | 'member';
 }
 
@@ -28,10 +31,29 @@ const roleOptions: SelectOption[] = [
 const UserTableRow: React.FC<UserTableRowProps> = ({
   user,
   onRoleChange,
+  onDelete,
   updating,
+  deleting,
   variant,
 }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isUpdating = updating === user.id;
+  const isDeleting = deleting === user.id;
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (onDelete) {
+      await onDelete(user.id);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+  };
 
   // Avatar background color based on variant
   const avatarBgColor = variant === 'admin' 
@@ -87,15 +109,17 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
       </td>
 
       {/* Role Selector */}
-      <td className="px-6 py-4 whitespace-nowrap w-32">
-        <SelectDropdown
-          value={user.role}
-          onChange={(value) => onRoleChange(user.id, value)}
-          options={roleOptions}
-          disabled={isUpdating}
-          className="w-32"
-          placeholder="Select role"
-        />
+      <td className="px-6 py-4 whitespace-nowrap w-32 relative">
+        <div className="relative z-10">
+          <SelectDropdown
+            value={user.role}
+            onChange={(value) => onRoleChange(user.id, value)}
+            options={roleOptions}
+            disabled={isUpdating}
+            className="w-32"
+            placeholder="Select role"
+          />
+        </div>
       </td>
 
       {/* Registration Date */}
@@ -105,6 +129,44 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
           month: 'short',
           day: 'numeric',
         })}
+      </td>
+
+      {/* Actions */}
+      <td className="px-6 py-4 whitespace-nowrap text-right w-24">
+        {onDelete && (
+          <div className="relative">
+            {!showDeleteConfirm ? (
+              <button
+                onClick={handleDeleteClick}
+                disabled={isUpdating || isDeleting}
+                className="inline-flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete user"
+                aria-label={`Delete ${user.full_name || user.username}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="px-2 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                  aria-label="Confirm delete"
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes'}
+                </button>
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={isDeleting}
+                  className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                  aria-label="Cancel delete"
+                >
+                  No
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </td>
     </tr>
   );

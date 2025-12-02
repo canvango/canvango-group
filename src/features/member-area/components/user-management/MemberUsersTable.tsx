@@ -16,7 +16,9 @@ interface User {
 interface MemberUsersTableProps {
   users: User[];
   onRoleChange: (userId: string, newRole: string) => Promise<void>;
+  onDelete: (userId: string) => Promise<void>;
   updating: string | null;
+  deleting: string | null;
 }
 
 /**
@@ -32,7 +34,9 @@ interface MemberUsersTableProps {
 const MemberUsersTable: React.FC<MemberUsersTableProps> = ({
   users,
   onRoleChange,
+  onDelete,
   updating,
+  deleting,
 }) => {
   return (
     <Card padding="none">
@@ -76,12 +80,18 @@ const MemberUsersTable: React.FC<MemberUsersTableProps> = ({
               >
                 Registered
               </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider w-24"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Tidak ada data member atau guest
                 </td>
               </tr>
@@ -91,7 +101,9 @@ const MemberUsersTable: React.FC<MemberUsersTableProps> = ({
                   key={user.id}
                   user={user}
                   onRoleChange={onRoleChange}
+                  onDelete={onDelete}
                   updating={updating}
+                  deleting={deleting}
                   variant="member"
                 />
               ))
