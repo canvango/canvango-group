@@ -8,11 +8,9 @@ import React from 'react';
 import { FinTechPaymentLayout } from '../components/FinTechPaymentLayout';
 import {
   InfoRow,
-  AlertBox,
   Divider,
-  AmountDisplay,
+  AlertBox,
   Button,
-  QRCodeContainer,
   TimerDisplay,
 } from '../components/FinTechCard';
 
@@ -20,35 +18,66 @@ const FinTechPaymentDemo: React.FC = () => {
   // Left Column Content
   const leftColumn = (
     <div className="space-y-6">
-      {/* Alert Section */}
-      <AlertBox type="warning">
-        <p className="font-semibold mb-1">⏰ Menunggu Pembayaran</p>
-        <p>Selesaikan sebelum 2 Desember 2025 pukul 19:05</p>
-      </AlertBox>
-
-      {/* Payment Method Title */}
+      {/* Alert Section - Outside Card */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-slate-900 mb-2">QRIS</h2>
+        <div className="inline-flex flex-col items-center gap-3 mb-6">
+          {/* Clock Icon */}
+          <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          {/* Text */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Menunggu Pembayaran</h3>
+            <p className="text-sm text-slate-600">Selesaikan pembayaran sebelum 3 Desember 2025 pukul 15:56</p>
+          </div>
+        </div>
       </div>
 
-      {/* QR Code */}
-      <QRCodeContainer
-        qrUrl="https://via.placeholder.com/300x300/e2e8f0/475569?text=QR+CODE"
-        subtitle="Scan dengan aplikasi pembayaran QRIS"
-      />
+      {/* Payment Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6 space-y-6">
+        {/* Header: Payment Method + Logo */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-slate-900">QRIS</h2>
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/QRIS_logo.svg/2560px-QRIS_logo.svg.png" 
+            alt="QRIS" 
+            className="h-8 w-auto object-contain"
+          />
+        </div>
 
-      {/* Amount Display */}
-      <AmountDisplay label="Total Pembayaran" amount={10000} size="lg" highlight />
+        {/* QR Code - Simple without heavy border */}
+        <div className="text-center py-4">
+          <div className="inline-block">
+            <img
+              src="https://via.placeholder.com/200x200/000000/FFFFFF?text=QR"
+              alt="QR Code"
+              className="w-48 h-48"
+            />
+          </div>
+          <p className="text-sm text-slate-500 mt-4">Scan dengan aplikasi pembayaran QRIS</p>
+        </div>
 
-      {/* Fee Info */}
-      <AlertBox type="success">
-        <p className="text-center">✓ Biaya admin ditanggung oleh kami</p>
-      </AlertBox>
+        {/* Amount Section */}
+        <div>
+          <p className="text-sm text-slate-600 mb-2">Jumlah Bayar</p>
+          <div className="flex justify-between items-center">
+            <p className="text-3xl font-bold text-slate-900">Rp50.000</p>
+            <button className="text-blue-600 text-sm font-semibold hover:text-blue-700 flex items-center gap-1">
+              Salin
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
-      {/* Action Button */}
-      <Button variant="secondary" fullWidth>
-        Cara Pembayaran
-      </Button>
+        {/* Action Button */}
+        <button className="w-full px-6 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors">
+          Cara Pembayaran
+        </button>
+      </div>
     </div>
   );
 
