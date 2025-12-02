@@ -154,18 +154,18 @@ export function TripayPaymentGateway({
             
             {/* LEFT PANEL: New Design */}
             <div className="space-y-4 sm:space-y-6 flex flex-col h-full">
-              {/* Alert Section - Compact */}
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 sm:p-4">
-                <div className="flex items-center gap-3">
+              {/* Alert Section - Center */}
+              <div className="text-center">
+                <div className="inline-flex flex-col items-center gap-2 sm:gap-3">
                   {/* Clock Icon */}
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500 flex items-center justify-center">
+                    <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </div>
                   {/* Text */}
-                  <div className="flex-1 text-left">
-                    <h3 className="text-sm sm:text-base font-bold text-orange-900 mb-0.5">Menunggu Pembayaran</h3>
-                    <p className="text-xs text-orange-700">
-                      Selesaikan sebelum {formatExpiredDate(paymentData.expired_time)}
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">Menunggu Pembayaran</h3>
+                    <p className="text-xs sm:text-sm text-slate-600">
+                      Selesaikan pembayaran sebelum {formatExpiredDate(paymentData.expired_time)}
                     </p>
                   </div>
                 </div>
