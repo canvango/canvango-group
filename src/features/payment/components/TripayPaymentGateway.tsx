@@ -175,12 +175,12 @@ export function TripayPaymentGateway({
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4 sm:space-y-6 flex-1 flex flex-col">
                 {/* Header: Payment Method + Logo */}
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">{paymentData.payment_name}</h2>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">{paymentData.payment_name}</h2>
                   {paymentData.payment_method.includes('QRIS') && (
                     <img 
                       src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/QRIS_logo.svg/2560px-QRIS_logo.svg.png" 
                       alt="QRIS" 
-                      className="h-6 sm:h-8 w-auto object-contain"
+                      className="h-5 sm:h-6 w-auto object-contain"
                     />
                   )}
                 </div>
@@ -263,21 +263,21 @@ export function TripayPaymentGateway({
             {/* RIGHT PANEL: 2 Separate Cards */}
             <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
               {/* Card 1: Header - Logo + Timer */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 shadow-sm">
-                <div className="flex justify-between items-center gap-2 sm:gap-4">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-sm">
+                <div className="flex justify-between items-center gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
                     <img 
                       src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
                       alt="Canvango Group" 
-                      className="h-10 sm:h-11 md:h-12 w-auto object-contain"
+                      className="h-8 sm:h-9 md:h-10 w-auto object-contain"
                     />
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
-                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-500">
+                    <p className="text-[10px] text-gray-600">Waktu Tersisa</p>
+                    <p className="text-base sm:text-lg md:text-xl font-bold text-red-500">
                       {formatTimeLeft(timeLeft)}
                     </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
+                    <p className="text-[10px] text-gray-500">Jam:Menit:Detik</p>
                   </div>
                 </div>
               </div>
