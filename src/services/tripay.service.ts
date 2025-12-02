@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tripay Payment Gateway Service
  * Handles payment creation and status checking
  */
@@ -17,6 +17,7 @@ const IS_SANDBOX = TRIPAY_MODE === 'sandbox';
 export interface TripayPaymentMethod {
   code: string;
   name: string;
+  group_name?: string;
   fee_merchant: {
     flat: number;
     percent: number;
@@ -113,11 +114,14 @@ export async function getPaymentMethods(): Promise<TripayPaymentMethod[]> {
     return (data || []).map(channel => ({
       code: channel.code,
       name: channel.name,
+      group_name: channel.group_name,
       fee_merchant: channel.fee_merchant,
       fee_customer: channel.fee_customer,
       total_fee: channel.total_fee,
       minimum_fee: channel.minimum_fee || 0,
       maximum_fee: channel.maximum_fee || 0,
+      minimum_amount: channel.minimum_amount,
+      maximum_amount: channel.maximum_amount,
       icon_url: channel.icon_url || '',
       active: channel.is_active,
     }));
@@ -243,7 +247,7 @@ async function createPaymentViaVercel(params: CreatePaymentParams, session: any)
     }
   );
 
-  console.log('📦 Vercel API response:', response.data);
+  console.log('ðŸ“¦ Vercel API response:', response.data);
 
   if (!response.data.success) {
     throw new Error(response.data.message || 'Failed to create payment');
@@ -333,11 +337,14 @@ export async function getPaymentMethodByCode(code: string): Promise<TripayPaymen
     return {
       code: data.code,
       name: data.name,
+      group_name: data.group_name,
       fee_merchant: data.fee_merchant,
       fee_customer: data.fee_customer,
       total_fee: data.total_fee,
       minimum_fee: data.minimum_fee || 0,
       maximum_fee: data.maximum_fee || 0,
+      minimum_amount: data.minimum_amount,
+      maximum_amount: data.maximum_amount,
       icon_url: data.icon_url || '',
       active: data.is_active,
     };

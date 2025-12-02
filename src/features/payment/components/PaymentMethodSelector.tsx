@@ -1,12 +1,12 @@
 /**
  * PaymentMethodSelector Component
  * Displays available payment channels with fee calculation
+ * Updated: All groups expanded by default, shows even without amount
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { usePaymentMethods } from '@/hooks/useTripay';
 import type { TripayPaymentMethod } from '@/services/tripay.service';
-import { calculateTotalAmount } from '@/services/tripay.service';
 
 interface PaymentMethodSelectorProps {
   amount: number;
@@ -24,9 +24,8 @@ export function PaymentMethodSelector({
   onSelect,
 }: PaymentMethodSelectorProps) {
   const { data: methods, isLoading, error } = usePaymentMethods();
-  const [expandedGroup, setExpandedGroup] = useState<string | null>('Virtual Account');
 
-  // Group payment methods by group_name
+  // Group payment methods by group_name with priority order
   const groupedMethods = useMemo(() => {
     if (!methods) return {};
 
@@ -41,6 +40,26 @@ export function PaymentMethodSelector({
 
     return grouped;
   }, [methods]);
+
+  // Define group order: E-Wallet first, then Virtual Account, then others
+  const groupOrder = ['E-Wallet', 'Virtual Account', 'Convenience Store', 'Lainnya'];
+  
+  const sortedGroups = useMemo(() => {
+    const entries = Object.entries(groupedMethods);
+    return entries.sort((a, b) => {
+      const indexA = groupOrder.indexOf(a[0]);
+      const indexB = groupOrder.indexOf(b[0]);
+      
+      // If both in order list, sort by order
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      // If only A in order list, A comes first
+      if (indexA !== -1) return -1;
+      // If only B in order list, B comes first
+      if (indexB !== -1) return 1;
+      // Otherwise, alphabetical
+      return a[0].localeCompare(b[0]);
+    });
+  }, [groupedMethods]);
 
   // Calculate fee for each method
   const calculateFee = (method: TripayPaymentMethod) => {
@@ -117,101 +136,115 @@ export function PaymentMethodSelector({
     );
   }
 
+  // Get icon for group
+  const getGroupIcon = (groupName: string) => {
+    switch (groupName) {
+      case 'E-Wallet':
+        return (
+          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'Virtual Account':
+        return (
+          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {Object.entries(groupedMethods).map(([groupName, groupMethods]) => (
+      {sortedGroups.map(([groupName, groupMethods]) => (
         <div key={groupName} className="card">
-          <button
-            onClick={() => setExpandedGroup(expandedGroup === groupName ? null : groupName)}
-            className="card-header w-full flex items-center justify-between hover:bg-gray-50 transition-colors"
-          >
-            <h3 className="text-lg font-semibold text-gray-900">{groupName}</h3>
-            <svg
-              className={`w-5 h-5 text-gray-500 transition-transform ${
-                expandedGroup === groupName ? 'rotate-180' : ''
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
+          {/* Group Header with Icon */}
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              {getGroupIcon(groupName)}
+              <h3 className="text-base font-semibold text-gray-700 uppercase tracking-wide">
+                {groupName}
+              </h3>
+            </div>
+          </div>
 
-          {expandedGroup === groupName && (
-            <div className="card-body space-y-2">
-              {groupMethods.map((method) => {
-                const fee = calculateFee(method);
-                const total = amount + fee;
-                const isValid = isMethodValid(method);
-                const isSelected = selectedMethod === method.code;
+          {/* Payment Methods List */}
+          <div className="card-body space-y-2">
+            {groupMethods.map((method) => {
+              const fee = amount > 0 ? calculateFee(method) : 0;
+              const total = amount + fee;
+              const isValid = amount > 0 ? isMethodValid(method) : true;
+              const isSelected = selectedMethod === method.code;
 
-                return (
-                  <button
-                    key={method.code}
-                    onClick={() => isValid && onSelect(method.code)}
-                    disabled={!isValid}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : isValid
-                        ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          {method.icon_url && (
-                            <img
-                              src={method.icon_url}
-                              alt={method.name}
-                              className="w-12 h-12 object-contain"
-                            />
-                          )}
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900">
-                              {method.name}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Biaya: {formatCurrency(fee)}
-                            </p>
-                          </div>
+              return (
+                <button
+                  key={method.code}
+                  onClick={() => isValid && onSelect(method.code)}
+                  disabled={!isValid}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : isValid
+                      ? 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                      : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Left: Icon + Name */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {method.icon_url && (
+                        <div className="flex-shrink-0 w-12 h-12 bg-white rounded-xl border border-gray-200 flex items-center justify-center p-2">
+                          <img
+                            src={method.icon_url}
+                            alt={method.name}
+                            className="w-full h-full object-contain"
+                          />
                         </div>
-
-                        {!isValid && (
-                          <div className="mt-2 text-xs text-red-600">
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {method.name}
+                        </h4>
+                        {amount > 0 && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Biaya: {formatCurrency(fee)}
+                          </p>
+                        )}
+                        {!isValid && amount > 0 && (
+                          <p className="text-xs text-red-600 mt-0.5">
                             {method.minimum_amount && amount < method.minimum_amount && (
-                              <span>
-                                Minimal {formatCurrency(method.minimum_amount)}
-                              </span>
+                              <span>Min. {formatCurrency(method.minimum_amount)}</span>
                             )}
                             {method.maximum_amount && amount > method.maximum_amount && (
-                              <span>
-                                Maksimal {formatCurrency(method.maximum_amount)}
-                              </span>
+                              <span>Maks. {formatCurrency(method.maximum_amount)}</span>
                             )}
-                          </div>
+                          </p>
                         )}
                       </div>
+                    </div>
 
-                      <div className="text-right">
+                    {/* Right: Total (only if amount > 0) */}
+                    {amount > 0 && (
+                      <div className="text-right flex-shrink-0">
                         <p className="text-sm font-semibold text-gray-900">
                           {formatCurrency(total)}
                         </p>
-                        <p className="text-xs text-gray-500">Total Bayar</p>
+                        <p className="text-xs text-gray-500">Total</p>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
