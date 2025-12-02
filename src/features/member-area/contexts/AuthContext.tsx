@@ -152,9 +152,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state changed:', event);
       
-      // Ignore USER_UPDATED and PASSWORD_RECOVERY events to prevent unnecessary re-renders
-      if (event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY') {
+      // Ignore PASSWORD_RECOVERY events to prevent unnecessary re-renders
+      if (event === 'PASSWORD_RECOVERY') {
         console.log('ℹ️ Ignoring', event, 'event');
+        return;
+      }
+      
+      // Handle USER_UPDATED for email confirmation
+      if (event === 'USER_UPDATED') {
+        console.log('ℹ️ USER_UPDATED event received');
+        
+        // Check if this is email confirmation (user.email_confirmed_at exists)
+        if (session?.user?.email_confirmed_at) {
+          console.log('✅ Email confirmed at:', session.user.email_confirmed_at);
+          notification.success('Email berhasil dikonfirmasi! Selamat datang di Canvango.');
+        }
         return;
       }
       
@@ -171,6 +183,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           localStorage.setItem(TOKEN_KEY, session.access_token);
           if (session.refresh_token) {
             localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
+          }
+          
+          // Check if this is from email confirmation (type=signup in URL)
+          const urlParams = new URLSearchParams(window.location.hash.substring(1));
+          const confirmationType = urlParams.get('type');
+          
+          if (confirmationType === 'signup' && event === 'SIGNED_IN') {
+            console.log('✅ Email confirmation detected');
+            notification.success('Email berhasil dikonfirmasi! Selamat datang di Canvango.');
+            
+            // Clean URL hash after showing notification
+            window.history.replaceState(null, '', window.location.pathname);
           }
           
           // Only fetch profile if not already fetching (prevent race condition)

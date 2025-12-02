@@ -38,3 +38,6 @@ coverage/
 .cache/
 .vercel
 .env*.local
+
+# Credentials & Sensitive Data
+BREVO_SMTP_CREDENTIALS.md

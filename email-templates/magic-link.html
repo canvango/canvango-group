@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Link Login</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <img src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764656607/Canvango_Group_pvf0yj.svg" 
+                   alt="Canvango Logo" 
+                   style="width: 240px; height: auto; display: block; margin: 0 auto;">
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+                Halo,
+              </p>
+              
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+                Klik tombol di bawah ini untuk login ke akun Canvango Anda tanpa password:
+              </p>
+              
+              <!-- Button -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <a href="{{ .ConfirmationURL }}" 
+                       style="display: inline-block; padding: 14px 40px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: 500;">
+                      Login Sekarang
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 24px 0 0; color: #6b7280; font-size: 13px; line-height: 1.6; text-align: center;">
+                Link ini berlaku selama 1 jam.
+              </p>
+              
+              <p style="margin: 24px 0 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                Jika Anda tidak meminta login link, abaikan email ini.
+              </p>
+              
+              <p style="margin: 32px 0 0; color: #4b5563; font-size: 15px; line-height: 1.6;">
+                Salam Hormat,<br>
+                <span style="color: #2563eb; font-weight: 500;">Tim Canvango</span>
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
+              
+              <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; text-align: center; line-height: 1.6;">
+                Email: <a href="mailto:support@canvango.com" style="color: #2563eb; text-decoration: none;">support@canvango.com</a>
+              </p>
+              
+              <p style="margin: 16px 0 0; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+                Email ini dikirim secara otomatis. Mohon tidak membalas.<br>
+                © 2024 CANVANGO.
+              </p>
+              
+            </td>
+          </tr>
+          
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+  
+</body>
+</html>
