@@ -263,21 +263,21 @@ export function TripayPaymentGateway({
             {/* RIGHT PANEL: 2 Separate Cards */}
             <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
               {/* Card 1: Header - Logo + Timer */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 shadow-sm">
                 <div className="flex justify-between items-center gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <img 
                       src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
                       alt="Canvango Group" 
-                      className="h-12 sm:h-14 md:h-16 w-auto object-contain"
+                      className="h-10 sm:h-11 md:h-12 w-auto object-contain"
                     />
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xs sm:text-sm text-gray-600">Waktu Tersisa</p>
-                    <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-500">
+                    <p className="text-[10px] sm:text-xs text-gray-600">Waktu Tersisa</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-500">
                       {formatTimeLeft(timeLeft)}
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-500">Jam:Menit:Detik</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
                   </div>
                 </div>
               </div>
