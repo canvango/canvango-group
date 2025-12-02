@@ -152,96 +152,112 @@ export function TripayPaymentGateway({
           {/* 2-Column Layout (Desktop) / Stack (Mobile) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
             
-            {/* LEFT PANEL: QR Code / Pay Code */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 text-center shadow-sm">
-              {/* Status Header - Inside QR Box */}
-              <div className="mb-4 sm:mb-6">
-                <div className="inline-flex items-center gap-2 sm:gap-3 bg-orange-50 border border-orange-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 animate-pulse flex-shrink-0" />
-                  <div className="text-left">
-                    <p className="text-xs sm:text-sm font-semibold text-orange-900">Menunggu Pembayaran</p>
-                    <p className="text-[10px] sm:text-xs text-orange-700">
-                      Selesaikan sebelum {formatExpiredDate(paymentData.expired_time)}
+            {/* LEFT PANEL: New Design */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Alert Section - Outside Card */}
+              <div className="text-center">
+                <div className="inline-flex flex-col items-center gap-3">
+                  {/* Clock Icon */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-orange-500 flex items-center justify-center">
+                    <Clock className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  {/* Text */}
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">Menunggu Pembayaran</h3>
+                    <p className="text-xs sm:text-sm text-slate-600">
+                      Selesaikan pembayaran sebelum {formatExpiredDate(paymentData.expired_time)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Method Name */}
-              <div className="mb-3 sm:mb-4 md:mb-6">
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
-                  {paymentData.payment_name}
-                </h2>
-              </div>
-
-              {/* QR Code (if available) */}
-              {paymentData.qr_url && (
-                <div className="mb-4 sm:mb-6">
-                  <div className="bg-white p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl inline-block border-2 border-gray-200">
-                    <img
-                      src={paymentData.qr_url}
-                      alt="QR Code"
-                      className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 max-w-full"
+              {/* Payment Card */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4 sm:space-y-6">
+                {/* Header: Payment Method + Logo */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">{paymentData.payment_name}</h2>
+                  {paymentData.payment_method.includes('QRIS') && (
+                    <img 
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/QRIS_logo.svg/2560px-QRIS_logo.svg.png" 
+                      alt="QRIS" 
+                      className="h-6 sm:h-8 w-auto object-contain"
                     />
-                  </div>
-                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-600 mt-3 sm:mt-4">
-                    Scan dengan aplikasi pembayaran {paymentData.payment_name}
-                  </p>
+                  )}
                 </div>
-              )}
 
-              {/* Pay Code / Virtual Account (if available) */}
-              {paymentData.pay_code && (
-                <div className="mb-4 sm:mb-6">
-                  <p className="text-[10px] sm:text-xs text-gray-600 mb-2">
-                    {paymentData.payment_method.includes('VA') ? 'Nomor Virtual Account' : 'Kode Pembayaran'}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 p-2 sm:p-3 md:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl border-2 border-blue-200">
-                      <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-mono font-bold text-blue-900 tracking-wider break-all">
-                        {paymentData.pay_code}
-                      </p>
+                {/* QR Code (if available) */}
+                {paymentData.qr_url && (
+                  <div className="text-center py-4">
+                    <div className="inline-block p-3 sm:p-4 bg-white rounded-xl border border-gray-200">
+                      <img
+                        src={paymentData.qr_url}
+                        alt="QR Code"
+                        className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64"
+                      />
                     </div>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-4">
+                      Scan dengan aplikasi pembayaran {paymentData.payment_name}
+                    </p>
+                  </div>
+                )}
+
+                {/* Pay Code / Virtual Account (if available) */}
+                {paymentData.pay_code && (
+                  <div className="text-center py-4">
+                    <p className="text-xs sm:text-sm text-slate-600 mb-3">
+                      {paymentData.payment_method.includes('VA') ? 'Nomor Virtual Account' : 'Kode Pembayaran'}
+                    </p>
+                    <div className="flex items-center gap-2 justify-center">
+                      <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <p className="text-lg sm:text-xl md:text-2xl font-mono font-bold text-slate-900 tracking-wider">
+                          {paymentData.pay_code}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(paymentData.pay_code!, 'paycode')}
+                        className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                        title="Salin kode"
+                      >
+                        {copiedPayCode ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Amount Section */}
+                <div>
+                  <p className="text-xs sm:text-sm text-slate-600 mb-2">
+                    {paymentData.pay_code ? 'Jumlah Bayar' : 'Total Pembayaran'}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+                      {formatCurrency(paymentData.amount)}
+                    </p>
                     <button
-                      onClick={() => handleCopy(paymentData.pay_code!, 'paycode')}
-                      className="btn-primary px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 flex-shrink-0"
-                      title="Salin kode"
+                      onClick={() => handleCopy(paymentData.amount.toString(), 'reference')}
+                      className="text-blue-600 text-sm font-semibold hover:text-blue-700 flex items-center gap-1"
                     >
-                      {copiedPayCode ? (
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-                      ) : (
-                        <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
-                      )}
+                      Salin
+                      {copiedReference ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
-                    Gunakan kode ini untuk transfer melalui ATM, Mobile Banking, atau Internet Banking
-                  </p>
+                  {paymentData.fee_merchant > 0 && (
+                    <p className="text-xs sm:text-sm text-green-600 mt-2">
+                      Biaya admin ditanggung oleh kami
+                    </p>
+                  )}
                 </div>
-              )}
 
-              {/* Amount */}
-              <div className="mb-4 sm:mb-6">
-                <p className="text-[10px] sm:text-xs text-gray-500">Total Pembayaran</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                  {formatCurrency(paymentData.amount)}
-                </p>
-                {paymentData.fee_merchant > 0 && (
-                  <p className="text-[10px] sm:text-xs text-green-600 mt-1">
-                    Biaya admin ditanggung oleh kami
-                  </p>
+                {/* Cara Pembayaran Button */}
+                {paymentData.instructions && paymentData.instructions.length > 0 && (
+                  <button
+                    onClick={() => setShowInstructions(!showInstructions)}
+                    className="w-full px-6 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors"
+                  >
+                    {showInstructions ? 'Sembunyikan' : 'Cara Pembayaran'}
+                  </button>
                 )}
               </div>
-
-              {/* Cara Pembayaran Button */}
-              {paymentData.instructions && paymentData.instructions.length > 0 && (
-                <button
-                  onClick={() => setShowInstructions(!showInstructions)}
-                  className="btn-secondary w-full text-xs sm:text-sm"
-                >
-                  {showInstructions ? 'Sembunyikan' : 'Cara Pembayaran'}
-                </button>
-              )}
             </div>
 
             {/* RIGHT PANEL: 2 Separate Cards */}
