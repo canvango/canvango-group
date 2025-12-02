@@ -57,7 +57,7 @@ const FinTechPaymentDemo: React.FC = () => {
   const rightColumn = (
     <div className="space-y-6">
       {/* Header with Logo + Timer */}
-      <div className="flex justify-between items-start gap-4">
+      <div className="flex justify-between items-start gap-4 pb-6">
         <div className="flex-1">
           <img 
             src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
@@ -67,6 +67,9 @@ const FinTechPaymentDemo: React.FC = () => {
         </div>
         <TimerDisplay label="Waktu Tersisa" timeString="00:31:17" sublabel="Jam:Menit:Detik" />
       </div>
+
+      {/* Divider after header */}
+      <div className="border-t-2 border-red-500 mb-6" />
 
       <Divider />
 

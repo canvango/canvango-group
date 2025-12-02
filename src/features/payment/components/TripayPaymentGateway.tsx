@@ -247,7 +247,7 @@ export function TripayPaymentGateway({
             {/* RIGHT PANEL: Transaction Details */}
             <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
               {/* Header: Logo + Timer */}
-              <div className="flex justify-between items-start mb-4 sm:mb-6">
+              <div className="flex justify-between items-start pb-4 sm:pb-6">
                 <div className="flex-1 min-w-0">
                   <img 
                     src="https://res.cloudinary.com/dubmxw6kl/image/upload/v1764639586/Canvango_Group_5_iu5nrz.png" 
@@ -263,6 +263,9 @@ export function TripayPaymentGateway({
                   <p className="text-[10px] sm:text-xs text-gray-500">Jam:Menit:Detik</p>
                 </div>
               </div>
+
+              {/* Divider after header */}
+              <div className="border-t-2 border-red-500 mb-4 sm:mb-6" />
 
               {/* Transaction Info */}
               <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm border-b border-gray-200 pb-4 sm:pb-6 mb-4 sm:mb-6">
