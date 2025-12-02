@@ -42,7 +42,10 @@ export const TripayTransactionDetailModal: React.FC<TripayTransactionDetailModal
     pay_code: transaction.tripayCallbackData?.pay_code,
     qr_url: transaction.tripayQrUrl,
     qr_string: transaction.tripayCallbackData?.qr_string,
-    expired_time: transaction.tripayCallbackData?.expired_time || Math.floor(Date.now() / 1000) + 86400,
+    // Use tripayExpiredAt from database, fallback to callback data, then fallback to expired (0)
+    expired_time: transaction.tripayExpiredAt 
+      ? Math.floor(transaction.tripayExpiredAt.getTime() / 1000)
+      : transaction.tripayCallbackData?.expired_time || 0,
     instructions: transaction.tripayCallbackData?.instructions || [],
   };
 

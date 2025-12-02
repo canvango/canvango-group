@@ -52,6 +52,7 @@ export interface Transaction {
   tripayAmount?: number;
   tripayFee?: number;
   tripayTotalAmount?: number;
+  tripayExpiredAt?: Date; // Payment expiration timestamp
   tripayCallbackData?: {
     instructions?: Array<{
       title: string;

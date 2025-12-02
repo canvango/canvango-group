@@ -74,6 +74,7 @@ const mapDbTransactionToTransaction = (dbTxn: any): Transaction => {
     tripayAmount: dbTxn.tripay_amount ? Number(dbTxn.tripay_amount) : undefined,
     tripayFee: dbTxn.tripay_fee ? Number(dbTxn.tripay_fee) : undefined,
     tripayTotalAmount: dbTxn.tripay_total_amount ? Number(dbTxn.tripay_total_amount) : undefined,
+    tripayExpiredAt: dbTxn.tripay_expired_at ? new Date(dbTxn.tripay_expired_at) : undefined,
     tripayCallbackData: dbTxn.tripay_callback_data,
   };
 };

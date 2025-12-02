@@ -167,6 +167,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tripay_fee: tripayData.total_fee,
       tripay_total_amount: tripayData.amount_received,
       tripay_status: tripayData.status,
+      tripay_expired_at: tripayData.expired_time ? new Date(tripayData.expired_time * 1000).toISOString() : null,
+      tripay_callback_data: {
+        ...tripayData,
+        instructions: tripayData.instructions || [],
+      },
       updated_at: new Date().toISOString(),
     };
 
