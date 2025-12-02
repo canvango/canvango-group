@@ -14,7 +14,7 @@ interface SidebarProps {
   user: {
     username: string;
     balance: number;
-    role?: 'member' | 'admin' | 'guest';
+    role?: 'member' | 'admin' | 'superadmin' | 'guest';
     stats?: {
       transactions: number;
     };
@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen = true, onClose }) => {
     }
   };
 
-  const isAdmin = user.role === 'admin';
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
   const isGuest = user.role === 'guest';
   
   // Helper to check if path is active

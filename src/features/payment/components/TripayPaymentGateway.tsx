@@ -30,6 +30,7 @@ interface TripayPaymentGatewayProps {
     qr_string?: string;
     expired_time: number;
     instructions: PaymentInstruction[];
+    status?: string; // ✅ Add status field
   };
   onBack?: () => void;
   onRefreshStatus?: () => void;
@@ -157,16 +158,51 @@ export function TripayPaymentGateway({
               {/* Alert Section - Center */}
               <div className="text-center">
                 <div className="inline-flex flex-col items-center gap-2 sm:gap-3">
-                  {/* Clock Icon */}
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500 flex items-center justify-center">
-                    <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                  </div>
+                  {/* Status Icon */}
+                  {paymentData.status === 'PAID' ? (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-500 flex items-center justify-center">
+                      <Check className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                    </div>
+                  ) : paymentData.status === 'EXPIRED' || paymentData.status === 'FAILED' ? (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-500 flex items-center justify-center">
+                      <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500 flex items-center justify-center">
+                      <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                    </div>
+                  )}
                   {/* Text */}
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">Menunggu Pembayaran</h3>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      Selesaikan pembayaran sebelum {formatExpiredDate(paymentData.expired_time)}
-                    </p>
+                    {paymentData.status === 'PAID' ? (
+                      <>
+                        <h3 className="text-base sm:text-lg font-bold text-green-600 mb-1">Pembayaran Berhasil</h3>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          Transaksi telah dikonfirmasi dan saldo Anda telah ditambahkan
+                        </p>
+                      </>
+                    ) : paymentData.status === 'EXPIRED' ? (
+                      <>
+                        <h3 className="text-base sm:text-lg font-bold text-red-600 mb-1">Pembayaran Kadaluarsa</h3>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          Waktu pembayaran telah habis. Silakan buat transaksi baru.
+                        </p>
+                      </>
+                    ) : paymentData.status === 'FAILED' ? (
+                      <>
+                        <h3 className="text-base sm:text-lg font-bold text-red-600 mb-1">Pembayaran Gagal</h3>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          Transaksi gagal diproses. Silakan coba lagi.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">Menunggu Pembayaran</h3>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          Selesaikan pembayaran sebelum {formatExpiredDate(paymentData.expired_time)}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

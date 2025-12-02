@@ -27,6 +27,7 @@ export const TripayTransactionDetailModal: React.FC<TripayTransactionDetailModal
   }
 
   // Extract payment data from transaction
+  // FIX: Use transaction.amount (user's top-up amount) instead of tripayAmount (which is amount - fee)
   const paymentData = {
     reference: transaction.tripayReference,
     merchant_ref: transaction.tripayMerchantRef || transaction.id,
@@ -35,7 +36,7 @@ export const TripayTransactionDetailModal: React.FC<TripayTransactionDetailModal
     customer_name: transaction.tripayCallbackData?.customer_name || 'Customer',
     customer_email: transaction.tripayCallbackData?.customer_email || '',
     customer_phone: transaction.tripayCallbackData?.customer_phone || '',
-    amount: transaction.tripayAmount || transaction.amount,
+    amount: transaction.amount, // ✅ Use transaction.amount (10000) not tripayAmount (9180)
     fee_merchant: transaction.tripayCallbackData?.fee_merchant || transaction.tripayFee || 0,
     total_fee: transaction.tripayFee || 0,
     amount_received: transaction.tripayCallbackData?.amount_received || transaction.tripayTotalAmount || transaction.amount,
@@ -47,6 +48,7 @@ export const TripayTransactionDetailModal: React.FC<TripayTransactionDetailModal
       ? Math.floor(transaction.tripayExpiredAt.getTime() / 1000)
       : transaction.tripayCallbackData?.expired_time || 0,
     instructions: transaction.tripayCallbackData?.instructions || [],
+    status: transaction.tripayStatus || transaction.status, // ✅ Add status for conditional rendering
   };
 
   return (

@@ -174,9 +174,15 @@ const TopUp: React.FC = () => {
 
   // If payment response exists, show full-page payment gateway
   if (paymentResponse) {
+    // FIX: Override amount with selectedAmount (user's top-up amount)
+    const correctedPaymentData = {
+      ...paymentResponse.data,
+      amount: selectedAmount, // ✅ Use selectedAmount instead of response.data.amount
+    };
+    
     return (
       <TripayPaymentGateway
-        paymentData={paymentResponse.data}
+        paymentData={correctedPaymentData}
         onBack={() => {
           setPaymentResponse(null);
           setPollingReference(null);

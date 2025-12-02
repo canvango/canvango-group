@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts';
+import { getSourceIP, isValidTripayIP, verifySignature, validateCallbackPayload, sanitizeInput } from '../_shared/security.ts';
+import { logSecurityEvent, logCallbackAttempt, logTransactionMismatch, logRateLimitViolation, SecuritySeverity, SecurityEventType } from '../_shared/audit.ts';
+import { FEATURE_FLAGS, RATE_LIMITS } from '../_shared/constants.ts';
+import { enforceRateLimit, getRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +16,10 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  let sourceIP = 'unknown';
+  let reference = '';
+  let merchant_ref = '';
+
   try {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -23,34 +30,139 @@ serve(async (req) => {
       throw new Error('TRIPAY_PRIVATE_KEY not configured');
     }
 
+    // Initialize Supabase client with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // =====================================================
+    // SECURITY LAYER 0: Rate Limiting
+    // =====================================================
+    sourceIP = getSourceIP(req);
+    
+    const rateLimitResult = await enforceRateLimit(
+      '/tripay-callback',
+      sourceIP,
+      FEATURE_FLAGS.ENABLE_RATE_LIMITING
+    );
+
+    if (!rateLimitResult.allowed) {
+      console.warn('⚠️ Rate limit exceeded for IP:', sourceIP);
+      
+      await logRateLimitViolation(supabase, {
+        endpoint: '/tripay-callback',
+        source_ip: sourceIP,
+        limit: RATE_LIMITS.CALLBACK.limit,
+        window: RATE_LIMITS.CALLBACK.window,
+      });
+
+      const headers = {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        ...getRateLimitHeaders(rateLimitResult),
+      };
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Too many requests. Please try again later.' 
+        }),
+        { status: 429, headers }
+      );
+    }
+
+    console.log('✅ Rate limit check passed:', {
+      remaining: rateLimitResult.remaining,
+      total: rateLimitResult.total,
+    });
+
+    // =====================================================
+    // SECURITY LAYER 1: IP Whitelist Validation
+    // =====================================================
+    console.log('📍 Source IP:', sourceIP);
+
+    const ipValid = isValidTripayIP(sourceIP);
+    
+    if (!ipValid) {
+      // Log IP validation failure
+      await logSecurityEvent(supabase, {
+        event_type: FEATURE_FLAGS.ENABLE_IP_VALIDATION 
+          ? SecurityEventType.CALLBACK_IP_FAIL 
+          : SecurityEventType.CALLBACK_IP_WARNING,
+        severity: FEATURE_FLAGS.ENABLE_IP_VALIDATION 
+          ? SecuritySeverity.HIGH 
+          : SecuritySeverity.MEDIUM,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          message: FEATURE_FLAGS.ENABLE_IP_VALIDATION
+            ? 'Callback from non-whitelisted IP (rejected)'
+            : 'Callback from non-whitelisted IP (warning only)',
+        },
+      });
+
+      // If IP validation is enabled, reject the request
+      if (FEATURE_FLAGS.ENABLE_IP_VALIDATION) {
+        console.error('❌ IP not whitelisted:', sourceIP);
+        return new Response(
+          JSON.stringify({ success: false, message: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        console.warn('⚠️ IP not whitelisted (warning mode):', sourceIP);
+      }
+    } else {
+      console.log('✅ IP validated:', sourceIP);
+    }
+
+    // =====================================================
+    // SECURITY LAYER 2: Signature Verification
+    // =====================================================
     // Get raw body text for signature verification (IMPORTANT!)
     const rawBody = await req.text();
-    console.log('📥 Tripay callback received (raw):', rawBody);
+    console.log('📥 Tripay callback received');
 
     // Verify signature BEFORE parsing JSON
     const callbackSignature = req.headers.get('X-Callback-Signature');
     if (!callbackSignature) {
       console.error('❌ Missing X-Callback-Signature header');
+      
+      await logSecurityEvent(supabase, {
+        event_type: SecurityEventType.CALLBACK_SIGNATURE_FAIL,
+        severity: SecuritySeverity.HIGH,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          error: 'Missing signature header',
+        },
+      });
+
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing signature' }),
+        JSON.stringify({ success: false, message: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Generate signature for verification using RAW body
-    const hmac = createHmac('sha256', tripayPrivateKey);
-    hmac.update(rawBody);
-    const calculatedSignature = hmac.digest('hex');
+    // Verify signature using constant-time comparison
+    const signatureValid = verifySignature(rawBody, callbackSignature, tripayPrivateKey);
 
-    console.log('🔐 Signature verification:');
-    console.log('  Expected:', calculatedSignature);
-    console.log('  Received:', callbackSignature);
+    console.log('🔐 Signature verification:', signatureValid ? 'VALID' : 'INVALID');
 
-    if (calculatedSignature !== callbackSignature) {
+    if (!signatureValid) {
       console.error('❌ Invalid signature');
+      
+      await logSecurityEvent(supabase, {
+        event_type: SecurityEventType.CALLBACK_SIGNATURE_FAIL,
+        severity: SecuritySeverity.CRITICAL,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          received_signature: callbackSignature.substring(0, 20) + '...',
+          error: 'Signature mismatch',
+        },
+      });
+
       return new Response(
-        JSON.stringify({ success: false, message: 'Invalid signature' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, message: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -58,53 +170,82 @@ serve(async (req) => {
 
     // Now parse the JSON body
     const body = JSON.parse(rawBody);
-    console.log('📝 Parsed callback data:', JSON.stringify(body, null, 2));
 
-    // Initialize Supabase client with service role
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // =====================================================
+    // SECURITY LAYER 3: Input Validation
+    // =====================================================
+    const validation = validateCallbackPayload(body);
+    if (!validation.valid) {
+      console.error('❌ Invalid callback payload:', validation.errors);
+      
+      await logSecurityEvent(supabase, {
+        event_type: SecurityEventType.CALLBACK_RECEIVED,
+        severity: SecuritySeverity.HIGH,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          error: 'Invalid payload structure',
+          validation_errors: validation.errors,
+        },
+      });
 
-    // Extract Tripay data
-    const {
-      reference,
-      merchant_ref,
-      payment_method,
-      payment_method_code,
-      payment_name,
-      amount,
-      fee_merchant,
-      fee_customer,
-      total_fee,
-      amount_received,
-      total_amount,
-      status,
-      paid_at,
-      is_closed_payment,
-      callback_virtual_account_id,
-      external_id,
-      account_number,
-      customer_name,
-      customer_email,
-      customer_phone,
-    } = body;
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid request' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract and sanitize Tripay data
+    reference = sanitizeInput(body.reference);
+    merchant_ref = sanitizeInput(body.merchant_ref);
+    const payment_method = sanitizeInput(body.payment_method);
+    const payment_method_code = sanitizeInput(body.payment_method_code);
+    const payment_name = sanitizeInput(body.payment_name);
+    const status = body.status;
+    const paid_at = body.paid_at;
+    const is_closed_payment = body.is_closed_payment;
+    
+    // Merchant reporting data (NOT used for balance calculation)
+    const amount_received = body.amount_received;
+    const fee_merchant = body.fee_merchant || 0;
+    const fee_customer = body.fee_customer || 0;
+    const total_fee = body.total_fee || 0;
+    const total_amount = body.total_amount || body.amount;
 
     console.log('📝 Processing payment:', {
       reference,
       merchant_ref,
       status,
-      amount: total_amount,
       is_closed_payment,
     });
 
-    // Check idempotency - has this callback been processed before?
-    const { data: existingCallback } = await supabase
-      .from('audit_logs')
-      .select('id')
-      .eq('action', 'tripay_callback')
+    // =====================================================
+    // SECURITY LAYER 4: Idempotency Check
+    // =====================================================
+    const { data: existingEvent } = await supabase
+      .from('security_events')
+      .select('id, created_at')
+      .eq('event_type', SecurityEventType.CALLBACK_RECEIVED)
       .eq('details->>reference', reference)
+      .eq('details->>success', 'true')
       .single();
 
-    if (existingCallback) {
+    if (existingEvent) {
       console.log('⚠️ Callback already processed for reference:', reference);
+      
+      await logSecurityEvent(supabase, {
+        event_type: SecurityEventType.IDEMPOTENCY_CHECK,
+        severity: SecuritySeverity.LOW,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          reference,
+          merchant_ref,
+          original_processing_time: existingEvent.created_at,
+          message: 'Duplicate callback ignored',
+        },
+      });
+
       return new Response(
         JSON.stringify({ success: true, message: 'Already processed' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -114,6 +255,9 @@ serve(async (req) => {
     // Determine if this is Closed Payment (1) or Open Payment (0)
     const isClosedPayment = is_closed_payment === 1;
 
+    // =====================================================
+    // SECURITY LAYER 5: Transaction Matching & Verification
+    // =====================================================
     if (isClosedPayment) {
       // Handle Closed Payment - find transaction by merchant_ref (our transaction ID)
       const { data: transaction, error: findError } = await supabase
@@ -124,49 +268,56 @@ serve(async (req) => {
 
       if (findError || !transaction) {
         console.error('❌ Transaction not found:', merchant_ref);
+        
+        await logSecurityEvent(supabase, {
+          event_type: SecurityEventType.TRANSACTION_MISMATCH,
+          severity: SecuritySeverity.CRITICAL,
+          source_ip: sourceIP,
+          endpoint: '/tripay-callback',
+          details: {
+            reference,
+            merchant_ref,
+            error: 'Transaction not found',
+          },
+        });
+
         return new Response(
-          JSON.stringify({ success: false, message: 'Transaction not found' }),
+          JSON.stringify({ success: false, message: 'Not found' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       console.log('✅ Closed Payment transaction found:', transaction.id);
-    } else {
-      // Handle Open Payment - find open_payment by merchant_ref
-      const { data: openPayment, error: findError } = await supabase
-        .from('open_payments')
-        .select('*')
-        .eq('merchant_ref', merchant_ref)
-        .single();
 
-      if (findError || !openPayment) {
-        console.error('❌ Open Payment not found:', merchant_ref);
+      // Verify payment method matches
+      if (transaction.payment_method && transaction.payment_method !== 'tripay') {
+        console.error('❌ Payment method mismatch');
+        
+        await logTransactionMismatch(supabase, {
+          reference,
+          merchant_ref,
+          mismatch_type: 'payment_method',
+          expected: transaction.payment_method,
+          received: 'tripay',
+          source_ip: sourceIP,
+        });
+
         return new Response(
-          JSON.stringify({ success: false, message: 'Open Payment not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: false, message: 'Invalid request' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      console.log('✅ Open Payment found:', openPayment.id);
-    }
-
-    if (isClosedPayment) {
-      // Process Closed Payment
-      const { data: transaction } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', merchant_ref)
-        .single();
-
       // Update transaction with Tripay data
+      // CRITICAL: Use amount from DATABASE, not from callback
       const updateData: any = {
         tripay_reference: reference,
         tripay_merchant_ref: merchant_ref,
         tripay_payment_method: payment_method_code || payment_method,
         tripay_payment_name: payment_name,
-        tripay_amount: total_amount, // Total amount paid by customer (including fee)
-        tripay_fee: fee_merchant || 0, // Fee charged by Tripay (for display only)
-        tripay_total_amount: total_amount, // Same as tripay_amount
+        tripay_amount: total_amount, // For display/verification only
+        tripay_fee: fee_merchant, // For merchant reporting only
+        tripay_total_amount: total_amount, // For display only
         tripay_status: status,
         tripay_callback_data: body,
         updated_at: new Date().toISOString(),
@@ -178,10 +329,10 @@ serve(async (req) => {
         updateData.completed_at = paid_at || new Date().toISOString();
         updateData.tripay_paid_at = paid_at;
         console.log('💰 Payment PAID - marking as completed');
-        console.log('💵 Balance will be updated automatically by database trigger');
+        console.log('💵 Balance will be updated using amount from database:', transaction.amount);
         
-        // NOTE: Balance update is handled automatically by trigger_auto_update_balance
-        // No need to manually call process_topup_transaction to avoid double topup
+        // NOTE: Balance update uses transaction.amount from database
+        // NOT total_amount from callback (security measure)
       } else if (status === 'EXPIRED') {
         updateData.status = 'failed';
         console.log('⏰ Payment EXPIRED - marking as failed');
@@ -201,39 +352,77 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('❌ Failed to update transaction:', updateError);
+        
+        await logSecurityEvent(supabase, {
+          event_type: SecurityEventType.CALLBACK_RECEIVED,
+          severity: SecuritySeverity.HIGH,
+          source_ip: sourceIP,
+          endpoint: '/tripay-callback',
+          details: {
+            reference,
+            merchant_ref,
+            error: 'Database update failed',
+            db_error: updateError.message,
+          },
+        });
+
         return new Response(
-          JSON.stringify({ success: false, message: 'Failed to update transaction' }),
+          JSON.stringify({ success: false, message: 'Internal server error' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       console.log('✅ Closed Payment transaction updated successfully');
     } else {
-      // Process Open Payment
-      const { data: openPayment } = await supabase
+      // Handle Open Payment
+      const { data: openPayment, error: findError } = await supabase
         .from('open_payments')
         .select('*')
         .eq('merchant_ref', merchant_ref)
         .single();
 
+      if (findError || !openPayment) {
+        console.error('❌ Open Payment not found:', merchant_ref);
+        
+        await logSecurityEvent(supabase, {
+          event_type: SecurityEventType.TRANSACTION_MISMATCH,
+          severity: SecuritySeverity.CRITICAL,
+          source_ip: sourceIP,
+          endpoint: '/tripay-callback',
+          details: {
+            reference,
+            merchant_ref,
+            error: 'Open Payment not found',
+          },
+        });
+
+        return new Response(
+          JSON.stringify({ success: false, message: 'Not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('✅ Open Payment found:', openPayment.id);
+
       if (status === 'PAID') {
         console.log('💰 Open Payment received - creating transaction record');
 
         // Create transaction record for this Open Payment
+        // CRITICAL: Use total_amount for balance (since no pre-existing transaction)
         const { data: newTransaction, error: createTxError } = await supabase
           .from('transactions')
           .insert({
             user_id: openPayment.user_id,
             transaction_type: 'topup',
-            amount: total_amount, // Use total_amount (what customer paid) for balance update
+            amount: total_amount, // This becomes the source of truth
             status: 'completed',
             payment_method: 'tripay',
             tripay_reference: reference,
             tripay_merchant_ref: merchant_ref,
             tripay_payment_method: payment_method_code || payment_method,
             tripay_payment_name: payment_name,
-            tripay_amount: total_amount, // Total amount paid by customer
-            tripay_fee: fee_merchant || 0, // Fee for display only
+            tripay_amount: total_amount,
+            tripay_fee: fee_merchant,
             tripay_total_amount: total_amount,
             tripay_status: status,
             tripay_paid_at: paid_at,
@@ -245,8 +434,22 @@ serve(async (req) => {
 
         if (createTxError) {
           console.error('❌ Failed to create transaction:', createTxError);
+          
+          await logSecurityEvent(supabase, {
+            event_type: SecurityEventType.CALLBACK_RECEIVED,
+            severity: SecuritySeverity.HIGH,
+            source_ip: sourceIP,
+            endpoint: '/tripay-callback',
+            details: {
+              reference,
+              merchant_ref,
+              error: 'Transaction creation failed',
+              db_error: createTxError.message,
+            },
+          });
+
           return new Response(
-            JSON.stringify({ success: false, message: 'Failed to create transaction' }),
+            JSON.stringify({ success: false, message: 'Internal server error' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -255,56 +458,39 @@ serve(async (req) => {
         console.log('💵 Balance updated automatically by database trigger');
 
         // Create open_payment_transaction record
-        const { error: createOPTError } = await supabase
+        await supabase
           .from('open_payment_transactions')
           .insert({
             open_payment_id: openPayment.id,
             transaction_id: newTransaction.id,
             reference: reference,
-            amount: total_amount, // Total amount paid by customer
-            fee_merchant: fee_merchant || 0,
-            fee_customer: fee_customer || 0,
-            total_fee: total_fee || 0,
-            amount_received: amount_received || amount, // Amount received after fee
+            amount: total_amount,
+            fee_merchant: fee_merchant,
+            fee_customer: fee_customer,
+            total_fee: total_fee,
+            amount_received: amount_received,
             status: 'PAID',
             paid_at: paid_at || new Date().toISOString(),
           });
-
-        if (createOPTError) {
-          console.error('❌ Failed to create open_payment_transaction:', createOPTError);
-        } else {
-          console.log('✅ Open Payment transaction record created');
-        }
-
-        // NOTE: Balance update is handled automatically by trigger_auto_update_balance
-        // when transaction is inserted with status='completed'
-        // No need to manually call process_topup_transaction to avoid double topup
       }
 
       console.log('✅ Open Payment processed successfully');
     }
 
-    // Log callback event to audit_logs
-    await supabase
-      .from('audit_logs')
-      .insert({
-        user_id: null, // System action
-        action: 'tripay_callback',
-        table_name: isClosedPayment ? 'transactions' : 'open_payments',
-        record_id: merchant_ref,
-        details: {
-          reference,
-          merchant_ref,
-          status,
-          amount: total_amount,
-          is_closed_payment: isClosedPayment,
-          callback_virtual_account_id,
-          external_id,
-          account_number,
-        },
-      });
+    // =====================================================
+    // SECURITY LAYER 6: Comprehensive Audit Logging
+    // =====================================================
+    await logCallbackAttempt(supabase, {
+      reference,
+      merchant_ref,
+      status,
+      success: true,
+      source_ip: sourceIP,
+      signature_valid: true,
+      ip_valid: ipValid,
+    });
 
-    console.log('✅ Callback logged to audit_logs');
+    console.log('✅ Callback processed and logged successfully');
 
     // Return success response
     return new Response(
@@ -313,10 +499,33 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('❌ Error processing callback:', error);
+    
+    // Log error to security events if we have supabase client
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await logSecurityEvent(supabase, {
+        event_type: SecurityEventType.CALLBACK_RECEIVED,
+        severity: SecuritySeverity.HIGH,
+        source_ip: sourceIP,
+        endpoint: '/tripay-callback',
+        details: {
+          reference,
+          merchant_ref,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+    } catch (logError) {
+      console.error('❌ Failed to log error:', logError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Internal server error' 
+        message: 'Internal server error'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

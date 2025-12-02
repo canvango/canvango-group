@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts';
+import { enforceRateLimit, getRateLimitHeaders } from '../_shared/rateLimit.ts';
+import { logRateLimitViolation } from '../_shared/audit.ts';
+import { FEATURE_FLAGS, RATE_LIMITS } from '../_shared/constants.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,6 +80,41 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Rate limiting check
+    const rateLimitResult = await enforceRateLimit(
+      '/tripay-create-payment',
+      user.id,
+      FEATURE_FLAGS.ENABLE_RATE_LIMITING
+    );
+
+    if (!rateLimitResult.allowed) {
+      console.warn('⚠️ Rate limit exceeded for user:', user.id);
+      
+      await logRateLimitViolation(supabase, {
+        endpoint: '/tripay-create-payment',
+        source_ip: 'unknown',
+        user_id: user.id,
+        limit: RATE_LIMITS.PAYMENT_CREATION.limit,
+        window: RATE_LIMITS.PAYMENT_CREATION.window,
+      });
+
+      const headers = {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        ...getRateLimitHeaders(rateLimitResult),
+      };
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Too many requests. Please try again later.' 
+        }),
+        { status: 429, headers }
+      );
+    }
+
+    console.log('✅ Rate limit check passed for user:', user.id);
 
     // Parse request body
     const body = await req.json();
