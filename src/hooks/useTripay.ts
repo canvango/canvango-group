@@ -49,8 +49,8 @@ export function usePaymentStatus(reference: string | null) {
       if (data?.status === 'PAID' || data?.status === 'EXPIRED' || data?.status === 'FAILED') {
         return false;
       }
-      // Poll every 10 seconds for pending payments
-      return 10000;
+      // Poll every 1 second for pending payments (fast notification)
+      return 1000;
     },
   });
 }

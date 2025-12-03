@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { History, Wallet, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import TopUpForm from '../components/topup/TopUpForm';
+import TopUpSuccessModal from '../components/topup/TopUpSuccessModal';
 import { PaymentMethodSelector } from '@/features/payment/components/PaymentMethodSelector';
 import { FeeCalculator } from '@/features/payment/components/FeeCalculator';
 import { TripayPaymentGateway } from '@/features/payment/components/TripayPaymentGateway';
@@ -26,6 +27,8 @@ const TopUp: React.FC = () => {
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false);
+  const [successAmount, setSuccessAmount] = React.useState(0);
 
   // Auto-poll payment status every 5 seconds
   const { data: paymentStatus } = usePaymentStatus(pollingReference);
@@ -39,10 +42,10 @@ const TopUp: React.FC = () => {
   // Check if payment is completed (auto-polling)
   React.useEffect(() => {
     if (paymentStatus?.tripay_status === 'PAID') {
-      setNotification({
-        type: 'success',
-        message: '🎉 Pembayaran berhasil! Saldo Anda telah ditambahkan.'
-      });
+      // Show success modal instead of notification
+      setSuccessAmount(selectedAmount);
+      setShowSuccessModal(true);
+      
       // Stop polling and reset form
       setPollingReference(null);
       setPaymentResponse(null);
@@ -62,7 +65,7 @@ const TopUp: React.FC = () => {
       });
       setPollingReference(null);
     }
-  }, [paymentStatus]);
+  }, [paymentStatus, selectedAmount]);
 
   // Update amount whenever form changes
   const handleAmountChange = (amount: number) => {
@@ -137,10 +140,10 @@ const TopUp: React.FC = () => {
       const status = await checkPaymentStatus(paymentResponse.data.reference as string);
       
       if (status.tripay_status === 'PAID') {
-        setNotification({
-          type: 'success',
-          message: '🎉 Pembayaran berhasil! Saldo Anda telah ditambahkan.'
-        });
+        // Show success modal instead of notification
+        setSuccessAmount(selectedAmount);
+        setShowSuccessModal(true);
+        
         setPollingReference(null);
         setPaymentResponse(null);
         setShowPaymentSelection(false);
@@ -170,6 +173,12 @@ const TopUp: React.FC = () => {
         message: 'Gagal memeriksa status pembayaran'
       });
     }
+  };
+
+  // Handle close success modal
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    setSuccessAmount(0);
   };
 
   // If payment response exists, show full-page payment gateway
@@ -318,6 +327,13 @@ const TopUp: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Success Modal */}
+      <TopUpSuccessModal
+        isOpen={showSuccessModal}
+        amount={successAmount}
+        onClose={handleCloseSuccessModal}
+      />
     </div>
   );
 };
