@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Copy, Check, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Clock, Copy, Check, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PaymentInstruction {
   title: string;
@@ -47,6 +47,8 @@ export function TripayPaymentGateway({
   const [showInstructions, setShowInstructions] = useState(false);
   const [copiedReference, setCopiedReference] = useState(false);
   const [copiedPayCode, setCopiedPayCode] = useState(false);
+  const [showTransactionDetails, setShowTransactionDetails] = useState(false);
+  const [showPaymentBreakdown, setShowPaymentBreakdown] = useState(false);
 
   // Debug: Log payment data
   console.log('TripayPaymentGateway - Payment Data:', {
@@ -298,8 +300,8 @@ export function TripayPaymentGateway({
 
             {/* RIGHT PANEL: 2 Separate Cards */}
             <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
-              {/* Card 1: Header - Logo + Timer */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-sm">
+              {/* Card 1: Header - Logo + Timer (Always visible on desktop, hidden on mobile) */}
+              <div className="hidden lg:block bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-sm">
                 <div className="flex justify-between items-center gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
                     <img 
@@ -320,105 +322,249 @@ export function TripayPaymentGateway({
 
               {/* Card 2: Transaction Info + Payment Breakdown */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm flex-1 flex flex-col">
-                {/* Transaction Info Section */}
-                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
-                <div className="flex justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 flex-shrink-0">Merchant</span>
-                  <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
-                </div>
-                <div className="flex justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 flex-shrink-0">Nama Pemesan</span>
-                  <span className="text-gray-900 font-medium text-right break-words">{paymentData.customer_name}</span>
-                </div>
-                <div className="flex justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 flex-shrink-0">Nomor Invoice</span>
-                  <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.merchant_ref}</span>
-                </div>
-                {paymentData.customer_phone && (
-                  <div className="flex justify-between gap-2 sm:gap-4">
-                    <span className="text-gray-600 flex-shrink-0">Nomor HP</span>
-                    <span className="text-gray-900 font-medium text-right">{paymentData.customer_phone}</span>
-                  </div>
-                )}
-                <div className="flex justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 flex-shrink-0">Nomor Referensi</span>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.reference}</span>
-                    <button
-                      onClick={() => handleCopy(paymentData.reference, 'reference')}
-                      className="text-blue-600 hover:text-blue-700 flex-shrink-0"
-                      title="Salin referensi"
-                    >
-                      {copiedReference ? (
-                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                      ) : (
-                        <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 flex-shrink-0">Email</span>
-                  <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.customer_email}</span>
-                </div>
-              </div>
-
-              {/* Payment Breakdown Section */}
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Rincian Pembayaran</h3>
-                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Jumlah Top Up</span>
-                    <span className="text-gray-900 font-medium">{formatCurrency(paymentData.amount)}</span>
-                  </div>
-                  
-                  {/* Biaya Admin Section */}
-                  <div className="border-t border-gray-100 pt-2 mt-2">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600 font-medium">BIAYA ADMIN</span>
-                      <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-0.5 rounded">
-                        Ditanggung Seller
-                      </span>
+                {/* Mobile: Timer at top */}
+                <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-red-500" />
+                      <span className="text-xs text-gray-600">Waktu Tersisa</span>
                     </div>
-                    
-                    {paymentData.fee_merchant > 0 && (
-                      <>
-                        <div className="flex justify-between text-xs text-gray-500 ml-3">
-                          <span>Biaya Tetap</span>
-                          <span className="line-through">{formatCurrency(paymentData.fee_merchant)}</span>
-                        </div>
-                        {paymentData.total_fee > paymentData.fee_merchant && (
-                          <div className="flex justify-between text-xs text-gray-500 ml-3">
-                            <span>Biaya Persentase</span>
-                            <span className="line-through">{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-xs text-gray-500 ml-3 mt-1">
-                          <span>Total Biaya</span>
-                          <span className="line-through">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Total Bayar */}
-                  <div className="flex justify-between items-center pt-2 sm:pt-3 border-t-2 border-gray-200">
-                    <span className="text-sm sm:text-base font-semibold text-gray-900">Total Bayar</span>
-                    <span className="text-base sm:text-lg md:text-xl font-bold text-blue-600">
-                      {formatCurrency(paymentData.amount)}
-                    </span>
-                  </div>
-                  
-                  {/* Info Message */}
-                  {paymentData.fee_merchant > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-2 sm:p-3 mt-2 sm:mt-3">
-                      <p className="text-[10px] sm:text-xs text-green-800 leading-relaxed">
-                        ✓ Bayar sebanyak <span className="font-semibold">{formatCurrency(paymentData.amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(paymentData.amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span> ditanggung oleh seller.
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-red-500">
+                        {formatTimeLeft(timeLeft)}
                       </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Collapsible: Transaction Info Section (Mobile only) */}
+                <div className="lg:hidden mb-4">
+                  <button
+                    onClick={() => setShowTransactionDetails(!showTransactionDetails)}
+                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">📋 Detail Transaksi</span>
+                    {showTransactionDetails ? (
+                      <ChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                  
+                  {showTransactionDetails && (
+                    <div className="mt-3 space-y-2 text-xs pb-4 border-b border-gray-200">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-600 flex-shrink-0">Merchant</span>
+                        <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-600 flex-shrink-0">Nama Pemesan</span>
+                        <span className="text-gray-900 font-medium text-right break-words">{paymentData.customer_name}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-600 flex-shrink-0">Nomor Invoice</span>
+                        <span className="text-gray-900 font-medium text-right break-all text-[10px]">{paymentData.merchant_ref}</span>
+                      </div>
+                      {paymentData.customer_phone && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-600 flex-shrink-0">Nomor HP</span>
+                          <span className="text-gray-900 font-medium text-right">{paymentData.customer_phone}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-600 flex-shrink-0">Nomor Referensi</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-900 font-medium text-right break-all text-[10px]">{paymentData.reference}</span>
+                          <button
+                            onClick={() => handleCopy(paymentData.reference, 'reference')}
+                            className="text-blue-600 hover:text-blue-700 flex-shrink-0"
+                            title="Salin referensi"
+                          >
+                            {copiedReference ? (
+                              <Check className="w-3 h-3" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-gray-600 flex-shrink-0">Email</span>
+                        <span className="text-gray-900 font-medium text-right break-all text-[10px]">{paymentData.customer_email}</span>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
+
+                {/* Desktop: Transaction Info (Always visible) */}
+                <div className="hidden lg:block space-y-2 sm:space-y-3 text-xs sm:text-sm pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-gray-200">
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Merchant</span>
+                    <span className="text-gray-900 font-medium text-right">CANVANGO GROUP</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Nama Pemesan</span>
+                    <span className="text-gray-900 font-medium text-right break-words">{paymentData.customer_name}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Nomor Invoice</span>
+                    <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.merchant_ref}</span>
+                  </div>
+                  {paymentData.customer_phone && (
+                    <div className="flex justify-between gap-2 sm:gap-4">
+                      <span className="text-gray-600 flex-shrink-0">Nomor HP</span>
+                      <span className="text-gray-900 font-medium text-right">{paymentData.customer_phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Nomor Referensi</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.reference}</span>
+                      <button
+                        onClick={() => handleCopy(paymentData.reference, 'reference')}
+                        className="text-blue-600 hover:text-blue-700 flex-shrink-0"
+                        title="Salin referensi"
+                      >
+                        {copiedReference ? (
+                          <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                        ) : (
+                          <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:gap-4">
+                    <span className="text-gray-600 flex-shrink-0">Email</span>
+                    <span className="text-gray-900 font-medium text-right break-all text-[10px] sm:text-xs">{paymentData.customer_email}</span>
+                  </div>
+                </div>
+
+                {/* Collapsible: Payment Breakdown (Mobile only) */}
+                <div className="lg:hidden mb-4">
+                  <button
+                    onClick={() => setShowPaymentBreakdown(!showPaymentBreakdown)}
+                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">📊 Rincian Pembayaran</span>
+                    {showPaymentBreakdown ? (
+                      <ChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                  
+                  {showPaymentBreakdown && (
+                    <div className="mt-3 space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Jumlah Top Up</span>
+                        <span className="text-gray-900 font-medium">{formatCurrency(paymentData.amount)}</span>
+                      </div>
+                      
+                      {/* Biaya Admin Section */}
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-gray-600 font-medium">BIAYA ADMIN</span>
+                          <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-0.5 rounded">
+                            Ditanggung Seller
+                          </span>
+                        </div>
+                        
+                        {paymentData.fee_merchant > 0 && (
+                          <>
+                            <div className="flex justify-between text-xs text-gray-500 ml-3">
+                              <span>Biaya Tetap</span>
+                              <span className="line-through">{formatCurrency(paymentData.fee_merchant)}</span>
+                            </div>
+                            {paymentData.total_fee > paymentData.fee_merchant && (
+                              <div className="flex justify-between text-xs text-gray-500 ml-3">
+                                <span>Biaya Persentase</span>
+                                <span className="line-through">{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-xs text-gray-500 ml-3 mt-1">
+                              <span>Total Biaya</span>
+                              <span className="line-through">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Total Bayar */}
+                      <div className="flex justify-between items-center pt-2 border-t-2 border-gray-200">
+                        <span className="text-sm font-semibold text-gray-900">Total Bayar</span>
+                        <span className="text-base font-bold text-blue-600">
+                          {formatCurrency(paymentData.amount)}
+                        </span>
+                      </div>
+                      
+                      {/* Info Message */}
+                      {paymentData.fee_merchant > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
+                          <p className="text-[10px] text-green-800 leading-relaxed">
+                            ✓ Bayar sebanyak <span className="font-semibold">{formatCurrency(paymentData.amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(paymentData.amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span> ditanggung oleh seller.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop: Payment Breakdown (Always visible) */}
+                <div className="hidden lg:block">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Rincian Pembayaran</h3>
+                  <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Jumlah Top Up</span>
+                      <span className="text-gray-900 font-medium">{formatCurrency(paymentData.amount)}</span>
+                    </div>
+                    
+                    {/* Biaya Admin Section */}
+                    <div className="border-t border-gray-100 pt-2 mt-2">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-600 font-medium">BIAYA ADMIN</span>
+                        <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-0.5 rounded">
+                          Ditanggung Seller
+                        </span>
+                      </div>
+                      
+                      {paymentData.fee_merchant > 0 && (
+                        <>
+                          <div className="flex justify-between text-xs text-gray-500 ml-3">
+                            <span>Biaya Tetap</span>
+                            <span className="line-through">{formatCurrency(paymentData.fee_merchant)}</span>
+                          </div>
+                          {paymentData.total_fee > paymentData.fee_merchant && (
+                            <div className="flex justify-between text-xs text-gray-500 ml-3">
+                              <span>Biaya Persentase</span>
+                              <span className="line-through">{formatCurrency(paymentData.total_fee - paymentData.fee_merchant)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs text-gray-500 ml-3 mt-1">
+                            <span>Total Biaya</span>
+                            <span className="line-through">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Total Bayar */}
+                    <div className="flex justify-between items-center pt-2 sm:pt-3 border-t-2 border-gray-200">
+                      <span className="text-sm sm:text-base font-semibold text-gray-900">Total Bayar</span>
+                      <span className="text-base sm:text-lg md:text-xl font-bold text-blue-600">
+                        {formatCurrency(paymentData.amount)}
+                      </span>
+                    </div>
+                    
+                    {/* Info Message */}
+                    {paymentData.fee_merchant > 0 && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-2 sm:p-3 mt-2 sm:mt-3">
+                        <p className="text-[10px] sm:text-xs text-green-800 leading-relaxed">
+                          ✓ Bayar sebanyak <span className="font-semibold">{formatCurrency(paymentData.amount)}</span> dan saldo Anda akan bertambah <span className="font-semibold">{formatCurrency(paymentData.amount)}</span>. Biaya admin <span className="font-semibold">{formatCurrency(paymentData.total_fee || paymentData.fee_merchant)}</span> ditanggung oleh seller.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Refresh Status Button */}
                 {onRefreshStatus && (
