@@ -61,6 +61,11 @@ export function TripayPaymentGateway({
     actual_total: paymentData.amount_received,
   });
 
+  // Auto-scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Calculate time left
   useEffect(() => {
     if (!paymentData.expired_time) return;
