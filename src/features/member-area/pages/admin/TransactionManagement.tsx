@@ -415,9 +415,10 @@ const TransactionManagement: React.FC = () => {
                           onClick={() => openStatusModal(transaction)}
                           className="text-primary-600 hover:text-primary-900 mr-3 transition-colors"
                         >
-                          Status
+                          Change Status
                         </button>
-                        {transaction.status === 'completed' && (
+                        {transaction.transaction_type === 'purchase' && 
+                         transaction.status === 'completed' && (
                           <button
                             onClick={() => openRefundModal(transaction)}
                             className="text-red-600 hover:text-red-900 transition-colors"
@@ -619,8 +620,13 @@ const TransactionManagement: React.FC = () => {
                   <option value="completed">Completed</option>
                   <option value="pending">Pending</option>
                   <option value="failed">Failed</option>
-                  <option value="refunded">Refunded</option>
+                  {/* Refunded status can only be set via Refund button */}
                 </select>
+              </div>
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <p className="text-xs text-yellow-800">
+                  <strong>Note:</strong> To refund a purchase transaction, use the "Refund" button which will return the balance to the user.
+                </p>
               </div>
               <div className="flex gap-2">
                 <button

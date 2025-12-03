@@ -12,7 +12,8 @@ export type AuditAction =
   | 'ACTIVATE'
   | 'DEACTIVATE'
   | 'LOGIN'
-  | 'LOGOUT';
+  | 'LOGOUT'
+  | 'REFUND';
 
 export type AuditResource = 
   | 'users'
