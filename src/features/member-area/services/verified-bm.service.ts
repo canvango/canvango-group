@@ -12,12 +12,22 @@ import {
 
 /**
  * Fetch verified BM request statistics
+ * Returns empty stats for guest users (no error thrown)
  */
 export const fetchVerifiedBMStats = async (): Promise<VerifiedBMRequestStats> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error('Not authenticated');
+    
+    // Return empty stats for guest users (don't throw error)
+    if (authError || !user) {
+      return {
+        totalRequests: 0,
+        pendingRequests: 0,
+        processingRequests: 0,
+        completedRequests: 0,
+        failedRequests: 0,
+      };
+    }
 
     const { data: requests, error } = await supabase
       .from('verified_bm_requests')
@@ -45,12 +55,16 @@ export const fetchVerifiedBMStats = async (): Promise<VerifiedBMRequestStats> =>
 
 /**
  * Fetch verified BM requests for current user with URL details
+ * Returns empty array for guest users (no error thrown)
  */
 export const fetchVerifiedBMRequests = async (): Promise<VerifiedBMRequest[]> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error('Not authenticated');
+    
+    // Return empty array for guest users (don't throw error)
+    if (authError || !user) {
+      return [];
+    }
 
     const { data: requests, error } = await supabase
       .from('verified_bm_requests')

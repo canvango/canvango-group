@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/clients/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/features/member-area/contexts/AuthContext';
 
 interface EmailVerificationStatus {
   isVerified: boolean;
@@ -11,8 +12,10 @@ interface EmailVerificationStatus {
 export const useEmailVerification = () => {
   const queryClient = useQueryClient();
   const [resendCooldown, setResendCooldown] = useState(0);
+  const { user, isGuest } = useAuth();
 
   // Query untuk cek status verifikasi
+  // Only run for authenticated users (skip for guests)
   const { data: verificationStatus, isLoading } = useQuery<EmailVerificationStatus>({
     queryKey: ['email-verification-status'],
     queryFn: async (): Promise<EmailVerificationStatus> => {
@@ -34,6 +37,7 @@ export const useEmailVerification = () => {
         userId: user.id,
       };
     },
+    enabled: !isGuest && !!user, // Only run query for authenticated users
     refetchInterval: 30000, // Refetch setiap 30 detik untuk cek jika user sudah verifikasi
   });
 

@@ -15,9 +15,10 @@ const EmailVerificationBanner: React.FC = () => {
 
   // Jangan tampilkan banner jika:
   // - Masih loading
+  // - Verification status belum ada (guest atau query disabled)
   // - Email sudah verified
   // - User dismiss banner
-  if (isLoading || verificationStatus?.isVerified || isDismissed) {
+  if (isLoading || !verificationStatus || verificationStatus?.isVerified || isDismissed) {
     return null;
   }
 

@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ConditionalDashboardRoute } from './components/auth/ConditionalDashboardRoute';
 
 // Lazy load all pages for code splitting and performance optimization
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -45,10 +46,12 @@ const MemberRoutes: React.FC = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Default redirect to dashboard */}
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
+        {/* Root path - Conditional behavior based on auth status */}
+        {/* Guest: Render Dashboard at "/" */}
+        {/* Authenticated: Redirect to "/dashboard" */}
+        <Route path="/" element={<ConditionalDashboardRoute />} />
         
-        {/* Dashboard - Main overview page - Accessible to guests */}
+        {/* Dashboard - Main overview page - Accessible to all users */}
         <Route 
           path="dashboard" 
           element={<Dashboard />} 

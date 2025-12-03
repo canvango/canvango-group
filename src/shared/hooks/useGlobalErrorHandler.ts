@@ -42,6 +42,14 @@ export const useGlobalErrorHandler = () => {
         return; // Not an auth error, let component handle it
       }
 
+      // Check if user has an active session before attempting refresh
+      // If no session exists, user is a guest - don't try to refresh
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('👤 No active session found (guest user), skipping token refresh');
+        return; // Guest user, no need to refresh or logout
+      }
+
       // Prevent concurrent refresh attempts
       if (isRefreshingRef.current) {
         console.log('🔄 Token refresh already in progress, skipping...');
