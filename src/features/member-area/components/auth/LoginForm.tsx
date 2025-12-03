@@ -31,9 +31,10 @@ export const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string>('');
   
-  // Turnstile verification
+  // Turnstile verification with auto-refresh on error
   const { token, setToken, verifyToken, isVerifying, reset: resetTurnstile } = useTurnstile();
   const isTurnstileEnabled = !!import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const [turnstileKey, setTurnstileKey] = useState(0); // Key to force Turnstile re-render
   
   // Debug: Log when loginError changes
   React.useEffect(() => {
@@ -147,9 +148,10 @@ export const LoginForm: React.FC = () => {
       // Don't clear form data - let user correct their input
       // formData state is preserved, only password can be cleared for security if needed
       
-      // Reset Turnstile on error
+      // Reset Turnstile on error - force widget re-render for better UX
       if (isTurnstileEnabled) {
         resetTurnstile();
+        setTurnstileKey(prev => prev + 1); // Increment key to force Turnstile widget re-render
       }
     } finally {
       console.log('🔵 Setting isSubmitting to false');
@@ -254,6 +256,7 @@ export const LoginForm: React.FC = () => {
           {isTurnstileEnabled && (
             <div className="mb-1">
               <TurnstileWidget
+                key={turnstileKey} // Force re-render on error for better UX
                 onSuccess={setToken}
                 onError={resetTurnstile}
                 onExpire={resetTurnstile}
