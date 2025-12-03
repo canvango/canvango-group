@@ -7,6 +7,7 @@ import { createAuditLog } from './auditLogService';
 
 export interface TransactionFilters {
   status?: string;
+  transactionType?: string; // NEW: Filter by transaction type (purchase, topup, etc)
   productType?: string;
   search?: string;
   startDate?: string;
@@ -51,8 +52,9 @@ export interface Transaction {
   total_amount?: number;
 }
 
-export type TransactionStatus = 'completed' | 'pending' | 'failed' | 'refunded';
-export type ProductType = 'bm_account' | 'personal_account' | 'verified_bm' | 'whatsapp_api' | string;
+export type TransactionStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+export type TransactionType = 'purchase' | 'topup' | 'refund' | 'warranty_claim';
+export type ProductType = 'bm_account' | 'personal_account' | 'verified_bm' | 'api' | string;
 
 export const getAllTransactions = async (filters: TransactionFilters, page: number = 1, limit: number = 20) => {
   return adminTransactionService.getTransactions(filters, page, limit);
@@ -81,6 +83,11 @@ export const adminTransactionService = {
     // Apply filters
     if (filters.status) {
       query = query.eq('status', filters.status);
+    }
+
+    // NEW: Filter by transaction type
+    if (filters.transactionType) {
+      query = query.eq('transaction_type', filters.transactionType);
     }
 
     if (filters.startDate) {

@@ -6,6 +6,7 @@ import {
   exportTransactions,
   Transaction,
   TransactionStatus,
+  TransactionType,
   ProductType,
 } from '../../services/adminTransactionService';
 
@@ -17,6 +18,7 @@ const TransactionManagement: React.FC = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | ''>('');
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<TransactionType | ''>('');
   const [productTypeFilter, setProductTypeFilter] = useState<ProductType | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -38,7 +40,7 @@ const TransactionManagement: React.FC = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, statusFilter, productTypeFilter, searchQuery, startDate, endDate]);
+  }, [currentPage, statusFilter, transactionTypeFilter, productTypeFilter, searchQuery, startDate, endDate]);
 
   const fetchTransactions = async () => {
     try {
@@ -48,6 +50,7 @@ const TransactionManagement: React.FC = () => {
       const filters: any = {};
 
       if (statusFilter) filters.status = statusFilter;
+      if (transactionTypeFilter) filters.transactionType = transactionTypeFilter;
       if (productTypeFilter) filters.productType = productTypeFilter;
       if (searchQuery) filters.search = searchQuery;
       if (startDate) filters.startDate = startDate;
@@ -102,9 +105,10 @@ const TransactionManagement: React.FC = () => {
       const params: any = {};
 
       if (statusFilter) params.status = statusFilter;
-      if (productTypeFilter) params.product_type = productTypeFilter;
-      if (startDate) params.start_date = startDate;
-      if (endDate) params.end_date = endDate;
+      if (transactionTypeFilter) params.transactionType = transactionTypeFilter;
+      if (productTypeFilter) params.productType = productTypeFilter;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
 
       const data = await exportTransactions(params);
       const csv = data.map(t => Object.values(t).join(',')).join('\n');
@@ -215,7 +219,32 @@ const TransactionManagement: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-3xl shadow mb-6">
+        {/* Row 1: Primary Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Transaction Type
+            </label>
+            <select
+              value={transactionTypeFilter}
+              onChange={(e) => {
+                setTransactionTypeFilter(e.target.value as TransactionType | '');
+                // Reset product type filter when changing transaction type
+                if (e.target.value !== 'purchase') {
+                  setProductTypeFilter('');
+                }
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Transactions</option>
+              <option value="purchase">Purchase</option>
+              <option value="topup">Top Up</option>
+              <option value="refund">Refund</option>
+              <option value="warranty_claim">Warranty Claim</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Status
@@ -229,30 +258,12 @@ const TransactionManagement: React.FC = () => {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Status</option>
-              <option value="completed">Completed</option>
               <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
               <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
               <option value="refunded">Refunded</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Type
-            </label>
-            <select
-              value={productTypeFilter}
-              onChange={(e) => {
-                setProductTypeFilter(e.target.value as ProductType | '');
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Products</option>
-              <option value="bm_account">BM Account</option>
-              <option value="personal_account">Personal Account</option>
-              <option value="verified_bm">Verified BM</option>
-              <option value="whatsapp_api">WhatsApp API</option>
             </select>
           </div>
 
@@ -273,7 +284,32 @@ const TransactionManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        {/* Row 2: Secondary Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Type
+              {transactionTypeFilter && transactionTypeFilter !== 'purchase' && (
+                <span className="text-xs text-gray-500 ml-1">(Only for Purchase)</span>
+              )}
+            </label>
+            <select
+              value={productTypeFilter}
+              onChange={(e) => {
+                setProductTypeFilter(e.target.value as ProductType | '');
+                setCurrentPage(1);
+              }}
+              disabled={transactionTypeFilter !== '' && transactionTypeFilter !== 'purchase'}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">All Products</option>
+              <option value="bm_account">BM Account</option>
+              <option value="personal_account">Personal Account</option>
+              <option value="verified_bm">Verified BM</option>
+              <option value="api">WhatsApp API</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Start Date
@@ -303,15 +339,36 @@ const TransactionManagement: React.FC = () => {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          <div className="flex items-end">
-            <button
-              onClick={handleExport}
-              className="w-full px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-            >
-              Export CSV
-            </button>
+        {/* Row 3: Export Action */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            {totalCount > 0 && (
+              <span>
+                Showing {totalCount} transaction{totalCount !== 1 ? 's' : ''}
+                {transactionTypeFilter && (
+                  <span className="font-medium text-gray-700">
+                    {' '}• {transactionTypeFilter === 'topup' ? 'Top Up' : 
+                         transactionTypeFilter === 'purchase' ? 'Purchase' : 
+                         transactionTypeFilter === 'refund' ? 'Refund' : 
+                         'Warranty Claim'}
+                  </span>
+                )}
+                {statusFilter && (
+                  <span className="font-medium text-gray-700">
+                    {' '}• {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                  </span>
+                )}
+              </span>
+            )}
           </div>
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+          >
+            Export CSV
+          </button>
         </div>
       </div>
 
@@ -617,9 +674,11 @@ const TransactionManagement: React.FC = () => {
                   onChange={(e) => setNewStatus(e.target.value as TransactionStatus)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="completed">Completed</option>
                   <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
                   <option value="failed">Failed</option>
+                  <option value="cancelled">Cancelled</option>
                   {/* Refunded status can only be set via Refund button */}
                 </select>
               </div>
