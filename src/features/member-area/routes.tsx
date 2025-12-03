@@ -14,6 +14,8 @@ const ClaimWarranty = lazy(() => import('./pages/ClaimWarranty'));
 const APIDocumentation = lazy(() => import('./pages/APIDocumentation'));
 const TutorialCenter = lazy(() => import('./pages/TutorialCenter'));
 
+// Legal pages moved to main.tsx for standalone rendering (SEO optimization)
+
 // Admin pages
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
@@ -116,6 +118,8 @@ const MemberRoutes: React.FC = () => {
           path="tutorial" 
           element={<TutorialCenter />} 
         />
+        
+        {/* Legal Pages moved to main.tsx for standalone rendering without layout wrapper */}
         
         {/* Unauthorized Page */}
         <Route 

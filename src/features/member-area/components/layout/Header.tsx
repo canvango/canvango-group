@@ -129,15 +129,14 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onMenuClick, sidebarOpe
           
           <a 
             href="/dashboard" 
-            className="flex items-center space-x-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
+            className="flex items-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
             aria-label="Go to dashboard"
           >
             <img 
               src="/logo.png" 
               alt="Canvango Group" 
-              className="h-6 w-auto"
+              className="h-10 w-auto"
             />
-            <span className="text-lg md:text-xl font-bold text-gray-900">Canvango Group</span>
           </a>
         </div>
         

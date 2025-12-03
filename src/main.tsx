@@ -52,6 +52,12 @@ import ForgotPassword from './features/member-area/pages/ForgotPassword';
 import ResetPassword from './features/member-area/pages/ResetPassword';
 import { GuestRoute } from './features/member-area/components/auth/GuestRoute';
 
+// Import legal/public pages (standalone - no layout wrapper)
+import PrivacyPolicy from './features/member-area/pages/PrivacyPolicy';
+import TermsOfService from './features/member-area/pages/TermsOfService';
+import ContactUs from './features/member-area/pages/ContactUs';
+import SecurityCenter from './features/member-area/pages/SecurityCenter';
+
 // Import main app component
 import MemberArea from './features/member-area/MemberArea';
 
@@ -123,6 +129,12 @@ if (!root) {
                             
                             {/* Password reset - accessible with valid token from email */}
                             <Route path="/reset-password" element={<ResetPassword />} />
+                            
+                            {/* Legal/Public pages - standalone without layout wrapper for SEO */}
+                            <Route path="/kebijakan-privasi" element={<PrivacyPolicy />} />
+                            <Route path="/syarat-ketentuan" element={<TermsOfService />} />
+                            <Route path="/hubungi-kami" element={<ContactUs />} />
+                            <Route path="/pusat-keamanan" element={<SecurityCenter />} />
                             
                             {/* Member area routes - all other routes */}
                             <Route path="/*" element={<MemberArea />} />
