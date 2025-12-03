@@ -15,7 +15,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const TopUp: React.FC = () => {
   usePageTitle('Top Up');
   
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const createPayment = useCreatePayment();
   const { data: paymentMethods } = usePaymentMethods();
   const [selectedAmount, setSelectedAmount] = React.useState(0);
@@ -177,6 +177,10 @@ const TopUp: React.FC = () => {
 
   // Handle close success modal
   const handleCloseSuccessModal = () => {
+    // Refresh user data to update balance display
+    refreshUser();
+    
+    // Close modal
     setShowSuccessModal(false);
     setSuccessAmount(0);
   };
