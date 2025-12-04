@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Toaster as SonnerToaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import './index.css';
 
 // Import context providers
@@ -144,6 +145,7 @@ if (!root) {
                       <Toaster position="top-right" />
                       <SonnerToaster position="top-right" richColors />
                       <WelcomePopup />
+                      <SpeedInsights />
                     </TurnstileProtection>
                   </AuthProvider>
                 </AppWithErrorHandler>
