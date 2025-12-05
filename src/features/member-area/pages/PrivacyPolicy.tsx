@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Clock, Shield, Database, Lock, Users, FileText, Eye, ArrowUp, Home, Infinity, Facebook, ShieldCheck } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faPhone, faClock, faShield, faDatabase, faLock, faUsers, faFileAlt, faEye, faArrowUp, faHome, faInfinity, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
+import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import LegalFooter from '../components/layout/LegalFooter';
 
@@ -41,28 +43,28 @@ const PrivacyPolicy: React.FC = () => {
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Home className="w-4 h-4" />
+                <FontAwesomeIcon icon={faHome} className="w-4 h-4" />
                 <span>Beranda</span>
               </button>
               <button
                 onClick={() => navigate('/akun-bm')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Infinity className="w-4 h-4" />
+                <FontAwesomeIcon icon={faInfinity} className="w-4 h-4" />
                 <span>Akun BM</span>
               </button>
               <button
                 onClick={() => navigate('/akun-personal')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Facebook className="w-4 h-4" />
+                <FontAwesomeIcon icon={faFacebook} className="w-4 h-4" />
                 <span>Akun Personal</span>
               </button>
               <button
                 onClick={() => navigate('/pusat-keamanan')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <ShieldCheck className="w-4 h-4" />
+                <FontAwesomeIcon icon={faShieldAlt} className="w-4 h-4" />
                 <span>Keamanan</span>
               </button>
             </nav>
@@ -89,7 +91,7 @@ const PrivacyPolicy: React.FC = () => {
           <div className="max-w-4xl mx-auto text-center">
             {/* Breadcrumb */}
             <div className="inline-flex items-center gap-2 bg-white bg-opacity-20 rounded-2xl px-4 py-2 backdrop-blur-sm mb-6">
-              <Shield className="w-4 h-4" />
+              <FontAwesomeIcon icon={faShield} className="w-4 h-4" />
               <span className="text-sm">Kebijakan Resmi</span>
             </div>
 
@@ -102,7 +104,7 @@ const PrivacyPolicy: React.FC = () => {
             
             {/* Last Updated */}
             <div className="flex items-center justify-center gap-2 text-sm text-blue-100 mt-6">
-              <Clock className="w-4 h-4" />
+              <FontAwesomeIcon icon={faClock} className="w-4 h-4" />
               <span>Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           </div>
@@ -118,7 +120,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-6 h-6 text-blue-600" />
+                      <FontAwesomeIcon icon={faFileAlt} className="w-6 h-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Pengantar</h2>
@@ -130,7 +132,7 @@ const PrivacyPolicy: React.FC = () => {
                   
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-2xl p-4 md:p-6 mt-6">
                     <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-blue-600" />
+                      <FontAwesomeIcon icon={faShield} className="w-5 h-5 text-blue-600" />
                       Catatan Hukum
                     </h3>
                     <p className="text-sm text-gray-700 leading-relaxed">
@@ -145,7 +147,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Database className="w-6 h-6 text-purple-600" />
+                      <FontAwesomeIcon icon={faDatabase} className="w-6 h-6 text-purple-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Data yang Kami Kumpulkan</h2>
@@ -158,7 +160,7 @@ const PrivacyPolicy: React.FC = () => {
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
+                          <FontAwesomeIcon icon={faUsers} className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="text-base font-semibold text-gray-900">Data Identitas</h3>
                       </div>
@@ -182,7 +184,7 @@ const PrivacyPolicy: React.FC = () => {
                     <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                          <Database className="w-5 h-5 text-white" />
+                          <FontAwesomeIcon icon={faDatabase} className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="text-base font-semibold text-gray-900">Data Transaksi</h3>
                       </div>
@@ -210,7 +212,7 @@ const PrivacyPolicy: React.FC = () => {
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                          <Eye className="w-5 h-5 text-white" />
+                          <FontAwesomeIcon icon={faEye} className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="text-base font-semibold text-gray-900">Data Teknis</h3>
                       </div>
@@ -234,7 +236,7 @@ const PrivacyPolicy: React.FC = () => {
                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-2xl p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-                          <Shield className="w-5 h-5 text-white" />
+                          <FontAwesomeIcon icon={faShield} className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="text-base font-semibold text-gray-900">Data Klaim Garansi</h3>
                       </div>
@@ -262,7 +264,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Eye className="w-6 h-6 text-green-600" />
+                      <FontAwesomeIcon icon={faEye} className="w-6 h-6 text-green-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Penggunaan Data</h2>
@@ -300,7 +302,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Users className="w-6 h-6 text-orange-600" />
+                      <FontAwesomeIcon icon={faUsers} className="w-6 h-6 text-orange-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Pihak Ketiga & Penjualan Data</h2>
@@ -314,7 +316,7 @@ const PrivacyPolicy: React.FC = () => {
                     <div className="relative">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                          <Shield className="w-5 h-5 text-white" />
+                          <FontAwesomeIcon icon={faShield} className="w-5 h-5 text-white" />
                         </div>
                         <h3 className="text-base md:text-lg font-semibold text-gray-900">
                           Komitmen Tidak Menjual Data
@@ -329,7 +331,7 @@ const PrivacyPolicy: React.FC = () => {
                   {/* Pengecualian */}
                   <div className="bg-gray-50 rounded-2xl p-6">
                     <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-gray-600" />
+                      <FontAwesomeIcon icon={faFileAlt} className="w-5 h-5 text-gray-600" />
                       Pengecualian (Berbagi Data dengan Pihak Ketiga yang Terpercaya)
                     </h3>
                     <div className="space-y-3">
@@ -356,7 +358,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-6 h-6 text-red-600" />
+                      <FontAwesomeIcon icon={faShield} className="w-6 h-6 text-red-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Perlindungan Data (Keamanan)</h2>
@@ -366,18 +368,18 @@ const PrivacyPolicy: React.FC = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                      { title: 'Enkripsi SSL/TLS', desc: 'Semua data dienkripsi', icon: Lock, color: 'blue' },
-                      { title: 'Password Hashing', desc: 'Password disimpan dalam bentuk hash yang tidak dapat dibalik', icon: Lock, color: 'green' },
-                      { title: 'Server Aman', desc: 'Data disimpan di server dengan proteksi firewall dan pemantauan 24 jam', icon: Database, color: 'purple' },
-                      { title: 'Backup Berkala', desc: 'Data di-backup secara otomatis untuk mencegah kehilangan data', icon: Database, color: 'yellow' },
-                      { title: 'Akses Terbatas', desc: 'Hanya personel berwenang yang dapat mengakses data pengguna', icon: Shield, color: 'red' },
-                      { title: 'Kepatuhan Regulasi', desc: 'Mengikuti standar keamanan dan UU Perlindungan Data Pribadi Indonesia', icon: FileText, color: 'indigo' },
+                      { title: 'Enkripsi SSL/TLS', desc: 'Semua data dienkripsi', icon: faLock, color: 'blue' },
+                      { title: 'Password Hashing', desc: 'Password disimpan dalam bentuk hash yang tidak dapat dibalik', icon: faLock, color: 'green' },
+                      { title: 'Server Aman', desc: 'Data disimpan di server dengan proteksi firewall dan pemantauan 24 jam', icon: faDatabase, color: 'purple' },
+                      { title: 'Backup Berkala', desc: 'Data di-backup secara otomatis untuk mencegah kehilangan data', icon: faDatabase, color: 'yellow' },
+                      { title: 'Akses Terbatas', desc: 'Hanya personel berwenang yang dapat mengakses data pengguna', icon: faShield, color: 'red' },
+                      { title: 'Kepatuhan Regulasi', desc: 'Mengikuti standar keamanan dan UU Perlindungan Data Pribadi Indonesia', icon: faFileAlt, color: 'indigo' },
                     ].map((item, index) => {
-                      const Icon = item.icon;
+                      const iconProp = item.icon;
                       return (
                         <div key={index} className={`bg-gradient-to-br from-${item.color}-50 to-${item.color}-100 border border-${item.color}-200 rounded-2xl p-5 hover:shadow-lg transition-all hover:-translate-y-1`}>
                           <div className={`w-12 h-12 bg-${item.color}-500 rounded-xl flex items-center justify-center mb-4`}>
-                            <Icon className="w-6 h-6 text-white" />
+                            <FontAwesomeIcon icon={iconProp} className="w-6 h-6 text-white" />
                           </div>
                           <h3 className="text-sm font-semibold text-gray-900 mb-2">{item.title}</h3>
                           <p className="text-sm text-gray-700 leading-relaxed">{item.desc}</p>
@@ -393,7 +395,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-6 h-6 text-indigo-600" />
+                      <FontAwesomeIcon icon={faFileAlt} className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Hak-hak Anda</h2>
@@ -429,7 +431,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Database className="w-6 h-6 text-yellow-600" />
+                      <FontAwesomeIcon icon={faDatabase} className="w-6 h-6 text-yellow-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Penyimpanan Data</h2>
@@ -473,7 +475,7 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-pink-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Lock className="w-6 h-6 text-pink-600" />
+                      <FontAwesomeIcon icon={faLock} className="w-6 h-6 text-pink-600" />
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Penggunaan Cookies</h2>
@@ -506,7 +508,7 @@ const PrivacyPolicy: React.FC = () => {
                   <div className="relative">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                        <Mail className="w-6 h-6" />
+                        <FontAwesomeIcon icon={faEnvelope} className="w-6 h-6" />
                       </div>
                       <h2 className="text-xl md:text-2xl font-semibold">
                         Pertanyaan tentang Privasi?
@@ -521,7 +523,7 @@ const PrivacyPolicy: React.FC = () => {
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-4 hover:bg-opacity-20 transition-all">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-                            <Mail className="w-5 h-5" />
+                            <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5" />
                           </div>
                           <div className="text-xs text-blue-100">Email</div>
                         </div>
@@ -533,7 +535,7 @@ const PrivacyPolicy: React.FC = () => {
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-4 hover:bg-opacity-20 transition-all">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-                            <Phone className="w-5 h-5" />
+                            <FontAwesomeIcon icon={faPhone} className="w-5 h-5" />
                           </div>
                           <div className="text-xs text-blue-100">Nomor Kontak</div>
                         </div>
@@ -545,7 +547,7 @@ const PrivacyPolicy: React.FC = () => {
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-4 hover:bg-opacity-20 transition-all">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-                            <Clock className="w-5 h-5" />
+                            <FontAwesomeIcon icon={faClock} className="w-5 h-5" />
                           </div>
                           <div className="text-xs text-blue-100">Waktu Respons</div>
                         </div>
@@ -567,7 +569,7 @@ const PrivacyPolicy: React.FC = () => {
           className="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-50"
           aria-label="Back to top"
         >
-          <ArrowUp className="w-5 h-5" />
+          <FontAwesomeIcon icon={faArrowUp} className="w-5 h-5" />
         </button>
       )}
 

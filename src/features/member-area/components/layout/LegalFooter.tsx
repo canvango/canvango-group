@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Instagram, Facebook, MessageCircle, Mail, Phone, Clock, ExternalLink } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faFacebook, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope, faPhone, faClock, faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * Standalone Footer for Legal/Public Pages
@@ -33,7 +35,7 @@ const LegalFooter: React.FC = () => {
                 className="w-8 h-8 bg-gray-100 hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors"
                 aria-label="Instagram"
               >
-                <Instagram className="w-4 h-4 text-gray-700" />
+                <FontAwesomeIcon icon={faInstagram} className="w-4 h-4 text-gray-700" />
               </a>
               <a 
                 href="https://facebook.com/canvangogroup" 
@@ -42,7 +44,7 @@ const LegalFooter: React.FC = () => {
                 className="w-8 h-8 bg-gray-100 hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors"
                 aria-label="Facebook"
               >
-                <Facebook className="w-4 h-4 text-gray-700" />
+                <FontAwesomeIcon icon={faFacebook} className="w-4 h-4 text-gray-700" />
               </a>
               <a 
                 href="https://wa.me/6289669654782" 
@@ -51,7 +53,7 @@ const LegalFooter: React.FC = () => {
                 className="w-8 h-8 bg-gray-100 hover:bg-green-50 rounded-lg flex items-center justify-center transition-colors"
                 aria-label="WhatsApp"
               >
-                <MessageCircle className="w-4 h-4 text-gray-700" />
+                <FontAwesomeIcon icon={faWhatsapp} className="w-4 h-4 text-gray-700" />
               </a>
             </div>
           </div>
@@ -138,7 +140,7 @@ const LegalFooter: React.FC = () => {
                   className="group relative w-10 h-10 bg-white hover:bg-blue-600 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   aria-label="Instagram"
                 >
-                  <Instagram className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
+                  <FontAwesomeIcon icon={faInstagram} className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
                 </a>
                 
                 <a 
@@ -148,7 +150,7 @@ const LegalFooter: React.FC = () => {
                   className="group relative w-10 h-10 bg-white hover:bg-blue-600 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   aria-label="Facebook"
                 >
-                  <Facebook className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
+                  <FontAwesomeIcon icon={faFacebook} className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
                 </a>
                 
                 <a 
@@ -158,7 +160,7 @@ const LegalFooter: React.FC = () => {
                   className="group relative w-10 h-10 bg-white hover:bg-green-600 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   aria-label="WhatsApp"
                 >
-                  <MessageCircle className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
+                  <FontAwesomeIcon icon={faWhatsapp} className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" />
                 </a>
               </div>
             </div>
@@ -176,7 +178,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Kebijakan Privasi</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -185,7 +187,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Syarat & Ketentuan</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -194,7 +196,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Pusat Keamanan</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -203,7 +205,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Hubungi Kami</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
               </ul>
@@ -222,7 +224,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Akun Personal</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -231,7 +233,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Akun Business Manager</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -240,7 +242,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Jasa Verified BM</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
@@ -249,7 +251,7 @@ const LegalFooter: React.FC = () => {
                     className="group text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1"
                   >
                     <span>Dashboard</span>
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
               </ul>
@@ -268,7 +270,7 @@ const LegalFooter: React.FC = () => {
                     className="flex items-start gap-2.5 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
-                      <Mail className="w-4 h-4 text-blue-600" />
+                      <FontAwesomeIcon icon={faEnvelope} className="w-4 h-4 text-blue-600" />
                     </div>
                     <span className="break-all pt-1">support@canvangogroup.com</span>
                   </a>
@@ -279,14 +281,14 @@ const LegalFooter: React.FC = () => {
                     className="flex items-start gap-2.5 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
-                      <Phone className="w-4 h-4 text-blue-600" />
+                      <FontAwesomeIcon icon={faPhone} className="w-4 h-4 text-blue-600" />
                     </div>
                     <span className="pt-1">+62-896-6965-4782</span>
                   </a>
                 </li>
                 <li className="flex items-start gap-2.5 text-sm text-gray-600">
                   <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <FontAwesomeIcon icon={faClock} className="w-4 h-4 text-blue-600" />
                   </div>
                   <span className="pt-1">Senin - Minggu<br/>09:00 - 21:00 WIB</span>
                 </li>

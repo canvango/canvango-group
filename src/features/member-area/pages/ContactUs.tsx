@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Clock, MapPin, MessageCircle, Send, ArrowUp, Home, Infinity, Facebook, ShieldCheck } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faPhone, faClock, faMapMarkerAlt, faComments, faPaperPlane, faArrowUp, faHome, faInfinity, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
+import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import LegalFooter from '../components/layout/LegalFooter';
 
@@ -41,28 +43,28 @@ const ContactUs: React.FC = () => {
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Home className="w-4 h-4" />
+                <FontAwesomeIcon icon={faHome} className="w-4 h-4" />
                 <span>Beranda</span>
               </button>
               <button
                 onClick={() => navigate('/akun-bm')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Infinity className="w-4 h-4" />
+                <FontAwesomeIcon icon={faInfinity} className="w-4 h-4" />
                 <span>Akun BM</span>
               </button>
               <button
                 onClick={() => navigate('/akun-personal')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Facebook className="w-4 h-4" />
+                <FontAwesomeIcon icon={faFacebook} className="w-4 h-4" />
                 <span>Akun Personal</span>
               </button>
               <button
                 onClick={() => navigate('/pusat-keamanan')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <ShieldCheck className="w-4 h-4" />
+                <FontAwesomeIcon icon={faShieldAlt} className="w-4 h-4" />
                 <span>Keamanan</span>
               </button>
             </nav>
@@ -89,7 +91,7 @@ const ContactUs: React.FC = () => {
           <div className="max-w-4xl mx-auto text-center">
             {/* Breadcrumb */}
             <div className="inline-flex items-center gap-2 bg-white bg-opacity-20 rounded-2xl px-4 py-2 backdrop-blur-sm mb-6">
-              <MessageCircle className="w-4 h-4" />
+              <FontAwesomeIcon icon={faComments} className="w-4 h-4" />
               <span className="text-sm">Layanan Pelanggan</span>
             </div>
 
@@ -102,7 +104,7 @@ const ContactUs: React.FC = () => {
             
             {/* Response Time Badge */}
             <div className="inline-flex items-center gap-2 bg-green-900 bg-opacity-50 rounded-2xl px-4 py-2 backdrop-blur-sm mt-6">
-              <Clock className="w-4 h-4" />
+              <FontAwesomeIcon icon={faClock} className="w-4 h-4" />
               <span className="text-sm font-semibold">Respon Maksimal 1x24 Jam</span>
             </div>
           </div>
@@ -119,7 +121,7 @@ const ContactUs: React.FC = () => {
                 {/* Email Card */}
                 <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6 md:p-8 hover:shadow-xl transition-all hover:-translate-y-1">
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                    <Mail className="w-8 h-8 text-white" />
+                    <FontAwesomeIcon icon={faEnvelope} className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Email Resmi</h3>
                   <p className="text-sm text-gray-600 mb-4">Kirim pertanyaan atau keluhan Anda melalui email</p>
@@ -128,7 +130,7 @@ const ContactUs: React.FC = () => {
                     className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm group"
                   >
                     <span>support@canvangogroup.com</span>
-                    <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <FontAwesomeIcon icon={faPaperPlane} className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </a>
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500">Respon dalam 1x24 jam kerja</p>
@@ -138,7 +140,7 @@ const ContactUs: React.FC = () => {
                 {/* WhatsApp Card */}
                 <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6 md:p-8 hover:shadow-xl transition-all hover:-translate-y-1">
                   <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
-                    <Phone className="w-8 h-8 text-white" />
+                    <FontAwesomeIcon icon={faPhone} className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">WhatsApp CS</h3>
                   <p className="text-sm text-gray-600 mb-4">Hubungi customer service kami via WhatsApp</p>
@@ -149,7 +151,7 @@ const ContactUs: React.FC = () => {
                     className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium text-sm group"
                   >
                     <span>+62-896-6965-4782</span>
-                    <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <FontAwesomeIcon icon={faPaperPlane} className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </a>
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500">Chat langsung dengan CS kami</p>
@@ -159,7 +161,7 @@ const ContactUs: React.FC = () => {
                 {/* Working Hours Card */}
                 <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-lg border border-yellow-200 p-6 md:p-8">
                   <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mb-4">
-                    <Clock className="w-8 h-8 text-white" />
+                    <FontAwesomeIcon icon={faClock} className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Jam Operasional</h3>
                   <p className="text-sm text-gray-600 mb-4">Waktu layanan customer service</p>
@@ -177,7 +179,7 @@ const ContactUs: React.FC = () => {
                 {/* Address Card */}
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-3xl shadow-lg border border-purple-200 p-6 md:p-8">
                   <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-4">
-                    <MapPin className="w-8 h-8 text-white" />
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Alamat Kantor</h3>
                   <p className="text-sm text-gray-600 mb-4">Lokasi badan usaha kami</p>
@@ -225,7 +227,7 @@ const ContactUs: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full -ml-24 -mb-24 opacity-10"></div>
                 
                 <div className="relative">
-                  <MessageCircle className="w-12 h-12 mx-auto mb-4" />
+                  <FontAwesomeIcon icon={faComments} className="w-12 h-12 mx-auto mb-4" />
                   <h2 className="text-xl md:text-2xl font-semibold mb-3">
                     Butuh Bantuan Segera?
                   </h2>
@@ -238,7 +240,7 @@ const ContactUs: React.FC = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center px-6 py-3 bg-white text-green-600 text-sm font-medium rounded-xl hover:bg-green-50 transition-colors"
                   >
-                    <Phone className="w-5 h-5 mr-2" />
+                    <FontAwesomeIcon icon={faPhone} className="w-5 h-5 mr-2" />
                     Chat via WhatsApp
                   </a>
                 </div>
@@ -276,7 +278,7 @@ const ContactUs: React.FC = () => {
           className="fixed bottom-6 right-6 w-12 h-12 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-50"
           aria-label="Back to top"
         >
-          <ArrowUp className="w-5 h-5" />
+          <FontAwesomeIcon icon={faArrowUp} className="w-5 h-5" />
         </button>
       )}
 

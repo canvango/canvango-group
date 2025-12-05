@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Clock, MapPin, Globe, Shield, Lock, Database, Activity, FileCheck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ArrowUp, Home, Infinity, Facebook, ShieldCheck } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faPhone, faClock, faMapMarkerAlt, faGlobe, faShield, faLock, faDatabase, faChartLine, faQuestionCircle, faExclamationTriangle, faCheckCircle, faChevronDown, faChevronUp, faArrowUp, faHome, faInfinity, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
+import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import LegalFooter from '../components/layout/LegalFooter';
 
@@ -81,28 +83,28 @@ const SecurityCenter: React.FC = () => {
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Home className="w-4 h-4" />
+                <FontAwesomeIcon icon={faHome} className="w-4 h-4" />
                 <span>Beranda</span>
               </button>
               <button
                 onClick={() => navigate('/akun-bm')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Infinity className="w-4 h-4" />
+                <FontAwesomeIcon icon={faInfinity} className="w-4 h-4" />
                 <span>Akun BM</span>
               </button>
               <button
                 onClick={() => navigate('/akun-personal')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <Facebook className="w-4 h-4" />
+                <FontAwesomeIcon icon={faFacebook} className="w-4 h-4" />
                 <span>Akun Personal</span>
               </button>
               <button
                 onClick={() => navigate('/pusat-keamanan')}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
               >
-                <ShieldCheck className="w-4 h-4" />
+                <FontAwesomeIcon icon={faShieldAlt} className="w-4 h-4" />
                 <span>Keamanan</span>
               </button>
             </nav>
@@ -129,7 +131,7 @@ const SecurityCenter: React.FC = () => {
           <div className="max-w-4xl mx-auto text-center">
             {/* Breadcrumb */}
             <div className="inline-flex items-center gap-2 bg-white bg-opacity-20 rounded-2xl px-4 py-2 backdrop-blur-sm mb-6">
-              <Shield className="w-4 h-4" />
+              <FontAwesomeIcon icon={faShield} className="w-4 h-4" />
               <span className="text-sm">Pusat Keamanan</span>
             </div>
 
@@ -142,7 +144,7 @@ const SecurityCenter: React.FC = () => {
             
             {/* Warning Badge */}
             <div className="inline-flex items-center gap-2 bg-red-900 bg-opacity-50 rounded-2xl px-4 py-2 backdrop-blur-sm mt-6">
-              <AlertTriangle className="w-4 h-4" />
+              <FontAwesomeIcon icon={faExclamationTriangle} className="w-4 h-4" />
               <span className="text-sm font-semibold">Waspada Penipuan - Verifikasi Kontak Resmi</span>
             </div>
           </div>
@@ -159,7 +161,7 @@ const SecurityCenter: React.FC = () => {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-red-200 rounded-full -mr-16 -mt-16 opacity-20"></div>
                 <div className="relative flex items-start gap-4">
                   <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-6 h-6 text-white" />
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl font-bold text-red-900 mb-2">PERINGATAN PENTING</h2>
@@ -176,7 +178,7 @@ const SecurityCenter: React.FC = () => {
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                    <FontAwesomeIcon icon={faCheckCircle} className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Kontak & Informasi Resmi</h2>
@@ -186,22 +188,22 @@ const SecurityCenter: React.FC = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { icon: Globe, label: 'Website Resmi', value: 'www.canvangogroup.com', link: 'https://www.canvangogroup.com', color: 'blue' },
-                    { icon: Mail, label: 'Email Resmi', value: 'support@canvangogroup.com', link: 'mailto:support@canvangogroup.com', color: 'green' },
-                    { icon: Phone, label: 'Nomor CS Resmi', value: '+62-896-6965-4782', link: 'tel:+6289669654782', color: 'purple', note: 'HANYA nomor ini yang resmi' },
-                    { icon: Clock, label: 'Jam Operasional CS', value: 'Senin-Minggu', value2: '09:00-21:00 WIB', color: 'yellow' },
+                    { icon: faGlobe, label: 'Website Resmi', value: 'www.canvangogroup.com', link: 'https://www.canvangogroup.com', color: 'blue' },
+                    { icon: faEnvelope, label: 'Email Resmi', value: 'support@canvangogroup.com', link: 'mailto:support@canvangogroup.com', color: 'green' },
+                    { icon: faPhone, label: 'Nomor CS Resmi', value: '+62-896-6965-4782', link: 'tel:+6289669654782', color: 'purple', note: 'HANYA nomor ini yang resmi' },
+                    { icon: faClock, label: 'Jam Operasional CS', value: 'Senin-Minggu', value2: '09:00-21:00 WIB', color: 'yellow' },
                   ].map((item, index) => {
-                    const Icon = item.icon;
+                    const iconProp = item.icon;
                     return (
                       <div key={index} className={`bg-gradient-to-br from-${item.color}-50 to-${item.color}-100 border border-${item.color}-200 rounded-2xl p-4`}>
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 bg-${item.color}-500 rounded-xl flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-5 h-5 text-white" />
+                            <FontAwesomeIcon icon={iconProp} className="w-5 h-5 text-white" />
                           </div>
                           <div className="flex-1">
                             <div className="text-xs text-gray-600 mb-1">{item.label}</div>
                             {item.link ? (
-                              <a href={item.link} target={item.icon === Globe ? '_blank' : undefined} rel={item.icon === Globe ? 'noopener noreferrer' : undefined} className="text-sm font-semibold text-gray-900 hover:underline">
+                              <a href={item.link} target={item.icon === faGlobe ? '_blank' : undefined} rel={item.icon === faGlobe ? 'noopener noreferrer' : undefined} className="text-sm font-semibold text-gray-900 hover:underline">
                                 {item.value}
                               </a>
                             ) : (
@@ -220,7 +222,7 @@ const SecurityCenter: React.FC = () => {
 
                 <div className="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4">
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <div className="text-xs text-gray-600 mb-1">Alamat Badan Usaha</div>
                       <p className="text-sm font-semibold text-gray-900">
@@ -237,7 +239,7 @@ const SecurityCenter: React.FC = () => {
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-6 h-6 text-green-600" />
+                    <FontAwesomeIcon icon={faShield} className="w-6 h-6 text-green-600" />
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Sistem Keamanan Platform</h2>
@@ -247,18 +249,18 @@ const SecurityCenter: React.FC = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
-                    { icon: Lock, title: 'Enkripsi SSL/TLS', desc: 'Semua data dienkripsi menggunakan protokol SSL/TLS 256-bit.', color: 'green' },
-                    { icon: Shield, title: 'Proteksi DDoS', desc: 'Server dilindungi dengan sistem anti-DDoS 24/7.', color: 'blue' },
-                    { icon: Mail, title: 'Verifikasi Email OTP', desc: 'Setiap pendaftaran diverifikasi melalui kode OTP.', color: 'purple' },
-                    { icon: Clock, title: 'Session Timeout', desc: 'Sesi login otomatis berakhir setelah tidak aktif.', color: 'yellow' },
-                    { icon: Database, title: 'Backup Data Harian', desc: 'Data di-backup otomatis setiap hari.', color: 'indigo' },
-                    { icon: Activity, title: 'Log Aktivitas', desc: 'Semua aktivitas tercatat di riwayat akun.', color: 'red' },
+                    { icon: faLock, title: 'Enkripsi SSL/TLS', desc: 'Semua data dienkripsi menggunakan protokol SSL/TLS 256-bit.', color: 'green' },
+                    { icon: faShield, title: 'Proteksi DDoS', desc: 'Server dilindungi dengan sistem anti-DDoS 24/7.', color: 'blue' },
+                    { icon: faEnvelope, title: 'Verifikasi Email OTP', desc: 'Setiap pendaftaran diverifikasi melalui kode OTP.', color: 'purple' },
+                    { icon: faClock, title: 'Session Timeout', desc: 'Sesi login otomatis berakhir setelah tidak aktif.', color: 'yellow' },
+                    { icon: faDatabase, title: 'Backup Data Harian', desc: 'Data di-backup otomatis setiap hari.', color: 'indigo' },
+                    { icon: faChartLine, title: 'Log Aktivitas', desc: 'Semua aktivitas tercatat di riwayat akun.', color: 'red' },
                   ].map((item, index) => {
-                    const Icon = item.icon;
+                    const iconProp = item.icon;
                     return (
                       <div key={index} className={`bg-gradient-to-br from-${item.color}-50 to-${item.color}-100 border border-${item.color}-200 rounded-2xl p-5 hover:shadow-md transition-all`}>
                         <div className={`w-12 h-12 bg-${item.color}-500 rounded-xl flex items-center justify-center mb-4`}>
-                          <Icon className="w-6 h-6 text-white" />
+                          <FontAwesomeIcon icon={iconProp} className="w-6 h-6 text-white" />
                         </div>
                         <h3 className="text-sm font-semibold text-gray-900 mb-2">{item.title}</h3>
                         <p className="text-sm text-gray-700 leading-relaxed">{item.desc}</p>
@@ -274,7 +276,7 @@ const SecurityCenter: React.FC = () => {
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="w-6 h-6 text-red-600" />
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Waspada Penipuan</h2>
@@ -312,7 +314,7 @@ const SecurityCenter: React.FC = () => {
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <FileCheck className="w-6 h-6 text-indigo-600" />
+                    <FontAwesomeIcon icon={faQuestionCircle} className="w-6 h-6 text-indigo-600" />
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">Pertanyaan Umum (FAQ)</h2>
@@ -329,9 +331,9 @@ const SecurityCenter: React.FC = () => {
                       >
                         <span className="text-sm font-semibold text-gray-900 pr-4">{faq.question}</span>
                         {openFaq === index ? (
-                          <ChevronUp className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                          <FontAwesomeIcon icon={faChevronUp} className="w-5 h-5 text-gray-600 flex-shrink-0" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                          <FontAwesomeIcon icon={faChevronDown} className="w-5 h-5 text-gray-600 flex-shrink-0" />
                         )}
                       </button>
                       {openFaq === index && (
@@ -352,7 +354,7 @@ const SecurityCenter: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full -ml-24 -mb-24 opacity-10"></div>
                 
                 <div className="relative">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="w-12 h-12 mx-auto mb-4" />
                   <h2 className="text-xl md:text-2xl font-semibold mb-3">
                     Temukan Aktivitas Mencurigakan?
                   </h2>
@@ -366,14 +368,14 @@ const SecurityCenter: React.FC = () => {
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center px-6 py-3 bg-white text-red-600 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors"
                     >
-                      <Phone className="w-5 h-5 mr-2" />
+                      <FontAwesomeIcon icon={faPhone} className="w-5 h-5 mr-2" />
                       Laporkan via WhatsApp
                     </a>
                     <a
                       href="mailto:support@canvangogroup.com?subject=Laporan%20Aktivitas%20Mencurigakan"
                       className="inline-flex items-center justify-center px-6 py-3 bg-white bg-opacity-20 backdrop-blur-sm text-white text-sm font-medium rounded-xl hover:bg-opacity-30 transition-colors border border-white border-opacity-30"
                     >
-                      <Mail className="w-5 h-5 mr-2" />
+                      <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 mr-2" />
                       Laporkan via Email
                     </a>
                   </div>
@@ -391,7 +393,7 @@ const SecurityCenter: React.FC = () => {
           className="fixed bottom-6 right-6 w-12 h-12 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-50"
           aria-label="Back to top"
         >
-          <ArrowUp className="w-5 h-5" />
+          <FontAwesomeIcon icon={faArrowUp} className="w-5 h-5" />
         </button>
       )}
 
