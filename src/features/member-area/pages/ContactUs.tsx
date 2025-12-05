@@ -182,8 +182,8 @@ const ContactUs: React.FC = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Alamat Kantor</h3>
                   <p className="text-sm text-gray-600 mb-4">Lokasi badan usaha kami</p>
                   <p className="text-sm text-gray-900 leading-relaxed">
-                    Jl Angkasa III 138<br />
-                    DKI Jakarta, Jakarta 10610<br />
+                    Jl WR Supratman 37<br />
+                    Jakarta Pusat, DKI Jakarta 15412<br />
                     Indonesia
                   </p>
                   <div className="mt-4 pt-4 border-t border-purple-200">

@@ -126,11 +126,6 @@ export const fetchProducts = async (
   }
 
   // Apply sorting
-  // PRIORITY 1: Always show available products first (stock_status = 'available')
-  // This ensures products with stock appear before sold out products
-  // Using ascending because 'available' < 'out_of_stock' alphabetically
-  query = query.order('stock_status', { ascending: true });
-  
   // PRIORITY 2: Apply user-selected sorting
   let sortField = 'created_at';
   if (params.sortBy === 'price') {
@@ -204,6 +199,16 @@ export const fetchProducts = async (
       createdAt: new Date(item.created_at),
       updatedAt: new Date(item.updated_at),
     };
+  });
+
+  // PRIORITY 1: Sort by real stock (products with stock first)
+  // This ensures products with available accounts appear before out-of-stock products
+  transformedData.sort((a, b) => {
+    // Products with stock (stock > 0) come first
+    if (a.stock > 0 && b.stock === 0) return -1;
+    if (a.stock === 0 && b.stock > 0) return 1;
+    // If both have stock or both don't, maintain database sort order
+    return 0;
   });
 
   return {
