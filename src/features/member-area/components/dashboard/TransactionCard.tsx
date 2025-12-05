@@ -29,14 +29,17 @@ const TransactionCard: React.FC<TransactionCardProps> = ({ transaction }) => {
     });
   };
 
-  // Mask username untuk privacy
-  const maskUsername = (username: string): string => {
-    if (!username || username.length <= 3) return username + '******';
-    return username.substring(0, 3) + '******';
+  // Get username from transaction data
+  const username = transaction.username || 'Member';
+  
+  // Mask username - show only first 3 characters for privacy
+  const maskUsername = (name: string): string => {
+    if (!name) return 'Mem******';
+    if (name.length <= 3) return name + '******';
+    return name.substring(0, 3) + '******';
   };
 
   const quantity = transaction.quantity || (transaction as any).metadata?.quantity || 1;
-  const username = (transaction as any).username || 'User';
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200 p-4 divide-y divide-dashed divide-gray-200">

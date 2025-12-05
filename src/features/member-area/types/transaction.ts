@@ -41,6 +41,9 @@ export interface Transaction {
   purchaseId?: string;
   accountDetails?: Record<string, any>;
   
+  // Username for public display (masked in UI)
+  username?: string;
+  
   // TriPay payment gateway fields
   tripayReference?: string;
   tripayMerchantRef?: string;

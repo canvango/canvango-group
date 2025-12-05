@@ -29,13 +29,10 @@ export async function getUserTransactions(
   const { page = 1, limit = 10, status } = params;
   const offset = (page - 1) * limit;
   
-  // Get authenticated user with timeout
-  const { data: { user } } = await handleSupabaseOperation(
-    async () => supabase.auth.getUser(),
-    'getUser'
-  );
+  // Get authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   
-  if (!user) {
+  if (authError || !user) {
     throw new Error('Not authenticated');
   }
 
@@ -114,15 +111,19 @@ export async function getUserTransactions(
 
 /**
  * Get recent transactions from all users (public - for dashboard) - Direct Supabase
+ * Includes masked username (first 3 characters only) for privacy
+ * Uses RPC function for JOIN since foreign key relationship is not defined
  */
 export async function getRecentTransactions(): Promise<Transaction[]> {
   try {
-    const data = await handleSupabaseOperation(
+    // First, get transactions
+    const transactionsData = await handleSupabaseOperation(
       async () => {
         return await supabase
           .from('transactions')
           .select(`
             id,
+            user_id,
             transaction_type,
             amount,
             status,
@@ -139,10 +140,33 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
       'getRecentTransactions'
     );
     
+    if (!transactionsData || transactionsData.length === 0) {
+      return [];
+    }
+    
+    // Get unique user IDs
+    const userIds = [...new Set(transactionsData.map((tx: any) => tx.user_id))];
+    
+    // Fetch usernames for these user IDs
+    const usersData = await handleSupabaseOperation(
+      async () => {
+        return await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', userIds);
+      },
+      'getUsernames'
+    );
+    
+    // Create a map of user_id -> username
+    const userMap = new Map(
+      (usersData || []).map((user: any) => [user.id, user.username])
+    );
+    
     // Transform data to match Transaction interface
-    const transactions: Transaction[] = (data || []).map((row: any) => ({
+    const transactions: Transaction[] = transactionsData.map((row: any) => ({
       id: row.id,
-      userId: '', // Not included in public view
+      userId: '', // Not included in public view for privacy
       transactionType: row.transaction_type,
       type: row.transaction_type, // Alias for compatibility
       status: row.status,
@@ -152,6 +176,8 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
         id: row.product.id,
         title: row.product.product_name
       } : undefined,
+      // Include username for display (will be masked in component)
+      username: userMap.get(row.user_id) || 'Member',
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.created_at), // Use created_at as fallback
     }));

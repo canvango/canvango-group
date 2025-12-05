@@ -109,12 +109,15 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   const config = statusConfig[tx.status];
                   const Icon = config.icon;
                   const quantity = tx.quantity || (tx as any).metadata?.quantity || 1;
-                  const username = (tx as any).username || 'User';
                   
-                  // Mask username
-                  const maskUsername = (username: string): string => {
-                    if (!username || username.length <= 3) return username + '******';
-                    return username.substring(0, 3) + '******';
+                  // Get username from transaction data
+                  const username = tx.username || 'Member';
+                  
+                  // Mask username - show only first 3 characters for privacy
+                  const maskUsername = (name: string): string => {
+                    if (!name) return 'Mem******';
+                    if (name.length <= 3) return name + '******';
+                    return name.substring(0, 3) + '******';
                   };
                   
                   return (
